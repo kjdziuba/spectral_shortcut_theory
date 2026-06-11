@@ -1,0 +1,23 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\TODO{Phase 7 (W21).}
+
+\subsection{Why freezing works}
+\TODO{Direct corollary of Theorem \ref{thm:twoscale}: removing $\thetap$ from the optimization eliminates the timescale separation.}
+
+\subsection{The residual baseline alternative}
+\TODO{$Z = f_\thetap(X) + \mathrm{PCA}(X)$ as soft prescription. Bypass shortcut without losing trainability.}
+
+\subsection{Limitations}
+\TODO{
+- Bound is a scaling law, not a tight characterization.
+- Assumes linear or near-linear spectral module; nonlinear extension is future work.
+- Synthetic verification is on toy problems; real-data sanity check is on one domain.
+}
+
+\subsection{Open problem: implicit bias toward spatial features}
+\TODO{State the spatial dominance conjecture as future work. This is the "holy grail" theorem we deliberately did not pursue here — frame as natural extension.}
+
+\subsection{Beyond spectroscopy}
+\TODO{Same pathology likely affects other compositional pipelines: video models with frozen image encoders, multimodal LLM bottlenecks, etc.}

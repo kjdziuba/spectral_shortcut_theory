@@ -1,0 +1,20 @@
+\section{The Effective Gradient Ratio Diagnostic}
+\label{sec:egr}
+
+\TODO{Phase 4 (W11-W12). Operationalize EGR, prove monotonicity, give threshold.}
+
+\subsection{Definition and motivation}
+\TODO{Reference Definition \ref{def:egr}. Explain why this ratio is the right object to track.}
+
+\subsection{Monotonicity under the slow-fast regime}
+\TODO{
+\begin{proposition}
+Under the assumptions of Theorem \ref{thm:twoscale}, $\EGR(t)$ is non-increasing on average along the fast manifold.
+\end{proposition}
+}
+
+\subsection{Threshold criterion}
+\TODO{State $\EGR(t) < \tau$ as a sufficient condition for gradient starvation onset. Discuss how to set $\tau$ practically.}
+
+\subsection{Implementation}
+\TODO{PyTorch callback; see \texttt{code/egr/}. Drop-in for any training loop.}

@@ -1,0 +1,32 @@
+\section{Theorem 2: Two-Timescale Spurious Convergence}
+\label{sec:thm2}
+
+\TODO{Phase 3 (W8-W10). Main result: joint SGD converges to a spurious stationary point.}
+
+\subsection{From SGD to ODE}
+\TODO{Continuous-time limit of joint SGD. Define effective timescale ratio
+\[
+    \epsilon = \frac{\lambda_{\min}(H_{\thetap\thetap})}{\lambda_{\max}(H_{\phip\phip})} \approx \frac{\Cf}{\Cg}.
+\]
+}
+
+\subsection{The slow-fast system}
+\TODO{
+\[
+    \dot{\phip}(t) = -\nabla_\phip \loss(\thetap, \phip), \qquad
+    \dot{\thetap}(t) = -\epsilon \nabla_\thetap \loss(\thetap, \phip).
+\]
+Apply Borkar singular perturbation: $\phip$ converges to manifold $\phip^*(\thetap_0)$ on fast timescale.
+}
+
+\subsection{Cross-entropy saturation}
+\TODO{Adapt Pezeshki gradient starvation: along the fast manifold, cross-entropy residual $r \to 0$ exponentially. Therefore $\nabla_\thetap \loss = J_\thetap^\top r \to 0$ before $\thetap$ leaves its initial neighborhood.}
+
+\begin{theorem}[Two-Timescale Spurious Convergence]
+\label{thm:twoscale}
+\TODO{Under Assumptions 1-4 and conditions \dots, joint SGD converges to a point $(\thetap^*, \phip^*)$ where $\nabla \loss(\thetap^*, \phip^*) = 0$ but $\thetap^* \neq \arg\min_\thetap \loss_{\mathrm{eff}}(\thetap)$, where $\loss_{\mathrm{eff}}(\thetap) = \loss(\thetap, \phip^*(\thetap))$.}
+\end{theorem}
+
+\begin{proof}
+\TODO{Combine Borkar two-timescale + Pezeshki cross-entropy decay.}
+\end{proof}

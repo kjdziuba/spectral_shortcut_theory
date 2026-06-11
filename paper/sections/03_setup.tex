@@ -1,0 +1,37 @@
+\section{Setup and Preliminaries}
+\label{sec:setup}
+
+\TODO{Phase 1 (W3-W4). Goal: define everything we need cleanly.}
+
+\subsection{The compositional model}
+\TODO{
+Input $x \in \R^{C \times H \times W \times S}$. Two modules:
+\begin{itemize}
+    \item Spectral reduction $f_\thetap: \R^{CS} \to \R^K$ applied per-pixel, $C_f$ parameters
+    \item Spatial model $g_\phip: \R^{K \times H \times W} \to \R^{N_{cls} \times H \times W}$, $C_g$ parameters
+\end{itemize}
+Compose: $\hat{y} = g_\phip(f_\thetap(X))$.
+}
+
+\subsection{Loss and gradients}
+\TODO{Cross-entropy loss. Derive $\nabla_\thetap L$ and $\nabla_\phip L$ via chain rule.}
+
+\subsection{The block Hessian}
+\TODO{Express joint Hessian in block form, define each block.}
+
+\subsection{Assumptions}
+\TODO{State all assumptions cleanly:
+\begin{assumption}[Smoothness] $\loss$ is twice differentiable. \end{assumption}
+\begin{assumption}[Lipschitz gradients] $\nabla \loss$ is $L$-Lipschitz. \end{assumption}
+\begin{assumption}[Sub-Gaussian inputs] Per-pixel inputs $x_{h,w}$ are sub-Gaussian. \end{assumption}
+\begin{assumption}[Capacity gap] $\Cg / \Cf \to \infty$. \end{assumption}
+}
+
+\subsection{The Effective Gradient Ratio}
+\begin{definition}[EGR]
+\label{def:egr}
+At training step $t$ with parameters $(\thetap_t, \phip_t)$, the Effective Gradient Ratio is
+\[
+    \EGR(t) = \frac{\norm{\nabla_\thetap \loss(\thetap_t, \phip_t)}}{\norm{\nabla_\phip \loss(\thetap_t, \phip_t)}}.
+\]
+\end{definition}

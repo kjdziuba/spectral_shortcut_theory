@@ -1,0 +1,73 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsthm, mathtools}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{natbib}
+
+% --- Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% --- Custom macros
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\inner}[2]{\left\langle#1,#2\right\rangle}
+\newcommand{\loss}{\mathcal{L}}
+\newcommand{\thetap}{\bm{\theta}}
+\newcommand{\phip}{\bm{\phi}}
+\newcommand{\EGR}{\mathrm{EGR}}
+\newcommand{\Cg}{C_g}
+\newcommand{\Cf}{C_f}
+\newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\NOTE}[1]{\textcolor{blue}{[NOTE: #1]}}
+
+% --- Title
+\title{The Spectral Shortcut Theorem: A Gradient-Geometric \\
+       Explanation for Failure Modes of Joint \\
+       Spectral-Spatial Deep Learning}
+\author{Krzysztof Dziuba \\ \texttt{krzys.dziuba@gmail.com}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\TODO{Write abstract last, after Phase 7.}
+\end{abstract}
+
+% --- Sections
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_setup}
+\input{sections/04_theorem1_hessian}
+\input{sections/05_theorem2_twoscale}
+\input{sections/06_egr}
+\input{sections/07_experiments}
+\input{sections/08_real_data}
+\input{sections/09_discussion}
+
+% --- Bibliography
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+% --- Supplement
+\appendix
+\input{sections/supplement}
+
+\end{document}

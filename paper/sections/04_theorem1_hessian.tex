@@ -1,0 +1,30 @@
+\section{Theorem 1: The Hessian Capacity Bound}
+\label{sec:thm1}
+
+\TODO{Phase 2 (W5-W7). Main result: $\kappa(H) \sim \Omega(\Cg / \Cf)$.}
+
+\begin{theorem}[Hessian Capacity Bound]
+\label{thm:hessian}
+\TODO{Statement: Under Assumptions 1-4, the condition number of the joint Gauss-Newton matrix satisfies
+\[
+    \kappa(G) \geq c \cdot \frac{\Cg}{\Cf}
+\]
+for some constant $c > 0$ depending on data covariance and bottleneck dimension.}
+\end{theorem}
+
+\begin{proof}
+\TODO{Proof outline:
+\begin{enumerate}
+    \item Define $G = J^\top J$ where $J = [J_\thetap, J_\phip]$. (Lemma in supplement.)
+    \item Express in block form.
+    \item Lower bound on $\lambda_{\max}(G)$ via Karakida (\citeyear{karakida2019}). \TODO{Cite once bib is set up.}
+    \item Upper bound on $\lambda_{\min}(G)$ via Schur complement.
+    \item Combine.
+\end{enumerate}}
+\end{proof}
+
+\subsection{Remarks}
+\TODO{
+- Bound is a lower bound, not tight. Experiments will show empirical scaling.
+- Linear triviality response: this is about supervised gradient dynamics, not unsupervised PCA.
+}
