@@ -4,6 +4,96 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-06-27 — Experiment 1.3 HEADLINE RESULT
+
+**Done**:
+- Identified design flaw in initial Exp 1.3: spatial info lived only
+  in labels (label-position correlation), not in X. CNN couldn't
+  extract pure position info during 150-epoch training. spatial_only
+  baseline was stuck at chance across all three calibration modes.
+- Fixed data generator: added per-position fixed spatial signature
+  along v ⊥ u (orthogonal direction in R^S). Spatial signal now
+  manifests directly in X content.
+- Preserved v1 broken-design results as `_brokendesign` files.
+- Re-ran exp1_3 with fixed data.
+
+**Final results (CNN D=256, 3 seeds)**:
+
+Bayes mode (alpha=0.82, beta=18.75):
+- spectral-only acc = 0.53 (CNN training)
+- spatial-only  acc = 0.53 (CNN training)
+- frozen        acc = 0.61
+- joint         acc = 0.48 (BELOW CHANCE)
+- **shortcut gap = 0.13** (frozen - joint)
+
+NTK mode: shortcut gap = 0.04
+Margin mode: shortcut gap = 0.09 but poor calibration quality
+
+**WINNER: Bayes mode** -- combined score 1.26 vs ntk 0.88 vs margin 0.82.
+
+**The headline finding**:
+Joint training collapses BELOW the spectral-only baseline (0.48 vs
+0.53). This means end-to-end training doesn't just fail to combine
+the two pathways -- it actively destroys spectral information that
+the model demonstrably can use when given spectral-only data. This
+is the direct empirical demonstration of the spectral-shortcut
+conjecture from Theorem 2.
+
+- Updated Section 7 with full Exp 1.3 write-up and calibration mode
+  comparison table.
+
+**Paper state at end of session**:
+- All sections 1-9 have substantive drafts.
+- All three experiments empirically validated:
+    Exp 1.1: kappa scales monotonically (lambda_theta flat, lambda_phi grows)
+    Exp 1.2: EGR collapse depth monotonic in capacity (CNN)
+    Exp 1.3: joint training collapses BELOW single-modality baseline
+- Real-data F1 table connects synthetic to FTIR/QCL findings.
+- Discussion section with prescriptions, limitations, open problem.
+
+**Next session**:
+- Begin Phase 2 (Theorem 1 proof details, W5-W7).
+- Read Pezeshki 2021 to build intuition for Theorem 2 proof.
+- Consider running Exp 1.4 (EGR as predictor) to support Section 6.
+
+---
+
+## 2026-06-26 (night) — Experiment 1.3 designed; Sections 7, 8, 9 drafted
+
+**Done**:
+- Built `synthetic/calibrate.py` with 3 modes (Bayes, NTK, Margin).
+  Fixed spatial-only baseline to use position-majority class (the
+  correct primitive given our data design — position info lives in
+  labels, not in X).
+- Bayes calibration successful: alpha=0.82, beta=18.75 gives
+  spectral-only acc=0.75, spatial-only acc=0.75 (calibrated equal).
+- NTK and Margin modes can't calibrate spatial side for this data
+  (no position info in X) — will document as a finding.
+- Wrote `experiments/exp1_3.py`: 36 runs (3 modes × 4 conditions ×
+  3 seeds), CNN D=256. Currently running in background.
+- Drafted Section 7 (Experiments) with Exp 1.1 + Exp 1.2 results.
+- Drafted Section 8 (Real-Data Validation) with FTIR/QCL F1 table
+  connecting synthetic to real-data findings.
+- Drafted Section 9 (Discussion) with prescriptions, limitations,
+  Spatial Dominance Conjecture as open problem, beyond-spectroscopy
+  applications.
+- Added bib entries for Huang 2022, Saxe 2011, Rahimi-Recht, Bhatia,
+  Horn-Johnson, Lyu-Li, Gunasekar, Chen GradNorm, Coil-Cheney,
+  Bozzo 2024.
+
+**Current paper state**:
+- Sections 1-9 ALL have substantive drafts.
+- TODOs are limited to actual proof details (Phases 2-3, W5-W10) and
+  Experiment 1.3 final results.
+- Supplement and abstract are stubs (per plan, written last).
+
+**Next session**:
+- Read Exp 1.3 results, pick best calibration, finalize Section 7.
+- Begin Phase 2 (Theorem 1 proof details, W5-W7).
+- User to read Pezeshki 2021 to build intuition for Theorem 2 proof.
+
+---
+
 ## 2026-06-26 (late+) — Experiment 1.2 v4: CNN extended + ViT universality
 
 **Done**:

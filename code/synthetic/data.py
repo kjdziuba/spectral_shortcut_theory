@@ -117,9 +117,33 @@ def make_problem(
     # 6) Build X. Spectral signal: alpha * z * u injected at every pixel; then noise.
     #    x[b,h,w,:] = alpha * z[b,h,w] * u + noise * eps
     X = alpha * z.unsqueeze(-1) * u.view(1, 1, 1, S)  # (B, H, W, S)
-    # Small spatial fill: a tiny bias from the chosen class's template along u
-    # (keeps the spectral channel mildly informative even when alpha is small but nonzero).
-    # NOTE: we keep this small so spectral_only ceiling at beta=0 is governed by alpha*z.
+
+    # Inject the spatial signal into X as well via a per-position fixed
+    # direction. This is essential for Experiment 1.3: without this,
+    # spatial-only accuracy is limited by what a learner can extract from
+    # position alone (not present in per-pixel X). With this, the spatial
+    # signal manifests as a per-position-constant component along an
+    # orthogonal direction in R^S, accessible to both per-pixel logreg
+    # and to spatial CNNs.
+    #
+    # We choose a direction v orthogonal to u so the two pathways do not
+    # interfere. The strength per position scales with the per-class
+    # pattern matched against the per-pixel class probability.
+    v = torch.randn(S, generator=g)
+    v = v - (v @ u) * u  # Gram-Schmidt against u
+    v = v / (v.norm() + 1e-8)
+    # Per-position fixed spatial bias along v.
+    # We use the soft class probabilities to form a smooth per-pixel scalar.
+    # m[h,w] in [-1, 1] derived from the smooth class probability differences.
+    if n_classes == 2:
+        prob_c0 = torch.softmax(beta * patterns.permute(1, 2, 0), dim=-1)[:, :, 0]  # (H, W)
+        m = (2.0 * prob_c0 - 1.0).clamp(-1.0, 1.0)  # (H, W)
+    else:
+        # multi-class: use the per-position class with the largest pattern
+        m = patterns.permute(1, 2, 0).softmax(dim=-1).max(dim=-1).values  # (H, W)
+    spatial_signature = (beta * m).view(1, H, W, 1) * v.view(1, 1, 1, S)
+    X = X + spatial_signature.expand(n_samples, H, W, S)
+
     X = X + noise * torch.randn(n_samples, H, W, S, generator=g)
 
     X = X.to(torch.float32)
