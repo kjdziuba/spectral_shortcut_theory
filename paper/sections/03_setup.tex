@@ -1,37 +1,163 @@
 \section{Setup and Preliminaries}
 \label{sec:setup}
 
-\TODO{Phase 1 (W3-W4). Goal: define everything we need cleanly.}
+We analyze a generic two-module compositional model. While our motivating
+application is infrared spectroscopic imaging for tissue classification,
+the framework applies to any pipeline that first reduces a per-element
+spectral signal and then applies a high-capacity spatial model. We
+deliberately keep the notation domain-agnostic.
 
 \subsection{The compositional model}
-\TODO{
-Input $x \in \R^{C \times H \times W \times S}$. Two modules:
-\begin{itemize}
-    \item Spectral reduction $f_\thetap: \R^{CS} \to \R^K$ applied per-pixel, $C_f$ parameters
-    \item Spatial model $g_\phip: \R^{K \times H \times W} \to \R^{N_{cls} \times H \times W}$, $C_g$ parameters
-\end{itemize}
-Compose: $\hat{y} = g_\phip(f_\thetap(X))$.
-}
+
+Let $X \in \R^{H \times W \times S}$ denote a hyperspectral input image,
+where $H$ and $W$ are spatial dimensions and $S$ is the spectral
+dimension.\footnote{Multi-channel inputs (e.g.\ raw absorbance together
+with first and second derivatives) are handled by concatenating channels
+along the spectral dimension; this changes only the input size and
+leaves the analysis unaffected.} We write the per-pixel spectrum at
+location $(h,w)$ as $x_{h,w} \in \R^S$.
+
+The model consists of two modules applied sequentially:
+\begin{enumerate}
+    \item A \emph{spectral reduction} $f_\thetap: \R^S \to \R^K$
+          applied independently to every pixel, producing a feature map
+          $Z \in \R^{K \times H \times W}$ with
+          $Z_{:,h,w} = f_\thetap(x_{h,w})$.
+    \item A \emph{spatial model} $g_\phip: \R^{K \times H \times W} \to
+          \R^{N_{\mathrm{cls}} \times H \times W}$ producing per-pixel
+          class logits $\hat{y} = g_\phip(Z)$.
+\end{enumerate}
+We denote the composed model
+$F_{\thetap,\phip}(X) = g_\phip(f_\thetap(X))$ and the parameter counts
+$\Cf := \dim(\thetap)$ and $\Cg := \dim(\phip)$.
+
+\begin{assumption}[Linear spectral reduction]
+\label{ass:linear}
+$f_\thetap$ is linear in $\thetap$: there exists $W \in \R^{S \times K}$
+with $\thetap = \mathrm{vec}(W)$ and $f_\thetap(x_{h,w}) = W^\top x_{h,w}$.
+\end{assumption}
+
+\begin{remark}
+Assumption \ref{ass:linear} captures the canonical case used widely in
+spectroscopy pipelines, including the FTIR and QCL tissue
+classification work we draw motivation from. It is also the cleanest
+case in which the Hessian of $\loss$ admits closed-form block analysis.
+We discuss extensions to shallow nonlinear $f_\thetap$ in
+Section~\ref{sec:discussion} and verify empirically in
+Section~\ref{sec:experiments} that the theorem's scaling persists when
+$f_\thetap$ is replaced by a small MLP.
+\end{remark}
+
+\begin{assumption}[Spatial model regularity]
+\label{ass:reg}
+$g_\phip$ is twice continuously differentiable in $\phip$ with
+$L$-Lipschitz gradients.
+\end{assumption}
+
+\begin{assumption}[Sub-Gaussian inputs]
+\label{ass:subg}
+Per-pixel inputs $\{x_{h,w}\}$ are sub-Gaussian with second moment
+$\Sigma = \E[x_{h,w} x_{h,w}^\top]$ of bounded condition number.
+\end{assumption}
+
+\begin{assumption}[Capacity gap]
+\label{ass:gap}
+$\Cg / \Cf \to \infty$.
+\end{assumption}
+
+Assumption~\ref{ass:gap} is the structural condition under which our
+theorems become informative. Empirically it is satisfied with several
+orders of magnitude to spare in modern spectral-spatial architectures
+(in our motivating example, $\Cg/\Cf \approx 325$).
 
 \subsection{Loss and gradients}
-\TODO{Cross-entropy loss. Derive $\nabla_\thetap L$ and $\nabla_\phip L$ via chain rule.}
+
+We train with per-pixel cross-entropy:
+\begin{equation}
+\label{eq:loss}
+    \loss(\thetap, \phip) = \frac{1}{HW} \sum_{h=1}^{H} \sum_{w=1}^{W}
+    \mathrm{CE}\!\left( F_{\thetap,\phip}(X)_{:,h,w},\ y_{h,w} \right),
+\end{equation}
+where $y_{h,w} \in \{1, \dots, N_{\mathrm{cls}}\}$ is the ground-truth
+class. Cross-entropy plays an essential role in
+Section~\ref{sec:thm2}: its gradient with respect to the logits
+$\hat{y}$ is the prediction residual
+$r = \mathrm{softmax}(\hat{y}) - y_{\mathrm{onehot}}$, which vanishes
+exponentially as predictions saturate. We discuss other loss functions
+sharing this vanishing-residual property in
+Section~\ref{sec:discussion}.
+
+The gradient of $\loss$ with respect to the spatial parameters is
+computed by standard backpropagation. The gradient with respect to the
+spectral parameters $\thetap$ admits the chain-rule decomposition
+\begin{equation}
+\label{eq:chain}
+    \nabla_\thetap \loss
+    = \underbrace{\frac{\partial \loss}{\partial \hat{y}}}_{\text{residual}}
+    \cdot \underbrace{\frac{\partial \hat{y}}{\partial Z}}_{\text{spatial Jacobian}}
+    \cdot \underbrace{\frac{\partial Z}{\partial \thetap}}_{\text{input}}.
+\end{equation}
+The three factors play distinct roles in our analysis. The residual is
+small when predictions are confident. The spatial Jacobian depends on
+the current state of $\phip$ and thus changes throughout training. The
+final factor is the input itself and is stationary. The product
+structure implies that if the residual decays to zero, the gradient to
+$\thetap$ vanishes regardless of the other two factors. This
+observation underlies Theorem~\ref{thm:twoscale}.
 
 \subsection{The block Hessian}
-\TODO{Express joint Hessian in block form, define each block.}
 
-\subsection{Assumptions}
-\TODO{State all assumptions cleanly:
-\begin{assumption}[Smoothness] $\loss$ is twice differentiable. \end{assumption}
-\begin{assumption}[Lipschitz gradients] $\nabla \loss$ is $L$-Lipschitz. \end{assumption}
-\begin{assumption}[Sub-Gaussian inputs] Per-pixel inputs $x_{h,w}$ are sub-Gaussian. \end{assumption}
-\begin{assumption}[Capacity gap] $\Cg / \Cf \to \infty$. \end{assumption}
-}
+The joint Hessian of $\loss$ decomposes into blocks aligned with the
+two parameter groups:
+\begin{equation}
+\label{eq:block_hessian}
+    H = \nabla^2 \loss(\thetap, \phip) =
+    \begin{pmatrix}
+        H_{\thetap\thetap} & H_{\thetap\phip} \\
+        H_{\phip\thetap} & H_{\phip\phip}
+    \end{pmatrix},
+\end{equation}
+with $H_{\thetap\thetap} \in \R^{\Cf \times \Cf}$,
+$H_{\phip\phip} \in \R^{\Cg \times \Cg}$, and cross blocks of
+appropriate sizes. Theorem~\ref{thm:hessian} bounds the condition
+number of $H$ in terms of $\Cg / \Cf$ by separately bounding the
+spectrum of each block.
+
+For optimization-rate analysis it is often more tractable to work with
+the Gauss-Newton approximation $G = J^\top J$, where $J = [J_\thetap,
+J_\phip]$ is the Jacobian of the per-pixel residuals. The two matrices
+coincide near interpolation, and Theorem~\ref{thm:hessian} is stated
+for $G$.
 
 \subsection{The Effective Gradient Ratio}
-\begin{definition}[EGR]
+
+We introduce a real-time diagnostic that tracks the asymmetry in
+gradient flow between the two modules.
+
+\begin{definition}[Effective Gradient Ratio]
 \label{def:egr}
-At training step $t$ with parameters $(\thetap_t, \phip_t)$, the Effective Gradient Ratio is
+At training step $t$ with parameters $(\thetap_t, \phip_t)$, the
+Effective Gradient Ratio is
 \[
-    \EGR(t) = \frac{\norm{\nabla_\thetap \loss(\thetap_t, \phip_t)}}{\norm{\nabla_\phip \loss(\thetap_t, \phip_t)}}.
+    \EGR(t) \;:=\; \frac{\norm{\nabla_\thetap \loss(\thetap_t, \phip_t)}}
+                        {\norm{\nabla_\phip \loss(\thetap_t, \phip_t)}}.
 \]
 \end{definition}
+
+\begin{remark}
+EGR is a unitless quantity directly computable inside any training
+loop with negligible overhead. Section~\ref{sec:egr} establishes its
+monotonicity along the slow-fast manifold (a consequence of
+Theorem~\ref{thm:twoscale}) and proposes a threshold criterion for
+detecting gradient starvation onset.
+\end{remark}
+
+\subsection{Notational conventions}
+
+Throughout, $\norm{\cdot}$ denotes the Euclidean ($\ell_2$) norm for
+vectors and the spectral norm for matrices; $\lambda_{\max}(\cdot)$ and
+$\lambda_{\min}(\cdot)$ denote the largest and smallest eigenvalues of
+a symmetric matrix; $\kappa(A) = \lambda_{\max}(A)/\lambda_{\min}(A)$
+its condition number. We write $A \succeq B$ to mean $A - B$ is
+positive semidefinite. The symbol $\Omega(\cdot)$ is used in the
+standard asymptotic sense.

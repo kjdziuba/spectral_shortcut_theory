@@ -149,7 +149,13 @@ Two-Timescale Spurious Convergence
 - Correlate early-epoch EGR with final test F1
 - Predict: strong correlation, threshold predicts failure
 
-**Deliverable end of Phase 5**: 4 main figures + experiment section draft.
+### W15: Experiment 1.5 — Spatial architecture ablation
+- Repeat key experiments with three spatial models: linear, CNN, ViT
+- Predict: gradient starvation pattern emerges across all three
+- Important because CNN-based pipelines (still common in spectroscopy) have the most reported "spectral collapse" issues
+- Strengthens universality claim significantly
+
+**Deliverable end of Phase 5**: 4 main figures + experiment section draft + universality ablation.
 
 ---
 
