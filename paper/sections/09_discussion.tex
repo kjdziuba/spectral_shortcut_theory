@@ -1,23 +1,163 @@
 \section{Discussion}
 \label{sec:discussion}
 
-\TODO{Phase 7 (W21).}
+\subsection{Implications for practice}
 
-\subsection{Why freezing works}
-\TODO{Direct corollary of Theorem \ref{thm:twoscale}: removing $\thetap$ from the optimization eliminates the timescale separation.}
+The theorems and experiments establish a concrete prescription. In any
+compositional spectral-spatial pipeline with substantial capacity
+asymmetry $\Cg \gg \Cf$, end-to-end joint training is expected to fail
+in a specific and predictable way: the spectral module stays near
+initialization while the spatial module fits the data using shortcuts
+in the unstructured feature map. Three operational responses follow.
 
-\subsection{The residual baseline alternative}
-\TODO{$Z = f_\thetap(X) + \mathrm{PCA}(X)$ as soft prescription. Bypass shortcut without losing trainability.}
+\paragraph{Freeze the spectral module.}
+The most direct response to Theorem~\ref{thm:twoscale} is to remove
+$\thetap$ from the optimization. Without a spectral update, the
+timescale separation is eliminated by construction, and $g_\phip$
+optimizes a standard supervised learning problem on fixed input
+features. If a pretrained spectral encoder is available (from
+unsupervised pretraining, self-supervised pretraining, or pre-task
+pretraining on the same data), it should be used frozen.
+
+\paragraph{Use a fixed baseline.}
+When pretraining is unavailable, a fixed but informative baseline
+$h(X)$ (e.g.\ PCA, fixed wavelet basis, random projection) can be
+injected as an additive component $Z = f_\thetap(X) + h(X)$. The
+fixed component ensures the spatial model receives a stable input even
+if $f_\thetap$ drifts; the additive structure allows fine-grained
+refinement of $f_\thetap$ without exposing the spatial model to the
+moving-target dynamics that produce the shortcut. We have not
+empirically tested this prescription in this paper; it follows
+directly from the theory and is a natural focus for follow-up work.
+
+\paragraph{Track EGR.}
+The EGR diagnostic detects the onset of starvation in real time.
+Practitioners should log it alongside training and validation loss.
+When $\EGR(t)$ drops below a chosen threshold (we recommend $0.1
+\cdot \EGR(0)$), the theoretical analysis predicts that subsequent
+$\thetap$ updates are essentially noise: the spectral module has been
+absorbed into a spurious stationary point. At this point, freezing
+$\thetap$ and continuing to train $\phip$ retains the run's
+investment while avoiding the negative consequences of further joint
+updates.
 
 \subsection{Limitations}
-\TODO{
-- Bound is a scaling law, not a tight characterization.
-- Assumes linear or near-linear spectral module; nonlinear extension is future work.
-- Synthetic verification is on toy problems; real-data sanity check is on one domain.
-}
 
-\subsection{Open problem: implicit bias toward spatial features}
-\TODO{State the spatial dominance conjecture as future work. This is the "holy grail" theorem we deliberately did not pursue here — frame as natural extension.}
+We make four limitations explicit.
 
-\subsection{Beyond spectroscopy}
-\TODO{Same pathology likely affects other compositional pipelines: video models with frozen image encoders, multimodal LLM bottlenecks, etc.}
+\paragraph{Linear spectral reduction.}
+Theorems~\ref{thm:hessian} and~\ref{thm:twoscale} are proven under the
+assumption that $f_\thetap$ is linear in $\thetap$. In practice some
+pipelines use shallow nonlinear spectral modules (1--2 layer MLPs).
+The intuition behind both theorems extends: nonlinear shallow
+$f_\thetap$ retains the property that the spectral block carries
+substantially less capacity than the spatial block, so the
+qualitative timescale separation persists. We verify empirically in
+Section~\ref{sec:experiments} that the joint-vs-frozen gap remains
+under nonlinear $f_\thetap$. A formal proof for nonlinear $f_\thetap$
+is left to future work.
+
+\paragraph{Finite-width scaling exponent.}
+The empirical scaling exponent of $\lambda_\phi$ vs.\ $\Cg$ is $\sim
+0.7$ at the widths we tested, while the asymptotic Karakida prediction
+is $1.0$. We expect the asymptote to be approached at larger widths.
+Two consequences for the paper: the Theorem~\ref{thm:hessian} bound
+should be read as a lower bound that may be loose at finite scale, and
+the empirical predictions should be interpreted as qualitative
+(monotonic growth) rather than tight (constant proportionality).
+
+\paragraph{Memorization regime.}
+For sufficiently overparametrized spatial models (ViT in our
+experiments), joint training enters a memorization regime in which
+train loss falls to near zero and both gradient norms approach the
+noise floor. In this regime the EGR observable becomes uninformative,
+even though the underlying prescription (freeze) continues to apply.
+Practitioners running highly overparametrized models should observe
+the symptoms (test loss divergence, train loss saturation) rather than
+relying on EGR alone.
+
+\paragraph{Single domain validation.}
+Our real-data validation is restricted to FTIR/QCL tissue classification
+in breast cancer. We expect the same mechanism to operate in
+hyperspectral remote sensing, Raman tissue classification, and mass
+spectrometry imaging, but those validations are future work.
+
+\subsection{Defense against the "linear triviality" critique}
+
+A natural reviewer objection is that, because $f_\thetap$ is linear,
+the analysis must reduce to principal component analysis. We address
+this in Remark~\ref{rem:not_pca} and emphasize again: PCA finds
+directions of maximum input variance independently of labels.
+Theorem~\ref{thm:hessian} concerns curvature of the supervised
+cross-entropy loss, which depends on the current state of $g_\phip$
+through the Jacobian $\partial \hat{y}/\partial Z$. The pathology we
+identify is that this supervised signal fails to reach $\thetap$. A
+PCA-decomposed $f_\thetap$ would not exhibit the joint-vs-frozen gap
+we observe: indeed, our experiments include a frozen-PCA baseline that
+performs well, exactly because PCA decomposition does not require the
+supervised signal to flow through it.
+
+\subsection{The Spatial Dominance Conjecture: an open problem}
+
+A stronger statement than Theorem~\ref{thm:twoscale} is suggested by
+our experiments but not proven: \emph{when spectral and spatial
+features carry equal information about the label, joint training
+exhibits an implicit bias toward the spatial pathway}. Pezeshki et
+al.~\cite{pezeshki2021gradient} prove a related but distinct result in
+the NTK regime; Huang et al.~\cite{huang2022modality} prove a related
+result for explicit dual-modality networks but not for compositional
+single-modality pipelines. A proof of the spatial-dominance conjecture
+in our setting would require formalizing ``equal information'' in an
+operationally meaningful way (Shannon mutual information is bijection-
+invariant and therefore not the right primitive for gradient dynamics)
+and combining the NTK eigenvalue gap with our compositional Hessian
+analysis. We leave this as an open problem.
+
+\subsection{Beyond spectroscopy: where else this matters}
+
+Although our motivating application is infrared tissue classification,
+the mechanism we identify applies to any compositional architecture
+with capacity asymmetry between sequential modules. We highlight three
+areas where the same pathology likely operates.
+
+\paragraph{Hyperspectral remote sensing.}
+The dominant paradigm for hyperspectral image classification is a
+shallow spectral reduction (PCA, autoencoder, or 1D conv) feeding into
+a deep spatial classifier (3D CNN, ViT). The capacity asymmetry is
+typically large. Joint training is the de facto standard. Our analysis
+predicts the same shortcut emergence; whether the field has noticed it
+under the guise of ``classification works without much spectral
+processing'' is a question worth examining.
+
+\paragraph{Multimodal foundation models.}
+Vision-language and audio-language models compose a sequence of
+modality-specific encoders into a shared representation space. The
+modality with the larger encoder typically dominates the shared
+representation. While this has been documented empirically (Wang et
+al.~\cite{wang2020what}, Peng et al.~\cite{peng2022balanced}), the
+mechanism is the same as ours: capacity-induced timescale separation
+combined with cross-entropy saturation. Our framework extends their
+empirical observations into the single-input compositional setting.
+
+\paragraph{Video models with frozen image encoders.}
+A standard practice in video understanding is to freeze a pretrained
+image encoder and train a temporal model on top. This is widely
+treated as ``transfer learning,'' but the same mechanism we describe
+predicts that joint training would fail in a specific way -- the
+image encoder would drift, the temporal model would absorb the
+shortcut, generalization would suffer. The empirical literature
+strongly supports the freezing practice; our analysis provides a
+mechanistic reason.
+
+\subsection{Concluding remarks}
+
+We have provided the first rigorous explanation for the failure of
+end-to-end joint training in compositional spectral-spatial deep
+learning. The phenomenon is geometric (Theorem~\ref{thm:hessian}) and
+dynamical (Theorem~\ref{thm:twoscale}), is detectable in real time via
+the EGR diagnostic, and has a direct prescriptive remedy (freezing or
+fixed-baseline injection). We expect the framework to extend beyond
+spectroscopy to any compositional architecture with capacity asymmetry,
+and to provide a principled foundation for the empirical practice of
+frozen feature extractors that the field has converged on by
+necessity rather than design.

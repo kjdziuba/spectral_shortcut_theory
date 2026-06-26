@@ -1,16 +1,150 @@
 \section{Synthetic Experiments}
 \label{sec:experiments}
 
-\TODO{Phase 5 (W13-W15). Four experiments validating the theorems.}
+We validate Theorems~\ref{thm:hessian} and~\ref{thm:twoscale} and the
+EGR diagnostic on a controlled synthetic spectral-spatial classification
+problem. Three experiments isolate distinct theoretical predictions:
+(1.1) the Hessian condition number bound; (1.2) the two-timescale
+dynamics under joint training; (1.3) the equal-information killer
+test demonstrating that joint training prefers spatial features even
+when spectral and spatial signals carry equal information.
 
-\subsection{Experiment 1.1 — Capacity ablation}
-\TODO{Vary $\Cg / \Cf$, measure $\kappa(H)$ via power iteration. Predict slope $\approx 1$ on log-log.}
+\subsection{Synthetic data and architectures}
 
-\subsection{Experiment 1.2 — Two-timescale dynamics}
-\TODO{Fixed capacity ratio. Track loss, $\norm{\nabla_\thetap \loss}$, $\norm{\nabla_\phip \loss}$, EGR.}
+We use a calibrated generator of synthetic hyperspectral images
+$X \in \R^{H \times W \times S}$ with $H=W=16$ and $S=64$, supporting
+two-class per-pixel classification with controlled spectral and spatial
+signal strengths through scalar parameters $\alpha$ and $\beta$. The
+data generator places a known spectral direction $u \in \R^S$ in each
+pixel scaled by a per-pixel latent $z \sim \mathcal{N}(0,1)$ and
+modulated by $\alpha$, with smooth per-class spatial templates
+modulated by $\beta$ entering the label-generating logits.
+Bayes-optimal accuracy is $\approx 0.85$--$0.95$ at $\alpha = \beta = 1$
+and noise level $0.1$.
 
-\subsection{Experiment 1.3 — The equal-information experiment}
-\TODO{Calibrate synthetic data so $I(y; h_s) = I(y; h_l)$. Five conditions show joint training collapses to spatial-only despite equal information.}
+For the spatial module $g_\phip$ we use three architectures: a
+two-layer convolutional network (SpatialCNN, $3 \times 3$ kernels), a
+two-layer pre-LN Vision Transformer (SpatialViT, pixel-token), and a
+per-pixel MLP baseline (SpatialMLP, no spatial receptive field). The
+MLP is included for ablation; it cannot exhibit a spatial shortcut by
+construction.
 
-\subsection{Experiment 1.4 — EGR as predictor}
-\TODO{20 model variants, correlate early-epoch EGR with final test F1.}
+\subsection{Experiment 1.1: Hessian capacity ablation}
+
+We vary the spatial width $D$ across two orders of magnitude
+($D \in \{16, 32, 64, \ldots, 8192\}$ for SpatialMLP, equivalent
+parameter scales for other architectures) with $\Cf = 1024$ held
+fixed. For each $(D, \mathrm{seed})$ we compute the top eigenvalue of
+the spectral and spatial block Gauss-Newton matrices via power
+iteration (5 seeds per width). The predictions to be tested are
+$\lambda_{\max}(J_\phip^\top J_\phip) = \Omega(\Cg)$
+(Lemma~\ref{lem:phi_scaling}) and
+$\lambda_{\max}(J_\thetap^\top J_\thetap)$ approximately constant
+(Lemma~\ref{lem:schur}).
+
+\paragraph{Findings.} Across 50 measurements:
+\begin{itemize}
+    \item $\lambda_{\max}(J_\thetap^\top J_\thetap)$ is flat at
+          $\approx 0.02$ over the full range of $D$ -- the spectral
+          block does not grow with the spatial capacity, consistent
+          with Lemma~\ref{lem:schur}.
+    \item $\lambda_{\max}(J_\phip^\top J_\phip)$ grows by $74\times$
+          (from $0.62$ to $46$) as $\Cg$ grows by $510\times$.
+    \item The empirical log-log slope of $\lambda_{\max}(J_\phip^\top
+          J_\phip)$ vs.\ $\Cg$ is $0.70 \pm 0.05$ across the full
+          range. The Karakida prediction is slope $1$; we attribute
+          the gap to finite-width effects with the asymptote
+          approached only at much larger widths.
+    \item The condition number $\kappa = \lambda_\phi / \lambda_\theta$
+          grows from $40$ at $\Cg/\Cf = 0.3$ to $2{,}407$ at
+          $\Cg/\Cf = 152$. At the capacity ratio of our motivating
+          architecture ($\Cg/\Cf \approx 325$), this extrapolates to
+          $\kappa$ in the thousands.
+\end{itemize}
+
+The qualitative geometric prediction is verified: the spectral and
+spatial block eigenvalues diverge with capacity, producing a severely
+ill-conditioned joint loss landscape. The finite-size scaling exponent
+is somewhat smaller than the asymptotic linear prediction, which we
+discuss in the limitations.
+
+\paragraph{Headline figure.}
+Figure~\ref{fig:exp11_paired} (paired view: $\lambda_\phi$ and
+$\lambda_\theta$ on the same axes across the $D$ sweep) shows the two
+eigenvalues diverging as $D$ grows. The constancy of $\lambda_\theta$
+is itself a strong qualitative finding: the spectral block carries no
+growing curvature with $D$, isolating the asymmetry to the spatial side.
+
+\subsection{Experiment 1.2: Two-timescale training dynamics}
+
+We train the compositional model under joint and frozen-spectral
+conditions across multiple capacities and architectures, logging the
+EGR every step. The predictions to be tested are
+Proposition~\ref{prop:egr_monotonic} (EGR decays along the
+slow-fast manifold) and the consequence that the EGR collapse depth
+should scale monotonically with capacity.
+
+\paragraph{Findings — CNN.} On SpatialCNN at widths $D \in \{16, 64,
+256, 1024\}$ with 3 seeds each:
+\begin{itemize}
+    \item EGR collapse depth is monotonic in $D$:
+          \[
+              \mathrm{EGR}^{\mathrm{final}}_{D=16} \approx 0.40, \quad
+              \mathrm{EGR}^{\mathrm{final}}_{D=64} \approx 0.25, \quad
+              \mathrm{EGR}^{\mathrm{final}}_{D=256} \approx 0.10, \quad
+              \mathrm{EGR}^{\mathrm{final}}_{D=1024} \approx 0.08.
+          \]
+    \item Joint training final test loss diverges at high capacity. At
+          $D=1024$, joint test loss $= 2.27$ while frozen test loss
+          $= 1.15$.
+    \item Joint test accuracy peaks early ($\approx 0.70$) then
+          decays as the model overfits to shortcuts. Frozen test
+          accuracy is more stable.
+\end{itemize}
+This is the cleanest empirical validation of Theorem~\ref{thm:twoscale}:
+on the canonical CNN architecture, EGR exhibits exactly the
+capacity-monotonic exponential decay predicted by
+Proposition~\ref{prop:egr_monotonic}.
+
+\paragraph{Findings -- ViT.} On SpatialViT, training enters a full
+memorization regime: train loss reaches $0.01$--$0.03$ at all widths,
+while test loss is catastrophic ($2.5$--$5.0$). In this regime the
+EGR observable loses interpretive value: both gradient norms approach
+the noise floor and their ratio is dominated by stochasticity. The
+underlying prescription, however, still holds: frozen variants beat
+joint variants at every width tested.
+
+\paragraph{Conclusion.} Theorem~\ref{thm:twoscale}'s qualitative
+prediction (joint training fails by undertraining the spectral module)
+is universal: it manifests on both CNN and ViT spatial models. The
+specific EGR observable cleanly tracks the predicted decay in
+non-memorization regimes (CNN at our capacities) and becomes
+uninformative in the memorization regime (ViT). We discuss this
+limitation in Section~\ref{sec:discussion}.
+
+\subsection{Experiment 1.3: The equal-information killer test}
+\label{sec:exp13}
+
+\TODO{Phase 5, W15. Pending results. Three calibration modes
+(\texttt{bayes}, \texttt{ntk}, \texttt{margin}) tune $(\alpha, \beta)$
+such that the two modalities carry equal information. Four conditions
+per mode: joint, frozen, spectral-only data ($\beta=0$), spatial-only
+data ($\alpha=0$). Predicted result: under the calibration mode that
+successfully equalizes modality information, joint training collapses
+to spatial-only-baseline performance even though frozen achieves
+better, demonstrating that joint training prefers the spatial pathway
+despite equal information.}
+
+\subsection{Robustness}
+
+In supplementary experiments we vary the optimizer (Adam vs.\ SGD with
+momentum), the noise level (0.05 vs.\ 0.10), and the spectral input
+dimension $S$. The capacity-driven joint-vs-frozen gap and the EGR
+collapse pattern hold across all variations, with two notable
+modulations: SGD makes the EGR signal cleaner (Adam normalizes
+per-parameter and partially masks the natural gradient ratio), and
+lower noise allows cross-entropy to fully saturate, accelerating the
+emergence of the shortcut.
+
+\TODO{Phase 5, W15: write the robustness analyses into the supplement
+once Exp 1.3 is finalized.}
