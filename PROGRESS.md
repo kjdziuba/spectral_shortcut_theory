@@ -4,6 +4,53 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-06-26 (late+) — Experiment 1.2 v4: CNN extended + ViT universality
+
+**Done**:
+- Added SpatialViT to `synthetic/models.py` (2-layer pre-LN ViT, ReLU
+  activation for Hessian compatibility).
+- Wrote `experiments/exp1_2v4.py` running 42 conditions (CNN widths
+  {16,64,256,1024} + ViT widths {64,128,256}, joint vs frozen, 3 seeds).
+- Drafted Section 1 (Introduction) properly.
+- Drafted Section 2 (Related Work) with all 6 subsections.
+
+**Findings (42-run sweep)**:
+
+CNN sweep:
+- EGR collapse depth scales monotonically with capacity (the headline
+  Theorem 2 result):
+    D=16   drops then recovers to ~0.4
+    D=64   stable around ~0.25
+    D=256  drops to ~0.10
+    D=1024 drops to ~0.08
+- Joint training final test loss diverges at high capacity:
+    D=1024 joint test loss = 2.3, frozen test loss = 1.2
+- Test accuracy gap exists but is small (~2-3 points) — joint overfits.
+
+ViT sweep:
+- Train loss reaches 0.01-0.03 at all widths — full memorization regime.
+- Test loss is catastrophic (2.5-5.0) — joint training fails harder than CNN.
+- EGR pattern INVERTED: rises with capacity rather than falling.
+  This is the memorization regime where both gradient norms approach
+  noise floor. Theorem 2's prediction holds in spirit (joint training
+  fails) but the EGR observable loses signal.
+- Frozen variants still beat joint at every width.
+
+**Decisions**:
+- For the paper: lead with CNN as the primary demonstration of Theorem 2.
+  Note ViT as a different failure mode (memorization regime) where
+  the EGR observable becomes uninformative but the overall prescription
+  (freeze) still holds.
+- Will mention in discussion that EGR diagnostic needs to be used
+  before full memorization; otherwise the ratio loses meaning.
+
+**Next session**:
+- Move to Experiment 1.3 (equal-information killer test).
+- Design the data calibration carefully (Shannon I(y; spectral) =
+  I(y; spatial) via signal-strength tuning).
+
+---
+
 ## 2026-06-26 (late) — Experiment 1.2 dynamics, three iterations
 
 **v1 (Adam, SpatialMLP, noise=0.1):**

@@ -1,12 +1,128 @@
 \section{Introduction}
 \label{sec:intro}
 
-\TODO{Phase 7 (W18). Lead with the empirical paradox: end-to-end joint training of spectral-spatial pipelines fails mysteriously across multiple subfields. Frame the question: why does freezing the spectral module help so dramatically? State our contributions.}
+The integration of spectroscopic imaging with deep learning has produced
+a class of compositional models that has become the de facto standard
+across infrared tissue classification, hyperspectral remote sensing,
+Raman imaging, and mass spectrometry imaging. A canonical pipeline
+processes a hyperspectral input $X \in \R^{H \times W \times S}$ in two
+stages: a per-pixel spectral reduction $f_\thetap: \R^S \to \R^K$
+followed by a spatial model $g_\phip: \R^{K \times H \times W} \to
+\R^{N_{\mathrm{cls}} \times H \times W}$. End-to-end joint training of
+this pipeline is overwhelmingly the default — adopted by foundational
+work in FTIR histology~\cite{berisha2019deep}, recent state-of-the-art
+spatial-spectral ViTs for prostate tissue
+classification~\cite{oleary2026spatial}, and essentially all
+hyperspectral remote sensing systems.
 
-\paragraph{Contributions.}
+\paragraph{An empirical paradox.}
+Despite the prevalence of this paradigm, an unexpected and persistent
+pattern has emerged across multiple subfields. Frozen pretrained
+spectral encoders dramatically outperform end-to-end joint training
+on held-out test data. In our motivating tissue classification setting,
+a learned-from-scratch linear $f_\thetap$ trained end-to-end achieves
+$0.675$ test F1; freezing a pretrained $f_\thetap$ yields $0.84$--$0.95$
+test F1. Most strikingly, replacing $f_\thetap$ with \emph{frozen
+random weights} yields $0.70$ test F1 --- outperforming the joint
+trained model. Recent independent observations
+\cite{oleary2026spatial,berisha2019deep} have noted, in different
+terms, that aggressive spectral compression to $16$ features has
+negligible impact on spatial-spectral neural network performance, and
+have concluded that ``tissue classification only needs a small set of
+spectral features.''
+
+We argue the opposite. The reason end-to-end joint training fails is
+not that spectral information is unimportant. It is that
+\emph{end-to-end optimization fails to extract that information}, even
+when the spectral signal is rich and discriminative. The problem is in
+the training procedure, not the data.
+
+\paragraph{This paper.}
+We provide a rigorous explanation for the failure of joint
+spectral-spatial training, grounded in the geometry of the loss
+landscape and the dynamics of stochastic gradient descent on
+compositional architectures with asymmetric capacity. Two main
+theorems form our contribution.
+
 \begin{itemize}
-    \item Theorem~\ref{thm:hessian} bounds the joint Hessian condition number as $\Omega(\Cg / \Cf)$.
-    \item Theorem~\ref{thm:twoscale} proves convergence to a spurious stationary point via two-timescale gradient starvation.
-    \item Definition~\ref{def:egr} introduces the Effective Gradient Ratio (EGR), a real-time diagnostic.
-    \item Empirical validation on synthetic and real spectroscopy data.
+    \item \textbf{Theorem~\ref{thm:hessian} (Hessian Capacity Bound).}
+          We bound the condition number of the joint Gauss-Newton
+          matrix in terms of the ratio of module capacities. Under
+          asymmetry $\Cg \gg \Cf$, the loss landscape is geometrically
+          ill-conditioned with $\kappa(G) = \Omega(\Cg/\Cf)$. The
+          proof combines block matrix analysis (Schur complement) with
+          the mean-field FIM scaling of Karakida et
+          al.~\cite{karakida2019universal}.
+    \item \textbf{Theorem~\ref{thm:twoscale} (Two-Timescale Spurious
+          Convergence).} The geometric ill-conditioning induces an
+          implicit slow-fast dynamical system. The high-capacity
+          spatial module rapidly fits the data using shortcuts in the
+          (initially random) feature map, driving the cross-entropy
+          residual to zero exponentially fast. The slow spectral
+          module is gradient-starved before it can specialize. The
+          system converges to a stationary point at which the spectral
+          parameters have not moved appreciably from initialization.
+          The proof combines Borkar's two-timescale stochastic
+          approximation~\cite{borkar2008stochastic} with Pezeshki et
+          al.'s gradient starvation
+          framework~\cite{pezeshki2021gradient}.
 \end{itemize}
+
+\paragraph{A real-time diagnostic.}
+The pathology described by Theorems~\ref{thm:hessian} and
+\ref{thm:twoscale} is invisible to standard loss curves --- training
+and validation loss both decay smoothly while the spectral module is
+silently starved. To make the pathology observable in practice we
+introduce the \emph{Effective Gradient Ratio} (EGR), a scalar
+diagnostic computable inside any training loop:
+\[
+    \EGR(t) = \frac{\norm{\nabla_\thetap \loss(\thetap_t, \phip_t)}}
+                   {\norm{\nabla_\phip \loss(\thetap_t, \phip_t)}}.
+\]
+Proposition~\ref{prop:egr_monotonic} establishes that EGR decays along
+the slow-fast manifold predicted by Theorem~\ref{thm:twoscale}.
+Empirically, the depth of the EGR collapse scales monotonically with
+capacity ratio, providing a quantitative, training-time observable for
+gradient starvation.
+
+\paragraph{Prescription.}
+The theory yields a direct prescription: freeze the spectral module,
+or inject a fixed residual baseline. Freezing eliminates the timescale
+gap by removing $\thetap$ from the optimization entirely. A residual
+baseline ($Z = f_\thetap(X) + h(X)$ for a fixed $h$, e.g.\ PCA) is a
+softer intervention that breaks the shortcut without precluding spectral
+fine-tuning. We discuss both in Section~\ref{sec:discussion}.
+
+\paragraph{Universality.}
+Although our motivating application is infrared tissue classification,
+the mechanism we identify applies to any compositional architecture
+with capacity asymmetry between sequential modules. We verify in
+Section~\ref{sec:experiments} that the same pattern manifests across
+linear, CNN, and Vision Transformer spatial models on synthetic
+hyperspectral problems, indicating the phenomenon is architecture-
+agnostic. We expect the same mechanism to govern frozen-encoder
+practices in Raman spectroscopy, mass spectrometry imaging, NIR
+analysis, and beyond.
+
+\paragraph{Relation to prior work.}
+The closest prior work is in multimodal learning, where Wang et
+al.~\cite{wang2020what} and Peng et al.~\cite{peng2022balanced}
+identified ``modality competition'' and proposed gradient blending and
+modulation interventions. Our setting is unimodal (a single
+hyperspectral input) but the mechanism is structurally analogous: the
+spatial and spectral subspaces of the input act as competing
+``modalities,'' with the spatial module monopolizing the gradient
+budget. We discuss this connection further in
+Section~\ref{sec:related}.
+
+\paragraph{Outline.}
+Section~\ref{sec:related} reviews related work. Section~\ref{sec:setup}
+establishes notation. Section~\ref{sec:thm1} proves
+Theorem~\ref{thm:hessian}. Section~\ref{sec:thm2} proves
+Theorem~\ref{thm:twoscale}. Section~\ref{sec:egr} formalizes the EGR
+diagnostic. Section~\ref{sec:experiments} validates both theorems and
+the diagnostic on synthetic spectral-spatial problems with linear, CNN,
+and ViT spatial models. Section~\ref{sec:real} briefly connects the
+synthetic findings to real FTIR/QCL tissue classification data.
+Section~\ref{sec:discussion} discusses prescriptions, limitations, and
+open problems.

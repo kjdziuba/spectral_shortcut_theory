@@ -1,19 +1,122 @@
 \section{Related Work}
 \label{sec:related}
 
-\TODO{Phase 0 (W1-W2). Fill in as you do reading notes. Subsections below.}
+Our analysis sits at the intersection of four lines of research: the
+implicit bias and gradient dynamics of cross-entropy training; the
+geometry of deep-network loss surfaces; multimodal gradient competition;
+and spectral-spatial deep learning for biomedical and remote-sensing
+applications. We survey each in turn.
 
 \subsection{Gradient starvation and implicit bias}
-\TODO{Pezeshki et al. 2021; Soudry et al. 2018; Geirhos et al. 2020 shortcut learning}
+
+Cross-entropy minimization is known to induce structural biases in the
+learned representation. Soudry et al.~\cite{soudry2018implicit} proved
+that on linearly separable data, gradient descent on logistic loss
+converges to the maximum-margin classifier. Gunasekar et
+al.~\cite{gunasekar2017implicit} and Lyu and Li~\cite{lyu2020gradient}
+extended this picture to deep homogeneous networks. These results
+establish that gradient-based training selects \emph{which} solution
+among many that fit the training data.
+
+Pezeshki et al.~\cite{pezeshki2021gradient} identified a distinct
+phenomenon termed \emph{gradient starvation}: in the Neural Tangent
+Kernel regime, dominant features in the input rapidly saturate the
+cross-entropy loss, after which weaker but task-relevant features
+receive negligible gradient signal. Our Theorem~\ref{thm:twoscale}
+adapts this framework to compositional architectures, where the
+``dominant features'' are introduced not by the input distribution
+but by an architectural capacity asymmetry between modules. The
+result is a module-level starvation rather than a feature-level one.
 
 \subsection{Two-timescale stochastic approximation}
-\TODO{Borkar 1997, 2008; Konda \& Tsitsiklis 2003; Heusel et al. 2017 (TTUR for GANs)}
+
+The classical machinery for analyzing coupled gradient flows with
+disparate timescales is Borkar's stochastic approximation
+framework~\cite{borkar2008stochastic}. Heusel et
+al.~\cite{heusel2017gans} adapted this to neural network training by
+introducing the Two Time-Scale Update Rule for GANs, proving
+convergence to a local Nash equilibrium under explicit step-size
+disparity. Our setting differs structurally: the timescale separation
+in our compositional model is not imposed by the optimizer (the same
+learning rate is applied to both modules) but emerges \emph{implicitly}
+from the Hessian eigenvalue gap quantified by Theorem~\ref{thm:hessian}.
 
 \subsection{Hessian geometry of deep networks}
-\TODO{Sagun et al. 2017; Pennington \& Bahri 2017; Karakida et al. 2019}
+
+The eigenspectrum of the neural-network Hessian has been characterized
+empirically and theoretically. Sagun et al.~\cite{sagun2017empirical}
+identified a bulk-plus-outliers structure for overparametrized
+networks. Pennington and Bahri~\cite{pennington2017geometry} developed
+a random matrix theory analysis that predicts spectral densities under
+Gaussian assumptions. Karakida et al.~\cite{karakida2019universal}
+derived closed-form mean-field expressions for the leading eigenvalue
+of the Fisher Information Matrix, showing it scales with the layer
+width and parameter count. Theorem~\ref{thm:hessian} applies these
+results blockwise to the joint Hessian of a compositional model,
+combining them with Schur complement bounds to yield a capacity-ratio
+scaling for the joint condition number.
 
 \subsection{Multimodal gradient competition}
-\TODO{Wang, Tran, Feiszli 2020; Peng et al. 2022 (OGM-GE); Huang et al. 2022}
+
+The phenomenon most structurally analogous to ours is gradient
+competition in multimodal learning. Wang, Tran, and
+Feiszli~\cite{wang2020what} showed empirically that joint training of
+multimodal classification networks underperforms unimodal training
+because different modalities overfit and generalize at different
+rates. They proposed Gradient Blending to dynamically reweight
+modality-specific losses. Peng et al.~\cite{peng2022balanced}
+identified ``modality laziness'' --- a tendency for one modality to
+dominate training, leaving the other under-optimized --- and proposed
+On-the-fly Gradient Modulation. These works are empirical; our
+contribution adapts and extends their framework to the unimodal
+\emph{compositional} setting and provides a rigorous geometric
+foundation. The recent biomedical application of gradient blending
+to multimodal sarcoma prognosis~\cite{bozzo2024multimodal} confirms
+the mechanism operates in medical settings, but is restricted to
+explicit dual-modality (MRI + clinical) architectures, not the
+single-modality compositional pipelines we consider.
 
 \subsection{Spectral-spatial deep learning}
-\TODO{Berisha/Manifold et al. 2019 (FTIR histology); O'Leary et al. 2026 (prostate IR ViT); Dawood/Minhas et al. 2026 (Nature BME shortcut learning in histopathology)}
+
+Spectral-spatial deep learning has been an active area for over a
+decade, primarily in two communities: biomedical infrared spectroscopy
+and hyperspectral remote sensing. Berisha et al.~\cite{berisha2019deep}
+established the benefit of combining spectral and spatial features for
+FTIR histology and observed that some tissue types could be classified
+from spatial features alone, with ``minimal chemical information''
+required --- a foreshadowing of the spatial shortcut phenomenon we
+diagnose. More recently, O'Leary et
+al.~\cite{oleary2026spatial} systematically compared spatial-spectral
+architectures for prostate cancer classification in infrared
+spectroscopy and reported the striking finding that compressing the
+spectral dimension to as few as 16 features had negligible effect on
+all models tested. The authors interpreted this as evidence that
+tissue classification requires only a limited spectral signature.
+Our Theorem~\ref{thm:twoscale} provides an alternative explanation:
+end-to-end training fails to extract the spectral signature even when
+it is present.
+
+The conceptually nearest work in biomedical imaging is the recent
+characterization of shortcut learning in histopathology by Dawood and
+Minhas et al.~\cite{dawood2026confounding}, who showed that AI models
+predicting molecular biomarkers from H\&E images exploit spurious
+correlations with clinicopathological features rather than learning
+genuine biological signal. Our paper extends the shortcut-learning
+framework into a new modality (spectroscopic imaging) with a different
+mechanism (gradient competition driven by architectural asymmetry
+rather than confounder leakage).
+
+\subsection{Frozen and random features}
+
+Frozen random features have a long history in machine learning. Saxe
+et al.~\cite{saxe2011random} showed that convolutional networks with
+random (untrained) filters achieve competitive performance on standard
+benchmarks. Rahimi and Recht~\cite{rahimi2007random} established the
+theoretical foundations of random features for kernel methods. More
+recently, Coil and Cheney~\cite{coil2025freezing} showed that freezing
+layers acts as implicit regularization in overparametrized networks.
+These works establish that frozen random features are not an oddity
+but a principled choice. Our contribution is to identify the specific
+mechanism --- gradient starvation under capacity asymmetry --- under
+which freezing is not merely competitive but \emph{strictly preferable}
+to joint training.

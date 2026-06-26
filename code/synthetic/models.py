@@ -111,6 +111,73 @@ class SpatialCNN(nn.Module):
         return logits.permute(0, 2, 3, 1).contiguous()
 
 
+class SpatialViT(nn.Module):
+    """Small Vision Transformer applied to a (B, H, W, K) feature map.
+
+    Tokens = pixels (HW tokens of dim K). We embed each pixel to dim D
+    (`width`), add learned positional embeddings, run `n_layers` standard
+    pre-LN transformer blocks with `n_heads` attention heads, then a per-
+    token (= per-pixel) linear classifier head.
+
+    Width `D` controls embedding dim. Parameter count scales roughly as
+    ~24 * n_layers * D^2 + 16 * D for our defaults.
+    """
+
+    def __init__(
+        self,
+        K: int,
+        n_classes: int,
+        width: int,
+        H: int = 16,
+        W: int = 16,
+        n_layers: int = 2,
+        n_heads: int = 4,
+        mlp_ratio: float = 2.0,
+    ) -> None:
+        super().__init__()
+        self.K = K
+        self.n_classes = n_classes
+        self.width = width
+        self.H = H
+        self.W = W
+
+        # Pixel token embedding
+        self.embed = nn.Linear(K, width)
+        # Learned positional embeddings
+        self.pos = nn.Parameter(torch.zeros(1, H * W, width))
+        nn.init.normal_(self.pos, std=0.02)
+
+        # Stack of transformer encoder layers
+        # We use ReLU (not GELU) so 2nd-order autograd plays nicely with the
+        # Hessian power iteration; norm_first=True is the modern pre-LN variant.
+        self.blocks = nn.ModuleList([
+            nn.TransformerEncoderLayer(
+                d_model=width,
+                nhead=n_heads,
+                dim_feedforward=int(width * mlp_ratio),
+                dropout=0.0,
+                activation="relu",
+                batch_first=True,
+                norm_first=True,
+            )
+            for _ in range(n_layers)
+        ])
+
+        # Per-token classification head
+        self.head = nn.Linear(width, n_classes)
+
+    def forward(self, Z: torch.Tensor) -> torch.Tensor:
+        # Z: (B, H, W, K) -> tokens (B, HW, K) -> embed (B, HW, D)
+        B = Z.shape[0]
+        tokens = Z.reshape(B, self.H * self.W, self.K)
+        tokens = self.embed(tokens) + self.pos
+        for blk in self.blocks:
+            tokens = blk(tokens)
+        # head -> (B, HW, n_classes) -> (B, H, W, n_classes)
+        logits = self.head(tokens)
+        return logits.reshape(B, self.H, self.W, self.n_classes)
+
+
 class CompositionModel(nn.Module):
     """F(X) = spatial(spectral(X)).
 
