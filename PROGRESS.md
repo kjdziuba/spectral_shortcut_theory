@@ -4,6 +4,34 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-06-26 (eve) — Experiment 1.1 scaled (5 seeds, D up to 8192)
+
+**Done**:
+- Extended widths to D ∈ {16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192}.
+- 5 seeds per D (5×10 = 50 measurements).
+- Added paired eigenvalues plot (λ_θ and λ_φ on same axes).
+
+**Findings**:
+- λ_θ stays flat at ~0.02 across the full D range — confirms the spectral
+  block does not grow because C_f is fixed. The pathology is entirely on
+  the spatial side.
+- λ_φ grows 74× (0.62 → 46) as C_g grows 510×.
+- κ grows from 40 → 2,407 as C_g/C_f goes from 0.3 → 152.
+- Fit slope is now 0.70 (up from 0.48 with the small range).
+- At C_g/C_f ≈ 152 (close to real architecture's 325), κ ~ 2,400 —
+  loss landscape is severely ill-conditioned.
+
+**Decisions**:
+- The "spectral block flat" finding is a HEADLINE result. Add paired
+  plot as the primary figure for Theorem 1 in the paper.
+- Will further push D to test asymptotic slope (whether it reaches 1)
+  but the qualitative claim is firmly established.
+
+**Next session**:
+- Run Experiment 1.2 (training dynamics) — should give cleaner result.
+
+---
+
 ## 2026-06-26 (PM) — Sections 4–6 drafted + Experiment 1.1 first run
 
 **Done**:

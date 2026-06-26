@@ -1,7 +1,7 @@
 """
-Experiment 1.1: Capacity Ablation.
+Experiment 1.1: Capacity Ablation (multi-seed, extended capacity).
 
-Validates Theorem 1: lambda_max(H_phi_phi) scales with C_g, the spatial
+Validates Theorem 1: lambda_max(H_phi_phi) grows with C_g, the spatial
 (downstream) capacity. We hold the spectral reduction fixed (S=64, K=16)
 and sweep the width D of the spatial MLP, measuring:
 
@@ -11,20 +11,20 @@ and sweep the width D of the spatial MLP, measuring:
   - lambda_phi   = lambda_max(H_phi_phi)     (spatial Hessian block)
   - kappa        = lambda_phi / lambda_theta (curvature ratio)
 
-Predicted relationship: log(lambda_phi) ~ log(C_g) with slope ~ 1 and
-log(kappa) ~ log(C_g / C_f) with slope ~ 1 (reference line y = x).
+This version runs N_SEEDS per width and reports mean +/- std, so we can
+distinguish a real scaling slope from initialization noise. Widths extend
+to D = 8192 to probe whether the empirical scaling slope approaches the
+predicted asymptote of 1 at larger widths.
 """
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
 
 # Make `synthetic`, `hessian`, ... importable.
 CODE_DIR = Path("/home/u37314kd/Projects/spectral_shortcut_theory/code")
@@ -43,90 +43,113 @@ from hessian.eigenvalues import top_eigenvalue_block, count_params  # noqa: E402
 RESULTS_DIR = Path("/home/u37314kd/Projects/spectral_shortcut_theory/results")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
+# --------------------------------------------------------------------- #
+# Configuration
+# --------------------------------------------------------------------- #
+S = 64
+K = 16
+H = W = 16
+N_CLASSES = 2
+N_SAMPLES = 64
+CAPACITIES = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
+SEEDS = [42, 43, 44, 45, 46]
+N_ITER_POWER = 20
 
-def run() -> pd.DataFrame:
-    # -------------------------------------------------------------------- #
-    # Configuration
-    # -------------------------------------------------------------------- #
-    S = 64
-    K = 16
-    H = W = 16
-    n_classes = 2
-    n_samples = 64
-    capacities = [16, 32, 64, 128, 256, 512]
-    seed = 42
 
+def measure_one(D: int, seed: int, device: torch.device) -> dict:
+    """Build a model at width D, seed it, measure block eigenvalues."""
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
+    spectral = SpectralReduction(S=S, K=K)
+    spatial = SpatialMLP(K=K, n_classes=N_CLASSES, width=D)
+    model = CompositionModel(spectral, spatial).to(device)
+
+    X, y = make_problem(
+        n_samples=N_SAMPLES,
+        S=S,
+        H=H,
+        W=W,
+        n_classes=N_CLASSES,
+        alpha=1.0,
+        beta=1.0,
+        seed=seed,
+    )
+    X = X.to(device)
+    y = y.to(device)
+
+    lambda_theta = top_eigenvalue_block(
+        model, X, y, block="spectral", n_iter=N_ITER_POWER, device=device,
+    )
+    lambda_phi = top_eigenvalue_block(
+        model, X, y, block="spatial", n_iter=N_ITER_POWER, device=device,
+    )
+
+    C_f = count_params(spectral)
+    C_g = count_params(spatial)
+    kappa = lambda_phi / lambda_theta if lambda_theta > 0 else float("nan")
+
+    # Free the GPU resources before the next run.
+    del model, spectral, spatial, X, y
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+
+    return {
+        "D": D,
+        "seed": seed,
+        "C_f": C_f,
+        "C_g": C_g,
+        "ratio": C_g / C_f,
+        "lambda_theta": float(lambda_theta),
+        "lambda_phi": float(lambda_phi),
+        "kappa": float(kappa),
+    }
+
+
+def run() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Returns (raw_df, agg_df) where raw_df has one row per (D, seed) and
+    agg_df has one row per D with mean and std summaries."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[exp1_1] device = {device}")
+    print(f"[exp1_1] widths: {CAPACITIES}")
+    print(f"[exp1_1] seeds:  {SEEDS}")
+    print()
 
     rows: list[dict] = []
+    for D in CAPACITIES:
+        for seed in SEEDS:
+            row = measure_one(D, seed, device)
+            rows.append(row)
+            print(
+                f"[exp1_1] D={D:5d}  seed={seed}  "
+                f"C_g={row['C_g']:8d}  ratio={row['ratio']:8.3f}  "
+                f"l_theta={row['lambda_theta']:.3e}  "
+                f"l_phi={row['lambda_phi']:.3e}  kappa={row['kappa']:.3e}"
+            )
 
-    for D in capacities:
-        # Reset RNG state so the only thing that varies is width D.
-        torch.manual_seed(seed)
-        np.random.seed(seed)
+    raw_df = pd.DataFrame(rows)
+    raw_path = RESULTS_DIR / "exp1_1_raw.csv"
+    raw_df.to_csv(raw_path, index=False)
+    print(f"\n[exp1_1] wrote {raw_path}")
 
-        # ------------------------------------------------------------- #
-        # Model
-        # ------------------------------------------------------------- #
-        spectral = SpectralReduction(S=S, K=K)
-        spatial = SpatialMLP(K=K, n_classes=n_classes, width=D)
-        model = CompositionModel(spectral, spatial).to(device)
+    # ---- aggregate over seeds for each width ----------------------- #
+    agg_df = raw_df.groupby("D", sort=True).agg(
+        C_f=("C_f", "first"),
+        C_g=("C_g", "first"),
+        ratio=("ratio", "first"),
+        lambda_theta_mean=("lambda_theta", "mean"),
+        lambda_theta_std=("lambda_theta", "std"),
+        lambda_phi_mean=("lambda_phi", "mean"),
+        lambda_phi_std=("lambda_phi", "std"),
+        kappa_mean=("kappa", "mean"),
+        kappa_std=("kappa", "std"),
+        n_seeds=("seed", "count"),
+    ).reset_index()
+    agg_path = RESULTS_DIR / "exp1_1_aggregated.csv"
+    agg_df.to_csv(agg_path, index=False)
+    print(f"[exp1_1] wrote {agg_path}")
 
-        # ------------------------------------------------------------- #
-        # Data
-        # ------------------------------------------------------------- #
-        X, y = make_problem(
-            n_samples=n_samples,
-            S=S,
-            H=H,
-            W=W,
-            n_classes=n_classes,
-            alpha=1.0,
-            beta=1.0,
-            seed=seed,
-        )
-        X = X.to(device)
-        y = y.to(device)
-
-        # ------------------------------------------------------------- #
-        # Hessian block top eigenvalues
-        # ------------------------------------------------------------- #
-        lambda_theta = top_eigenvalue_block(
-            model, X, y, block="spectral", n_iter=20, device=device,
-        )
-        lambda_phi = top_eigenvalue_block(
-            model, X, y, block="spatial", n_iter=20, device=device,
-        )
-
-        C_f = count_params(spectral)
-        C_g = count_params(spatial)
-        ratio = C_g / C_f
-        kappa = lambda_phi / lambda_theta if lambda_theta > 0 else float("nan")
-
-        row = {
-            "D": D,
-            "C_f": C_f,
-            "C_g": C_g,
-            "ratio": ratio,
-            "lambda_theta": float(lambda_theta),
-            "lambda_phi": float(lambda_phi),
-            "kappa": float(kappa),
-        }
-        rows.append(row)
-        print(
-            f"[exp1_1] D={D:4d}  C_f={C_f:7d}  C_g={C_g:8d}  "
-            f"ratio={ratio:8.3f}  lambda_theta={lambda_theta:.4e}  "
-            f"lambda_phi={lambda_phi:.4e}  kappa={kappa:.4e}"
-        )
-
-    df = pd.DataFrame(rows)
-
-    csv_path = RESULTS_DIR / "exp1_1_results.csv"
-    df.to_csv(csv_path, index=False)
-    print(f"[exp1_1] wrote {csv_path}")
-
-    return df
+    return raw_df, agg_df
 
 
 def _fit_loglog_slope(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
@@ -137,89 +160,171 @@ def _fit_loglog_slope(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
     return float(slope), float(intercept)
 
 
-def plot(df: pd.DataFrame) -> None:
+def plot(agg_df: pd.DataFrame, raw_df: pd.DataFrame) -> None:
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    # --------------------------------------------------------------- #
-    # Plot 1: lambda_phi vs C_g (log-log)
-    # --------------------------------------------------------------- #
-    fig, ax = plt.subplots(figsize=(6, 5))
-    Cg = df["C_g"].to_numpy(dtype=float)
-    lphi = df["lambda_phi"].to_numpy(dtype=float)
+    Cg = agg_df["C_g"].to_numpy(dtype=float)
+    Cf = agg_df["C_f"].to_numpy(dtype=float)
+    ratio = agg_df["ratio"].to_numpy(dtype=float)
+    lphi_mean = agg_df["lambda_phi_mean"].to_numpy(dtype=float)
+    lphi_std = agg_df["lambda_phi_std"].to_numpy(dtype=float)
+    kappa_mean = agg_df["kappa_mean"].to_numpy(dtype=float)
+    kappa_std = agg_df["kappa_std"].to_numpy(dtype=float)
 
-    ax.loglog(Cg, lphi, "o-", color="C0", label=r"measured $\lambda_\phi$")
+    # --------------------------------------------------------------- #
+    # Plot 1: lambda_phi vs C_g (log-log) with shaded +/- 1 std
+    # --------------------------------------------------------------- #
+    fig, ax = plt.subplots(figsize=(7, 5))
 
-    slope, intercept = _fit_loglog_slope(Cg, lphi)
-    fit_x = np.array([Cg.min(), Cg.max()])
-    fit_y = np.exp(intercept) * fit_x**slope
-    ax.loglog(
-        fit_x,
-        fit_y,
-        "--",
-        color="C1",
-        label=f"fit slope = {slope:.2f}",
+    # All seeds as faint dots
+    ax.scatter(
+        raw_df["C_g"], raw_df["lambda_phi"],
+        s=20, color="C0", alpha=0.3, label="individual seeds",
     )
 
-    # Reference: predicted slope = 1, anchored at first data point.
-    ref_y = lphi[0] * (fit_x / Cg[0])
-    ax.loglog(fit_x, ref_y, ":", color="grey", label="predicted slope = 1")
+    # Mean line
+    ax.plot(
+        Cg, lphi_mean, "o-",
+        color="C0", lw=2, label=r"mean $\lambda_\phi$",
+    )
 
-    ax.set_xlabel(r"spatial capacity $C_g$")
-    ax.set_ylabel(r"$\lambda_{\max}(H_{\phi\phi})$")
-    ax.set_title(r"Exp 1.1: $\lambda_\phi$ vs spatial capacity $C_g$")
+    # +/- 1 std shaded band (in linear, before going to log-log)
+    ax.fill_between(
+        Cg,
+        np.clip(lphi_mean - lphi_std, 1e-12, None),
+        lphi_mean + lphi_std,
+        color="C0", alpha=0.18, label=r"$\pm 1\sigma$ across seeds",
+    )
+
+    # Fit slope
+    slope, intercept = _fit_loglog_slope(Cg, lphi_mean)
+    fit_x = np.array([Cg.min(), Cg.max()])
+    fit_y = np.exp(intercept) * fit_x**slope
+    ax.plot(fit_x, fit_y, "--", color="C1", lw=2,
+            label=f"fit slope = {slope:.2f}")
+
+    # Reference line slope = 1 (predicted)
+    ref_y = lphi_mean[0] * (fit_x / Cg[0])
+    ax.plot(fit_x, ref_y, ":", color="grey", lw=2,
+            label="predicted slope = 1")
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel(r"spatial parameter count $C_g$")
+    ax.set_ylabel(r"$\lambda_{\max}(H_{\phi\phi})$ (mean over 5 seeds)")
+    ax.set_title(
+        r"Exp 1.1: spatial Hessian top eigenvalue vs capacity"
+        + f"\n(widths D=16..8192, fit slope = {slope:.2f})"
+    )
     ax.grid(True, which="both", alpha=0.3)
-    ax.legend()
+    ax.legend(loc="lower right", fontsize=9)
     fig.tight_layout()
-
     out1 = RESULTS_DIR / "exp1_1_lambda_vs_Cg.png"
     fig.savefig(out1, dpi=150)
     plt.close(fig)
-    print(f"[exp1_1] wrote {out1}  (fit slope = {slope:.3f})")
+    print(f"[exp1_1] wrote {out1}  (slope = {slope:.3f})")
 
     # --------------------------------------------------------------- #
-    # Plot 2: kappa vs ratio (log-log) with y = x reference
+    # Plot 2: kappa vs ratio (log-log)
     # --------------------------------------------------------------- #
-    fig, ax = plt.subplots(figsize=(6, 5))
-    ratio = df["ratio"].to_numpy(dtype=float)
-    kappa = df["kappa"].to_numpy(dtype=float)
+    fig, ax = plt.subplots(figsize=(7, 5))
 
-    ax.loglog(ratio, kappa, "o-", color="C2", label=r"measured $\kappa$")
-
-    slope_k, intercept_k = _fit_loglog_slope(ratio, kappa)
-    fit_x = np.array([ratio.min(), ratio.max()])
-    fit_y = np.exp(intercept_k) * fit_x**slope_k
-    ax.loglog(
-        fit_x,
-        fit_y,
-        "--",
-        color="C1",
-        label=f"fit slope = {slope_k:.2f}",
+    ax.scatter(
+        raw_df["ratio"], raw_df["kappa"],
+        s=20, color="C2", alpha=0.3, label="individual seeds",
     )
 
-    # Reference line y = x (predicted slope = 1 through origin in log-log).
-    ax.loglog(fit_x, fit_x, ":", color="grey", label="y = x (predicted)")
+    ax.plot(
+        ratio, kappa_mean, "o-",
+        color="C2", lw=2, label=r"mean $\kappa$",
+    )
+    ax.fill_between(
+        ratio,
+        np.clip(kappa_mean - kappa_std, 1e-12, None),
+        kappa_mean + kappa_std,
+        color="C2", alpha=0.18, label=r"$\pm 1\sigma$",
+    )
 
-    ax.set_xlabel(r"$C_g / C_f$")
+    slope_k, intercept_k = _fit_loglog_slope(ratio, kappa_mean)
+    fit_x = np.array([ratio.min(), ratio.max()])
+    fit_y = np.exp(intercept_k) * fit_x**slope_k
+    ax.plot(fit_x, fit_y, "--", color="C1", lw=2,
+            label=f"fit slope = {slope_k:.2f}")
+
+    ax.plot(fit_x, fit_x, ":", color="grey", lw=2,
+            label="y = x (predicted)")
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel(r"capacity ratio $C_g / C_f$")
     ax.set_ylabel(r"$\kappa = \lambda_\phi / \lambda_\theta$")
-    ax.set_title(r"Exp 1.1: curvature ratio vs capacity ratio")
+    ax.set_title(
+        r"Exp 1.1: condition number across modules vs capacity ratio"
+        + f"\n(widths D=16..8192, fit slope = {slope_k:.2f})"
+    )
     ax.grid(True, which="both", alpha=0.3)
-    ax.legend()
+    ax.legend(loc="lower right", fontsize=9)
     fig.tight_layout()
-
     out2 = RESULTS_DIR / "exp1_1_kappa_vs_ratio.png"
     fig.savefig(out2, dpi=150)
     plt.close(fig)
-    print(f"[exp1_1] wrote {out2}  (fit slope = {slope_k:.3f})")
+    print(f"[exp1_1] wrote {out2}  (slope = {slope_k:.3f})")
+
+    # --------------------------------------------------------------- #
+    # Plot 3: lambda_theta and lambda_phi together (paired view)
+    # --------------------------------------------------------------- #
+    fig, ax = plt.subplots(figsize=(7, 5))
+
+    lth_mean = agg_df["lambda_theta_mean"].to_numpy(dtype=float)
+    lth_std = agg_df["lambda_theta_std"].to_numpy(dtype=float)
+
+    ax.plot(Cg, lphi_mean, "o-", color="C0", lw=2,
+            label=r"$\lambda_\phi$ (spatial)")
+    ax.fill_between(
+        Cg,
+        np.clip(lphi_mean - lphi_std, 1e-12, None),
+        lphi_mean + lphi_std,
+        color="C0", alpha=0.18,
+    )
+
+    ax.plot(Cg, lth_mean, "s-", color="C3", lw=2,
+            label=r"$\lambda_\theta$ (spectral)")
+    ax.fill_between(
+        Cg,
+        np.clip(lth_mean - lth_std, 1e-12, None),
+        lth_mean + lth_std,
+        color="C3", alpha=0.18,
+    )
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel(r"spatial parameter count $C_g$")
+    ax.set_ylabel("top block Hessian eigenvalue")
+    ax.set_title(r"Exp 1.1: paired view of spectral and spatial curvature")
+    ax.grid(True, which="both", alpha=0.3)
+    ax.legend(loc="lower right", fontsize=9)
+    fig.tight_layout()
+    out3 = RESULTS_DIR / "exp1_1_paired_eigenvalues.png"
+    fig.savefig(out3, dpi=150)
+    plt.close(fig)
+    print(f"[exp1_1] wrote {out3}")
 
 
 def main() -> None:
-    df = run()
-    print("\n=== Exp 1.1 results ===")
-    print(df.to_string(index=False))
-    plot(df)
+    raw_df, agg_df = run()
+
+    print("\n=== Exp 1.1 results (aggregated over seeds) ===")
+    cols = [
+        "D", "C_f", "C_g", "ratio",
+        "lambda_theta_mean", "lambda_phi_mean",
+        "kappa_mean", "kappa_std", "n_seeds",
+    ]
+    print(agg_df[cols].to_string(index=False, float_format=lambda v: f"{v:.4g}"))
+
+    plot(agg_df, raw_df)
 
 
 if __name__ == "__main__":
