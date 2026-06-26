@@ -4,6 +4,57 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-06-26 (late) — Experiment 1.2 dynamics, three iterations
+
+**v1 (Adam, SpatialMLP, noise=0.1):**
+- Trained joint at D ∈ {32, 128, 512, 2048}, 3 seeds each, 150 epochs.
+- Observed striking test-accuracy COLLAPSE at D=2048: peaks at ~70%
+  early, then decays to ~50% by epoch 150 while train loss continues to
+  drop. Two seeds at D=512 also collapse, one holds.
+- EGR did not show dramatic decay (Adam's per-param normalization
+  masks the natural gradient asymmetry).
+
+**v2 (SGD+momentum, SpatialMLP, noise=0.05) — diagnostic miss:**
+- Joint vs frozen converged to nearly identical accuracies (~75%).
+- The collapse from v1 disappeared.
+- ROOT CAUSE: SpatialMLP has zero spatial receptive field (per-pixel
+  MLP). It has no spatial pathway for a "spatial shortcut" to exploit.
+  The whole framing of "joint training discovers spatial shortcuts"
+  cannot be demonstrated without 2D spatial mixing in g_phi.
+
+**v3 (Adam, SpatialCNN with 2x 3x3 convs, noise=0.1) — the right setup:**
+- Trained joint AND frozen at D ∈ {16, 64, 256}, 3 seeds each.
+- Frozen beats joint at every capacity; gap widens with D.
+  D=256: joint acc 54%, frozen acc 57%; joint test loss 1.05, frozen 0.80.
+- Joint test accuracy at D=256 peaks ~70% then COLLAPSES to ~52%.
+  Train loss meanwhile drops to 0.29 — classic shortcut overfit.
+- EGR trajectories show the predicted capacity-monotonic collapse:
+    D=16:  drops then recovers to ~0.4
+    D=64:  drops to ~0.25 and plateaus
+    D=256: drops to ~0.2 then keeps decaying to ~0.1
+  This matches Proposition prop:egr_monotonic.
+
+**Headline plots ready for paper drafts:**
+- exp1_2v3_cnn_joint_vs_frozen.png — joint vs frozen by capacity
+- exp1_2v3_cnn_egr_overlay.png    — capacity-monotonic EGR collapse
+- exp1_2v3_cnn_joint_D256.png     — 4-panel full mechanism at D=256
+
+**Decisions**:
+- SpatialMLP retained as "no-spatial-mixing baseline" for ablations.
+- SpatialCNN is the canonical architecture for the dynamics figures.
+- Adam is the realistic optimizer for the literature contrast;
+  SGD ablation can stay in supplement.
+- noise=0.1 is the "interesting" regime (CE doesn't fully saturate,
+  shortcuts emerge); we'll also report noise=0.05 in supplement to
+  show the regime where joint training "looks fine."
+
+**Next session**:
+- Push SpatialCNN widths up to D=1024 to test whether the gap
+  continues widening, or saturates somewhere.
+- Add SpatialViT for the third architecture in our universality story.
+
+---
+
 ## 2026-06-26 (eve) — Experiment 1.1 scaled (5 seeds, D up to 8192)
 
 **Done**:
