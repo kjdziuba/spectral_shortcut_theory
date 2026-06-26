@@ -4,7 +4,47 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
-## 2026-06-26 — Section 3 (Setup) drafted
+## 2026-06-26 (PM) — Sections 4–6 drafted + Experiment 1.1 first run
+
+**Done**:
+- Drafted Section 4 (Theorem 1: Hessian Capacity Bound) — formal
+  statement, 3 supporting lemmas (Karakida scaling, Cauchy interlacing,
+  Schur complement), proof skeleton with TODO markers for Phase 2.
+- Drafted Section 5 (Theorem 2: Two-Timescale Spurious Convergence) —
+  formal statement, 3 supporting lemmas (timescale gap, fast manifold,
+  residual decay), proof sketch combining Borkar + Pezeshki.
+- Drafted Section 6 (EGR) — initial-value proposition, monotonicity
+  proposition, threshold criterion, implementation reference.
+- Workflow built infrastructure in parallel: synthetic/data.py,
+  synthetic/models.py, hessian/eigenvalues.py, egr/callback.py,
+  experiments/exp1_1.py, experiments/exp1_2.py. Smoke test passed.
+- Fixed signature mismatch in exp1_1.py (top_eigenvalue_block API).
+- **Ran Experiment 1.1 (capacity ablation)** on synthetic data:
+    D ∈ {16, 32, 64, 128, 256, 512}, C_f = 1024, C_g ∈ [306, 9730]
+    κ ranges from 23 to 464.
+
+**Findings**:
+- Direction confirmed: λ_φ grows with C_g, κ grows with C_g/C_f.
+- Scaling exponent α ≈ 0.48 (predicted 1 from Karakida asymptote).
+- κ already exceeds 400 at modest C_g/C_f ≈ 10 — landscape is
+  pathological even far from the real-architecture regime
+  (C_g/C_f ≈ 325).
+- Need: scale D up to 2048+, average over seeds, run Exp 1.2 dynamics.
+
+**Decisions**:
+- Theorem 1 statement will be reframed as "monotonic growth with
+  measurable exponent" rather than tight Ω(C_g/C_f).
+- Cite Karakida for asymptote, document empirical finite-size α.
+- Add capacity ablation up to D=8192 as next step.
+
+**Next session**:
+- Run Experiment 1.2 (dynamics) — should give clean qualitative result.
+- Scale Experiment 1.1 to larger D + 5-seed averaging.
+- User reads Pezeshki when ready.
+
+---
+
+## 2026-06-26 (AM) — Section 3 (Setup) drafted
 
 **Done**:
 - Walked through model setup, chain rule, Jacobian, Hessian conceptually

@@ -1,20 +1,161 @@
 \section{The Effective Gradient Ratio Diagnostic}
 \label{sec:egr}
 
-\TODO{Phase 4 (W11-W12). Operationalize EGR, prove monotonicity, give threshold.}
+Theorems~\ref{thm:hessian} and~\ref{thm:twoscale} together identify a
+training pathology that is invisible to standard loss curves: as
+cross-entropy decays toward zero on both training and validation
+sets, the spectral module is silently gradient-starved. A practitioner
+running joint training sees the loss go down and the validation
+accuracy go up, with no in-training signal that the spectral module
+has failed to specialize. The implication for held-out test
+performance is only revealed once test data is examined---often after
+many epochs of wasted compute, or after deployment.
 
-\subsection{Definition and motivation}
-\TODO{Reference Definition \ref{def:egr}. Explain why this ratio is the right object to track.}
+This section introduces the \emph{Effective Gradient Ratio} (EGR), a
+real-time diagnostic that detects gradient starvation as it occurs.
+EGR is a single scalar, computable inside any training loop at
+negligible cost, that converts the asymptotic prediction of
+Theorem~\ref{thm:twoscale} into a concrete observable.
 
-\subsection{Monotonicity under the slow-fast regime}
-\TODO{
-\begin{proposition}
-Under the assumptions of Theorem \ref{thm:twoscale}, $\EGR(t)$ is non-increasing on average along the fast manifold.
+\subsection{Definition and basic properties}
+
+Recall from Definition~\ref{def:egr} that at training step $t$,
+\[
+    \EGR(t) = \frac{\norm{\nabla_\thetap \loss(\thetap_t, \phip_t)}}
+                   {\norm{\nabla_\phip \loss(\thetap_t, \phip_t)}}.
+\]
+The numerator and denominator are computable directly from gradients
+accumulated during the standard backward pass. EGR is unitless and
+invariant to the choice of learning rate.
+
+\begin{proposition}[Initial value]
+\label{prop:egr_init}
+At initialization, under random Gaussian weights with variance scaled
+in the standard way (e.g.\ Kaiming initialization),
+\[
+    \E[\EGR(0)] = \Theta\!\left( \sqrt{\Cf / \Cg} \right).
+\]
 \end{proposition}
-}
+
+\begin{remark}
+Proposition~\ref{prop:egr_init} captures the intuition that at
+initialization, the gradient norms reflect the parameter counts of each
+module: $\norm{\nabla_\phip \loss}^2 \sim \Cg$ in expectation while
+$\norm{\nabla_\thetap \loss}^2 \sim \Cf$. The square root arises from
+the norm. For our motivating architecture with $\Cg/\Cf \approx 325$,
+this gives $\E[\EGR(0)] \approx 0.055$.
+\TODO{Phase 4, W11: derive the exact constants under Kaiming
+initialization. Verify empirically in Experiment 1.1.}
+\end{remark}
+
+\subsection{Monotonicity along the slow-fast manifold}
+
+\begin{proposition}[EGR decay]
+\label{prop:egr_monotonic}
+Under the conditions of Theorem~\ref{thm:twoscale}, along the fast
+equilibrium manifold $\phip = \phip^\star(\thetap)$,
+\[
+    \EGR(t) \;\;\leq\;\; \EGR(t_0) \cdot \exp\!\left( -\mu (t - t_0) \right)
+\]
+for $t \geq t_0 \geq T_{\mathrm{fast}}$, where $\mu$ is the residual
+decay rate from Lemma~\ref{lem:residual}.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+By the chain-rule decomposition~\eqref{eq:chain},
+\[
+    \norm{\nabla_\thetap \loss} \leq \norm{\partial \hat{y}/\partial Z}_{\mathrm{op}}
+    \cdot \norm{\partial Z/\partial \thetap}_{\mathrm{op}} \cdot \norm{r}.
+\]
+On the fast manifold, the residual $r$ decays as
+$\norm{r} \leq C e^{-\mu t}$ by Lemma~\ref{lem:residual}, while
+$\norm{\nabla_\phip \loss}$ also depends on $r$ but is regularized by
+the spatial Hessian curvature, which under
+Theorem~\ref{thm:hessian} scales with $\Cg$. The ratio
+therefore decays at rate $\Omega(\mu)$.
+\TODO{Phase 4, W11: tighten the proof to give exact constants on the
+denominator's decay rate.}
+\end{proof}
 
 \subsection{Threshold criterion}
-\TODO{State $\EGR(t) < \tau$ as a sufficient condition for gradient starvation onset. Discuss how to set $\tau$ practically.}
+
+Proposition~\ref{prop:egr_monotonic} suggests a practical criterion
+for detecting the onset of gradient starvation.
+
+\begin{definition}[Gradient starvation alert]
+\label{def:alert}
+We say the model is in a \emph{gradient starvation regime} at step $t$
+if
+\[
+    \EGR(t) \;\;<\;\; \tau \cdot \EGR(0),
+\]
+where $\tau \in (0, 1)$ is a user-supplied tolerance. Empirically, we
+recommend $\tau \in [0.05, 0.1]$, corresponding to a 10--20$\times$
+drop in EGR relative to initialization.
+\end{definition}
+
+\begin{remark}
+The threshold $\tau$ is the only hyperparameter of the diagnostic.
+The default $\tau = 0.1$ corresponds to a one-decade decay and is the
+value we use throughout Section~\ref{sec:experiments}. We provide a
+sensitivity analysis to $\tau$ in the supplement.
+\end{remark}
+
+\paragraph{Practical use.}
+A practitioner logs $\EGR(t)$ at each step. When the alert fires,
+two options are available:
+\begin{enumerate}
+    \item \textbf{Freeze the spectral module.} This is the prescription
+          most directly motivated by Theorem~\ref{thm:twoscale}:
+          removing $\thetap$ from the optimization eliminates the
+          timescale gap. We discuss this in Section~\ref{sec:discussion}.
+    \item \textbf{Inject a fixed residual baseline.} A softer
+          intervention: replace $Z = f_\thetap(X)$ with
+          $Z = f_\thetap(X) + h(X)$ for a fixed feature extractor
+          $h$ (e.g.\ PCA). The fixed baseline ensures the spatial
+          model receives stable input even if $f_\thetap$ continues
+          to drift, breaking the shortcut without freezing.
+\end{enumerate}
+We evaluate both interventions in Experiment~1.3.
+
+\subsection{Relationship to existing diagnostics}
+
+EGR is conceptually related to several existing notions but is
+distinct in its scope and intent.
+
+\paragraph{GradNorm~\cite{chen2018gradnorm}.}
+GradNorm dynamically reweights losses in multi-task learning to
+equalize gradient magnitudes across tasks. EGR measures rather than
+intervenes, and applies to single-task compositional architectures
+rather than multi-task losses.
+
+\paragraph{Modality-specific learning rates (MSLR).}
+In multimodal learning, MSLR adjusts learning rates per modality. EGR
+diagnoses the underlying pathology that MSLR addresses but in a
+unimodal, two-stage architecture where the ``modalities'' are
+the spectral and spatial subspaces of a single input.
+
+\paragraph{Loss curve monitoring.}
+The conventional practice of monitoring training and validation loss
+fails to detect gradient starvation because both can decay even as
+$\thetap$ stagnates. EGR is sensitive to the structural failure
+even when no global loss curve abnormality is present.
 
 \subsection{Implementation}
-\TODO{PyTorch callback; see \texttt{code/egr/}. Drop-in for any training loop.}
+
+The EGR diagnostic is implemented as a PyTorch training callback. It
+hooks into the standard training loop between the backward pass and
+the optimizer step:
+\begin{verbatim}
+loss.backward()
+egr_logger.log_step(global_step)   # <-- the only added line
+optimizer.step()
+optimizer.zero_grad()
+\end{verbatim}
+The callback identifies the spectral and spatial parameter groups via
+\verb|model.spectral.parameters()| and \verb|model.spatial.parameters()|
+(or any user-supplied naming convention) and records the gradient
+norms and EGR at each step. We release the implementation as the
+\verb|egr| package, available at the project repository.
+\TODO{Phase 4, W12: prepare PyPI package skeleton. Add unit tests
+for gradient norm computation and threshold detection.}

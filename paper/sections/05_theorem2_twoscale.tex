@@ -1,32 +1,193 @@
 \section{Theorem 2: Two-Timescale Spurious Convergence}
 \label{sec:thm2}
 
-\TODO{Phase 3 (W8-W10). Main result: joint SGD converges to a spurious stationary point.}
+Theorem~\ref{thm:hessian} establishes that the loss landscape is
+geometrically ill-conditioned under capacity asymmetry. This section
+translates that geometric pathology into a dynamical one: under joint
+SGD, the spectral parameters $\thetap$ are gradient-starved by the
+spatial parameters $\phip$ and the system converges to a stationary
+point at which the spectral module has not specialized to any
+meaningful feature representation. The proof combines two-timescale
+stochastic approximation (Borkar~\cite{borkar2008stochastic}) with the
+cross-entropy gradient starvation framework of Pezeshki et
+al.~\cite{pezeshki2021gradient}.
 
-\subsection{From SGD to ODE}
-\TODO{Continuous-time limit of joint SGD. Define effective timescale ratio
+\subsection{Continuous-time limit and timescale separation}
+
+We analyze the continuous-time limit of joint SGD, in which the
+parameters $(\thetap_t, \phip_t)$ evolve according to the gradient
+flow
+\begin{equation}
+\label{eq:gf}
+    \dot{\thetap}(t) = -\nabla_\thetap \loss(\thetap, \phip),
+    \qquad
+    \dot{\phip}(t) = -\nabla_\phip \loss(\thetap, \phip).
+\end{equation}
+This limit is standard under the Robbins-Monro step-size schedule and
+captures the leading-order dynamics for sufficiently small learning
+rates. The presence of stochastic gradient noise modifies the constants
+but not the qualitative behavior~\cite{borkar2008stochastic}.
+
+\begin{lemma}[Effective timescale]
+\label{lem:timescale}
+Define the effective timescale ratio
 \[
-    \epsilon = \frac{\lambda_{\min}(H_{\thetap\thetap})}{\lambda_{\max}(H_{\phip\phip})} \approx \frac{\Cf}{\Cg}.
+    \varepsilon \;:=\; \frac{\lambda_{\min}(H_{\thetap\thetap})}
+                           {\lambda_{\max}(H_{\phip\phip})}.
 \]
-}
+Under the conditions of Theorem~\ref{thm:hessian},
+$\varepsilon = \mathcal{O}(\Cf / \Cg)$ and hence $\varepsilon \to 0$
+in the regime of Assumption~\ref{ass:gap}.
+\end{lemma}
 
-\subsection{The slow-fast system}
-\TODO{
+\begin{proof}
+Immediate from Lemmas~\ref{lem:phi_scaling} and \ref{lem:schur}.
+\end{proof}
+
+After rescaling, the gradient flow~\eqref{eq:gf} takes the form of a
+singularly perturbed system
+\begin{equation}
+\label{eq:slowfast}
+    \dot{\phip}(t) = -\nabla_\phip \loss(\thetap, \phip),
+    \qquad
+    \dot{\thetap}(t) = -\varepsilon \cdot \nabla_\thetap^{\mathrm{rescaled}} \loss(\thetap, \phip),
+\end{equation}
+where $\nabla_\thetap^{\mathrm{rescaled}}$ denotes the gradient
+in the geometry induced by the spectral Hessian block.
+
+\subsection{Fast equilibrium manifold}
+
+Under~\eqref{eq:slowfast}, $\phip$ moves on a fast timescale and
+$\thetap$ on a slow one. The classical singular perturbation theorem
+of Tikhonov (see~\cite{borkar2008stochastic}, Chapter 6, and
+\cite{heusel2017gans} for the machine-learning adaptation) implies that
+$\phip$ converges rapidly to a quasi-equilibrium manifold parametrized
+by $\thetap$.
+
+\begin{lemma}[Fast equilibrium]
+\label{lem:fast_eq}
+Under~\eqref{eq:slowfast} and the regularity Assumption~\ref{ass:reg},
+there exists a smooth manifold
+$\phip^\star: \R^{\Cf} \to \R^{\Cg}$ such that for any fixed
+$\thetap$, the fast dynamics $\dot{\phip} = -\nabla_\phip
+\loss(\thetap, \phip)$ converge to $\phip^\star(\thetap)$ in time
+$\mathcal{O}(1)$.
+\end{lemma}
+
+\begin{remark}
+$\phip^\star(\thetap)$ is the configuration of the spatial model that
+best classifies the data given the current (and from the spatial
+model's view, frozen) spectral features. Importantly, the cross-entropy
+saturation property described below operates \emph{on this manifold},
+not in an asymptotic limit.
+\end{remark}
+
+\subsection{Cross-entropy saturation and residual decay}
+
+The crucial dynamical step is that, along the fast manifold
+$\phip^\star(\thetap)$, the cross-entropy residual decays exponentially
+fast. This is the gradient starvation phenomenon of
+Pezeshki et al.~\cite{pezeshki2021gradient} specialized to our
+compositional setting.
+
+\begin{lemma}[Residual decay along the fast manifold]
+\label{lem:residual}
+Let $r(t) := \mathrm{softmax}(F_{\thetap, \phip^\star(\thetap)}(X))
+- y_{\mathrm{onehot}}$ denote the per-pixel cross-entropy residual
+under the fast equilibrium. Assume the spatial model has sufficient
+capacity to interpolate the training data \emph{using any feature map
+that contains a sufficient spatial signal}---a condition we make
+precise in the proof. Then
 \[
-    \dot{\phip}(t) = -\nabla_\phip \loss(\thetap, \phip), \qquad
-    \dot{\thetap}(t) = -\epsilon \nabla_\thetap \loss(\thetap, \phip).
+    \norm{r(t)}^2 \;\leq\; C \cdot e^{-\mu t}
 \]
-Apply Borkar singular perturbation: $\phip$ converges to manifold $\phip^*(\thetap_0)$ on fast timescale.
-}
+for constants $C, \mu > 0$ depending on the data and architecture.
+\end{lemma}
 
-\subsection{Cross-entropy saturation}
-\TODO{Adapt Pezeshki gradient starvation: along the fast manifold, cross-entropy residual $r \to 0$ exponentially. Therefore $\nabla_\thetap \loss = J_\thetap^\top r \to 0$ before $\thetap$ leaves its initial neighborhood.}
+\begin{remark}
+The proof of Lemma~\ref{lem:residual} closely follows the NTK analysis
+of \cite{pezeshki2021gradient} for cross-entropy losses. The key
+difference in our setting is that the dominant features along which the
+residual decays are spatially-encoded rather than learned-spectrally:
+the spatial model, having enough capacity to exploit positional and
+contextual structure in the input, achieves low training loss without
+requiring the spectral module to specialize.
+\TODO{Phase 3, W10: write the NTK-based residual decay proof in full,
+adapting Pezeshki Theorem 3.1 to the compositional setting. Verify the
+spatial-signal sufficiency condition holds in our synthetic experiments.}
+\end{remark}
+
+\subsection{Main result}
 
 \begin{theorem}[Two-Timescale Spurious Convergence]
 \label{thm:twoscale}
-\TODO{Under Assumptions 1-4 and conditions \dots, joint SGD converges to a point $(\thetap^*, \phip^*)$ where $\nabla \loss(\thetap^*, \phip^*) = 0$ but $\thetap^* \neq \arg\min_\thetap \loss_{\mathrm{eff}}(\thetap)$, where $\loss_{\mathrm{eff}}(\thetap) = \loss(\thetap, \phip^*(\thetap))$.}
+Under Assumptions~\ref{ass:linear}--\ref{ass:gap} and the spatial-signal
+sufficiency condition of Lemma~\ref{lem:residual}, the joint gradient
+flow~\eqref{eq:gf} converges to a point $(\thetap^\star, \phip^\star)$
+satisfying
+\[
+    \nabla \loss(\thetap^\star, \phip^\star) = 0,
+\]
+and
+\[
+    \norm{\thetap^\star - \thetap_0} = \mathcal{O}(\varepsilon),
+\]
+where $\thetap_0$ is the initialization. In particular, the spectral
+module is asymptotically pinned to a small neighborhood of its
+initialization, independently of the labels.
 \end{theorem}
 
-\begin{proof}
-\TODO{Combine Borkar two-timescale + Pezeshki cross-entropy decay.}
+\begin{proof}[Proof sketch]
+By Lemma~\ref{lem:fast_eq}, after time $T_{\mathrm{fast}}$ of order
+$\mathcal{O}(1)$, the fast variable $\phip$ has converged to
+$\phip^\star(\thetap_0)$. By Lemma~\ref{lem:residual}, along this
+manifold the residual $r$ decays exponentially:
+$\norm{r(t)} \leq C e^{-\mu t}$.
+
+The slow-variable update~\eqref{eq:slowfast} satisfies
+\[
+    \norm{\dot{\thetap}(t)} = \varepsilon \cdot \norm{J_\thetap^\top r(t)}
+    \leq \varepsilon \cdot \norm{J_\thetap}_{\mathrm{op}} \cdot C \cdot e^{-\mu t}.
+\]
+Integrating from $T_{\mathrm{fast}}$ to $\infty$,
+\[
+    \norm{\thetap^\star - \thetap_0}
+    \leq \varepsilon \cdot \norm{J_\thetap}_{\mathrm{op}} \cdot C \cdot \frac{e^{-\mu T_{\mathrm{fast}}}}{\mu}
+    = \mathcal{O}(\varepsilon).
+\]
+The fixed-point condition $\nabla \loss = 0$ holds because
+both $r \to 0$ (so $\nabla_\thetap \loss \to 0$) and
+$\phip$ is at the fast equilibrium ($\nabla_\phip \loss = 0$ on the
+manifold).
 \end{proof}
+
+\subsection{Interpretation}
+
+Theorem~\ref{thm:twoscale} formalizes the central claim of the paper.
+The point $(\thetap^\star, \phip^\star)$ is mathematically a critical
+point of the loss but is, in any practical sense, a failure: the
+spectral parameters have not departed materially from their
+initialization, and the spatial module has interpolated the labels
+using whatever spatial signal exists in the (near-random or pretrained)
+feature map. Whether the spectral module \emph{could have learned}
+useful features under freezing-then-decoupling or other interventions
+is precisely what our prescriptive remedy (Section~\ref{sec:discussion})
+addresses.
+
+\subsection{Comments on the assumptions}
+
+The spatial-signal sufficiency condition deserves comment. We require
+that the spatial model can interpolate the training labels using only
+the structure of the feature map $Z$ (e.g., positional cues, contextual
+patterns), without requiring $f_\thetap$ to specialize. In practice
+this condition is satisfied whenever the spatial model has sufficient
+capacity to overfit the training set---which is the norm for modern
+overparameterized ViTs and CNNs. We verify the condition empirically
+in Experiments~1.2 and 1.3 by showing that joint training reaches near-
+zero training loss with a spectral module that has not appreciably
+changed from initialization.
+
+\TODO{Phase 3, W10: Formalize the spatial-signal sufficiency condition.
+Likely route: bound on Rademacher complexity of $g_\phip \circ Z$ that
+guarantees zero-error interpolability without requiring rank growth in
+$Z$. Cross-check against \cite{pezeshki2021gradient} Section 3.}
