@@ -4,6 +4,36 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-06-30 — EGR fixed-width sweep + Karakida derivation drafted
+
+**Done**:
+- Wrote `code/experiments/exp1_4_fw.py` (fixed width D=256, sweeps
+  noise × lr × weight_decay × 6 seeds = 144 runs).
+- Launched in background — expected ~70 min.
+- Drafted `study_notes/04_karakida_derivation.md` covering the
+  asymptotic scaling argument for Lemma 4.1
+  (`λ_max(J_φ^T J_φ) = Ω(C_g)`):
+  - Karakida 2019 framework recap (mean-field FIM)
+  - FIM ↔ Gauss-Newton conversion factor for CE
+  - Per-architecture scaling (MLP / CNN / ViT) — all give λ_max ∝ C_g
+  - Honest explanation of why our empirical slope is 0.7 not 1.0
+    (finite-width corrections, bias parameters, CE residual)
+  - 5-step proof outline for the supplement
+- Lab talk: pushed to GitHub at
+  https://github.com/kjdziuba/spectral_shortcut_theory; design brief
+  in `presentation/DESIGN_BRIEF.md` is the handoff for design tool.
+
+**Next session**:
+- Read the fixed-width sweep result when it lands (notification).
+- Run adversarial verification on the new correlation (workflow).
+- If within-bin signal survives → upgrade Section 6 to
+  "capacity-independent diagnostic"; otherwise leave the
+  "capacity-aware" framing.
+- Then: 2-hour focused session writing the Lemma 4.1 proof into
+  `paper/sections/supplement.tex` using the Karakida derivation.
+
+---
+
 ## 2026-06-29 — Exp 1.4 + adversarial verification + Pezeshki session
 
 **Done**:
