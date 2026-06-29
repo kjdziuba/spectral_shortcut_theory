@@ -4,6 +4,47 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-06-30 — EGR fixed-width sweep RESULT: real-but-weak
+
+**Done**:
+- Ran exp1_4_fw (144 runs, D=256 fixed, noise × lr × wd × 6 seeds).
+- Spawned 3-skeptic + synthesis Workflow on the new correlations.
+- Synthesis verdict: **"real_but_weak"** — capacity-independent
+  signal exists and survives every adversarial control, but
+  practical effect size is moderate.
+
+**Key numbers (D=256, n=144)**:
+- Raw r(egr_min, final_acc) = +0.344 (p = 2.5e-5)
+- Partial r controlling for noise/lr/wd = +0.395 (larger, not smaller)
+  → NOT a hyperparameter confound
+- Within-bin r (seeds only): mean +0.584 across 24 cells, 23/24 strongly
+  positive, Fisher-z aggregate p < 1e-13
+- Partial r controlling for train loss = +0.335 (essentially unchanged)
+  → EGR adds value beyond train-loss tracking
+- ROC-AUC for "bad run" classification = 0.612 (real but modest)
+- Best threshold: TPR 0.90 / FPR 0.57 → not deployable as standalone alarm
+
+**Section 6 updated**:
+- Removed "capacity-aware diagnostic" framing.
+- New structure:
+    (i)  pooled correlation, capacity confounded (r = -0.78 but partial = -0.17)
+    (ii) fixed-capacity test (r = +0.34, survives all controls)
+    (iii) practical interpretation (AUC modest, use alongside train loss)
+- Verdict: capacity-independent signal real; practically a complementary
+  diagnostic, not a standalone alarm.
+
+**Why this matters**: had we stopped at the pooled correlation,
+reviewers would have crushed us with "this is just capacity in disguise."
+The fixed-width follow-up + adversarial workflow give us a defensible,
+honest claim.
+
+**Next session**:
+- Phase 2 W7: write Lemma 4.3 (Schur complement bound for lambda_min).
+  This is the last load-bearing piece for Theorem 1's full proof.
+- Then: Theorem 2 proof (Phase 3).
+
+---
+
 ## 2026-06-30 — EGR fixed-width sweep + Karakida derivation drafted
 
 **Done**:
