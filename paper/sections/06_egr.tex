@@ -141,6 +141,48 @@ fails to detect gradient starvation because both can decay even as
 $\thetap$ stagnates. EGR is sensitive to the structural failure
 even when no global loss curve abnormality is present.
 
+\subsection{Empirical validation: EGR depth as a diagnostic}
+\label{sec:egr-empirical}
+
+Across $N=24$ runs spanning four widths $\{16,64,256,1024\}$ with six
+seeds each, EGR depth correlates strongly with final test accuracy:
+Pearson $r = -0.723$ ($p = 6.6\times 10^{-5}$), Spearman $\rho = -0.808$
+($p = 1.8\times 10^{-6}$), and with the train--test gap at $r = +0.741$
+($p = 3.5\times 10^{-5}$). We subjected this claim to three adversarial
+checks.
+
+First, EGR depth survives comparison with the most natural baseline.
+Final training loss is itself a moderate overfit indicator ($r = +0.613$
+with test accuracy), but the partial correlation
+$r(\mathrm{egr\_depth},\,\mathrm{acc}\mid \log\mathrm{train\_loss}) = -0.572$
+($p = 0.0035$) shows EGR depth carries roughly a third of the
+test-accuracy variance independent of train-loss magnitude. Second, the
+depth metric is genuinely about the \emph{gap} rather than a relabeling
+of its minimum: $\mathrm{egr\_min}$ and $\mathrm{egr\_early}$ are
+essentially uncorrelated ($r = -0.155$), each contributes independent
+signal ($r(\mathrm{egr\_depth},\,\mathrm{acc}\mid\mathrm{egr\_min}) =
+-0.556$, $p = 0.0048$), and the implicit $(+1,-1)$ projection in
+egr\_depth nearly matches the optimal regression weights $(+0.79,-0.66)$.
+
+Third, and most importantly, the capacity confound is real. EGR depth
+is collinear with width ($r = +0.903$ with $\log\mathrm{width}$), and
+the partial correlation controlling for $\log\mathrm{width}$ falls to
+$-0.169$ ($p = 0.44$). Within-capacity Pearson correlations at fixed
+width are unstable ($-0.80,\,+0.03,\,-0.74,\,-0.17$; none significant
+at $n=6$). Reviewers should therefore treat EGR depth as a
+\emph{capacity-aware} diagnostic: informative when comparing models of
+comparable width or when capacity is held constant, but not a
+capacity-independent predictor at this sample size. Disentangling the
+residual within-capacity signal requires more seeds per width or
+designs that vary regularization at fixed width.
+
+\TODO{Phase 5 follow-up (W15+): rerun Exp 1.4 at fixed width
+$D \in \{64, 256\}$ varying noise, learning rate, and regularization
+strength (10+ seeds each). If EGR depth retains a within-bin Pearson
+$|r| > 0.5$, upgrade to ``capacity-independent'' diagnostic.
+Otherwise revise Section 6 to explicitly frame as
+``capacity-aware''.}
+
 \subsection{Implementation}
 
 The EGR diagnostic is implemented as a PyTorch training callback. It

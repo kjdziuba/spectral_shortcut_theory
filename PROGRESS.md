@@ -4,6 +4,56 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-06-29 — Exp 1.4 + adversarial verification + Pezeshki session
+
+**Done**:
+- User started reading Pezeshki 2021. Captured notes + follow-ups in
+  `study_notes/02_pezeshki_notes_and_followups.md`:
+    1. Add Spectral Decoupling as an experimental condition (Exp 1.6).
+    2. Cite Pezeshki Sec 4 / App B robustness claim to avoid running
+       those ablations ourselves.
+    3. Prepare 3-4 slide presentation for spectroscopy people (TODO).
+    4. NTK measurements not necessary for the main theorems.
+- Wrote `study_notes/03_hessian_block_algebra.md` walkthrough — block
+  matrix decomposition, Cauchy interlacing, Schur complement, Karakida
+  scaling, combining into κ(G) ≥ Ω(C_g/C_f).
+- Ran Exp 1.4 v1 (early-window EGR only) — got NEGATIVE correlation
+  r=-0.56. Identified confound: capacity drives both.
+- Iterated to Exp 1.4 v2 with multiple EGR windows (early/mid/late/min/depth).
+- Headline pooled correlations: r(egr_depth, final_acc) = -0.78,
+  Spearman -0.81.
+- **Spawned adversarial verification workflow** (3 skeptics + synthesis):
+    - Reviewer 1 (within-capacity): VERDICT = CONFOUND. Partial
+      correlation controlling for log(width) drops to -0.17 (NS).
+      EGR depth almost perfectly tracks width (r=0.90).
+    - Reviewer 2 (depth vs min): VERDICT = DEPTH_IS_REAL. Both
+      egr_early and egr_min contribute independent signal; the gap
+      isn't just a min restatement.
+    - Reviewer 3 (vs train loss): VERDICT = ADDS_VALUE. Partial r
+      controlling for train_loss = -0.572 (significant).
+    - Synthesis: VERDICT = MODERATE_DIAGNOSTIC. EGR depth is a
+      "capacity-aware" diagnostic, not capacity-independent.
+- Inserted honest synthesis paragraph into Section 6 with full caveats
+  and a TODO marker for the follow-up at fixed width.
+
+**Key insight**: Workflow's adversarial verification caught the same
+type of confound that v1 had. Without it we might have written "EGR
+depth is a strong real-time diagnostic" and gotten torn apart by
+reviewers. The honest framing is "capacity-aware diagnostic — useful
+when comparing comparable-width models, not yet a capacity-independent
+predictor."
+
+**Decisions**:
+- Section 6 now has explicit caveats. Follow-up Phase 5 work: rerun
+  at fixed width varying noise/lr/reg to test residual within-bin signal.
+- Spectral Decoupling experiment to add as Exp 1.6 eventually.
+
+**Next session**:
+- Continue with Hessian algebra proof writing (Phase 2 W5-W7).
+- Or: kick off the fixed-width EGR follow-up to upgrade the diagnostic.
+
+---
+
 ## 2026-06-27 — Experiment 1.3 HEADLINE RESULT
 
 **Done**:
