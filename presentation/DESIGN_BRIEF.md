@@ -6,6 +6,18 @@ already have. The two PPTX files I tried to build (`v1` and `v2`) are
 in this folder for reference but don't look professional enough — use
 this brief instead, ignore the slides.
 
+**Repo on GitHub** (public): https://github.com/kjdziuba/spectral_shortcut_theory
+
+Quick links the design tool should browse:
+- This brief: https://github.com/kjdziuba/spectral_shortcut_theory/blob/main/presentation/DESIGN_BRIEF.md
+- All plots:   https://github.com/kjdziuba/spectral_shortcut_theory/tree/main/results
+- Rough illustration drafts (only as reference):
+  https://github.com/kjdziuba/spectral_shortcut_theory/tree/main/presentation/img
+- Project README (broader context):
+  https://github.com/kjdziuba/spectral_shortcut_theory/blob/main/README.md
+- Progress log (what we've actually validated empirically):
+  https://github.com/kjdziuba/spectral_shortcut_theory/blob/main/PROGRESS.md
+
 ---
 
 ## 1. Context
