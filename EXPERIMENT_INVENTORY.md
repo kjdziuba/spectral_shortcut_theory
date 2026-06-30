@@ -65,6 +65,19 @@ Headline: `exp1_3v1_summary.png`.
 
 ---
 
+### Experiment 1.6 — Spectral Decoupling comparison
+**Compares our prescription (freeze) against Pezeshki's L2-on-logits (SD).**
+
+| Version | What | Status | Headline |
+|---------|------|--------|----------|
+| v1 | 120 runs at D=256 fixed: joint, frozen, sd × λ ∈ {1e-3,1e-2,1e-1,1.0} × 4 noise × 5 seeds | **canonical** | joint vs SD(best λ): paired Wilcoxon T=88 p=0.55 (no significant collapse reduction). joint vs frozen: T=6 p<0.0001 (41% collapse reduction). SD does not target the timescale gap. |
+
+**Artifacts**: `code/experiments/exp1_6.py`, `results/exp1_6_summary.csv`,
+`results/exp1_6/{egr,metrics}/`, `results/exp1_6_collapse_comparison.png`,
+`results/exp1_6_lambda_sweep.png`, `results/exp1_6_notes.md`.
+
+---
+
 ## Pending — required for the paper
 
 ### Exp 1.5 — Smallest capacity ratio where pathology disappears
@@ -75,13 +88,6 @@ performance. This bounds the regime where our prescription matters.
 - estimated runs: 8 ratios × 2 conditions × 5 seeds = 80
 - estimated wall time: ~40 min
 - priority: medium (strengthens generality claim)
-
-### Exp 1.6 — Spectral Decoupling comparison
-**Pezeshki's L2-on-logits regularizer as an alternative to freezing.**
-Train under three conditions at fixed CNN: joint, frozen, joint + spectral decoupling.
-- estimated runs: 3 conditions × 5 noise levels × 5 seeds = 75
-- estimated wall time: ~40 min
-- priority: high (preempts a likely reviewer ask)
 
 ### Exp 1.7 — Real-data EGR trajectories
 **Compute EGR for the 5 production variants in the spectroscopy companion paper.**
@@ -121,10 +127,9 @@ These are nice-to-haves that we explicitly decided to skip:
 | Pending | Wall time | Cumulative |
 |---------|-----------|------------|
 | Exp 1.5 | 40 min    | 40 min     |
-| Exp 1.6 | 40 min    | 1 h 20 min |
-| Exp 1.7 | 3 h       | 4 h 20 min |
-| Exp 1.8 | 30 min    | 4 h 50 min |
-| Exp 1.9 | 30 min    | 5 h 20 min |
+| Exp 1.7 | 3 h       | 3 h 40 min |
+| Exp 1.8 | 30 min    | 4 h 10 min |
+| Exp 1.9 | 30 min    | 4 h 40 min |
 
 Synthetic experiments can run on RTX 5000 Ada locally without queueing.
 Real-data (1.7, 1.8) needs the FTIR/QCL pipeline — same env as the
@@ -151,10 +156,9 @@ spectral_tokenization repo.
 If we have the energy to keep pushing:
 
 1. **Lemma 4.3 + combine** — finishes Theorem 1's proof. Half-day session.
-2. **Exp 1.6** (Spectral Decoupling comparison) — reviewers will ask.
-3. **Exp 1.5** (smallest capacity ratio) — bounds the prescription.
-4. **Theorem 2 proof** — the big math session.
-5. **Exp 1.7 + 1.8** (real-data link) — Section 8's empirical anchor.
-6. **Exp 1.9** (loss variants) — supplement robustness only.
+2. **Exp 1.5** (smallest capacity ratio) — bounds the prescription.
+3. **Theorem 2 proof** — the big math session.
+4. **Exp 1.7 + 1.8** (real-data link) — Section 8's empirical anchor.
+5. **Exp 1.9** (loss variants) — supplement robustness only.
 
 If we have to stop after one more session it should be **Lemma 4.3 + combine**, because that closes a load-bearing piece of the main result.
