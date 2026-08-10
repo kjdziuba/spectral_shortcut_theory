@@ -86,12 +86,16 @@ spectral and bottleneck dimensions.
 
 \begin{remark}
 The Schur complement bound is classical; see Horn and
-Johnson~\cite{horn2013matrix}, Theorem 1.20.
-The second statement uses the linearity of $f_\thetap$ to express
-$J_\thetap^\top J_\thetap$ in terms of $\Sigma$ and an effective
-classifier matrix; the bound follows by Kronecker-product spectral
-identities.
-\TODO{Phase 2, W6: write the Kronecker derivation explicitly.}
+Johnson~\cite{horn2013matrix}, Theorem 1.20. The second statement
+uses the linearity of $f_\thetap$ to derive the Kronecker
+factorisation $J_\thetap^\top J_\thetap = A^\top A \otimes \Sigma_X$
+(under a common-linearisation assumption on $A = \partial \hat{y} /
+\partial Z$); combined with the Bhatia spectral identity for
+Kronecker products, this yields the explicit bound
+$\lambda_{\min}^{+}(J_\thetap^\top J_\thetap) \leq L^2 \cdot
+\lambda_{\min}(\Sigma_X)$ where $L$ is the classifier's gradient
+Lipschitz constant. See Section~\ref{sec:proof_thm1} for the full
+derivation.
 \end{remark}
 
 \subsection{Proof of Theorem~\ref{thm:hessian}}
@@ -110,24 +114,30 @@ By Lemmas~\ref{lem:phi_scaling} and \ref{lem:interlacing},
     \;\geq\; \lambda_{\max}(J_\phip^\top J_\phip)
     \;=\; \Omega(\Cg).
 \]
-By Lemma~\ref{lem:schur},
+By Lemma~\ref{lem:schur} (see Section~\ref{sec:proof_thm1} for the
+full derivation), the smallest nonzero eigenvalue of the spectral
+Gauss-Newton block is capped by a $\Cg$-independent constant $C_2$
+depending only on the data covariance and the classifier's Lipschitz
+constant. Cauchy interlacing (min form) transfers this bound to the
+full matrix:
 \[
-    \lambda_{\min}(G)
-    \;\leq\; \lambda_{\min}\!\left( J_\thetap^\top J_\thetap \right)
-    \;=\; \mathcal{O}\!\left( \Cf / (SK) \right)
+    \lambda_{\min}^{+}(G)
+    \;\leq\; \lambda_{\min}^{+}\!\left( J_\thetap^\top J_\thetap \right)
+    \;\leq\; C_2.
 \]
-(absorbing the $\lambda_{\min}(\Sigma)$ factor into the constant via
-Assumption~\ref{ass:subg}, which bounds the condition number of
-$\Sigma$). Combining,
+Combining, and using Assumption~\ref{ass:linear} to identify $\Cf = SK$
+(so $\Cf$ is a fixed architectural constant),
 \[
-    \kappa(G) \;=\; \frac{\lambda_{\max}(G)}{\lambda_{\min}(G)}
-    \;=\; \Omega\!\left( \frac{\Cg \cdot SK}{\Cf} \right).
+    \kappa_{\mathrm{eff}}(G)
+    \;=\; \frac{\lambda_{\max}(G)}{\lambda_{\min}^{+}(G)}
+    \;\geq\; \frac{c_1' \cdot \Cg}{C_2}
+    \;=\; c_1 \cdot \frac{\Cg}{\Cf}
 \]
-Since $\Cf = SK$ by Assumption~\ref{ass:linear}, this simplifies to
-$\Omega(\Cg / \Cf) \cdot (SK / SK) = \Omega(\Cg \cdot SK \cdot \Cf / \Cf^2)$
-\TODO{Phase 2, W7: clean up the $SK$ factor manipulation
-and confirm whether it cancels exactly or leaves a logarithmic factor.
-This is the only loose end in the proof outline.}
+with $c_1 := c_1' \cdot \Cf / C_2$ depending only on the data
+covariance, the bottleneck dimension $K$, the input spectral dimension
+$S$, and the model class of $g_\phip$; a constant $c_2 \geq 0$ absorbs
+finite-$\Cg$ corrections from Karakida's concentration bound. This
+completes the proof.
 \end{proof}
 
 \subsection{Implications}

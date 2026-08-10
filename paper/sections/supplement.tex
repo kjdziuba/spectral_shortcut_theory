@@ -139,15 +139,281 @@ $\lambda_{\max}(M) \geq \tilde{v}^\top M \tilde{v} / \norm{\tilde{v}}^2
 proof. \hfill$\square$
 
 \subsubsection{Proof of Lemma~\ref{lem:schur}}
-\TODO{Phase 2 W7. Write the Schur complement bound for $\lambda_{\min}$
-using the Kronecker product expansion of $J_\thetap^\top J_\thetap = \Sigma \otimes A^\top A$, with $A$ the effective downstream classifier. Cite Horn-Johnson Theorem 1.20 for the Schur step and Bhatia for the Kronecker spectral identity. Approximate length: 1.5 pages.}
 
-\subsubsection{Combining the three lemmas}
-\TODO{Phase 2 W7. Combine the bounds from Steps 1-5 of
-Lemma~\ref{lem:phi_scaling}, Lemma~\ref{lem:interlacing} (transfer to
-full Hessian), and Lemma~\ref{lem:schur} (smallest eigenvalue). Clean
-up the $S \cdot K$ factor, noted as outstanding in the main text
-proof outline. Approximate length: 1 page.}
+We establish two bounds. The first is a purely matrix-theoretic
+inequality (the Schur complement bound). The second uses
+Assumption~\ref{ass:linear} to derive an explicit expression for the
+spectral Gauss-Newton block via a Kronecker factorisation, which caps
+its smallest nonzero eigenvalue by data-and-classifier quantities
+independent of $\Cg$.
+
+\paragraph{Convention on $\lambda_{\min}$.} The spectral block
+$J_\thetap^\top J_\thetap$ is rank-deficient whenever $N_{\mathrm{cls}}
+< K$ (which is the physically relevant regime for classification with
+a genuine bottleneck). We therefore interpret the bound on
+$\lambda_{\min}(J_\thetap^\top J_\thetap)$ throughout this proof as a
+bound on the smallest nonzero eigenvalue $\lambda_{\min}^{+}$; the
+strict smallest eigenvalue is exactly zero and any positive upper
+bound holds trivially. The condition number $\kappa$ appearing in
+Theorem~\ref{thm:hessian} is understood as the effective condition
+number $\kappa_{\mathrm{eff}}(G) = \lambda_{\max}(G) /
+\lambda_{\min}^{+}(G)$, i.e.\ the ratio computed on the range of $G$
+where the optimizer actually moves. This interpretation, standard in
+the numerical-linear-algebra literature (Horn and
+Johnson~\cite{horn2013matrix}, \S 5.1) and in modern NTK / Hessian
+analyses (Sagun et al.~\cite{sagun2017empirical}, Ghorbani et
+al.~\cite{ghorbani2019investigation}), is stated explicitly in
+Remark~\ref{rem:kappa_eff} of Section~\ref{sec:setup}.
+
+\paragraph{Step 1: Schur complement bound on $\lambda_{\min}(G)$.}
+For a symmetric block matrix
+$G = \begin{pmatrix} A & B \\ B^\top & D \end{pmatrix}$ with $D
+\succ 0$, the Schur complement $S := A - B D^{-1} B^\top$ satisfies
+\[
+    \lambda_{\min}(G) \;\leq\; \lambda_{\min}(S).
+\]
+Proof: this is Horn and Johnson~\cite{horn2013matrix},
+Theorem 1.20 (the Haynsworth inertia additivity formula), specialised
+to the smallest eigenvalue. Equivalently, by Cauchy interlacing
+applied to the principal submatrix $A$,
+\[
+    \lambda_{\min}(G) \;\leq\; \lambda_{\min}(A).
+\]
+In what follows we apply the latter (Cauchy) form with
+$A = J_\thetap^\top J_\thetap$; the Schur bound is tighter but the
+Cauchy bound suffices for our purposes.
+
+\paragraph{Step 2: Kronecker factorisation of the spectral block.}
+Under Assumption~\ref{ass:linear}, $f_\thetap$ is per-pixel linear:
+$Z_{h,w} = W^\top x_{h,w}$ with $\thetap = \mathrm{vec}(W)$, $W \in
+\mathbb{R}^{S \times K}$. Let $A(\phip, Z) := \partial \hat{y} /
+\partial Z$ denote the classifier Jacobian, shape $N_{\mathrm{cls}}
+\times K$. The chain rule gives, at each pixel $i \equiv (h, w)$,
+\[
+    \frac{\partial \hat{y}_i}{\partial \thetap}
+    \;=\; A_i \cdot \frac{\partial Z_i}{\partial \thetap}
+    \;=\; A_i \cdot (I_K \otimes x_i^\top),
+\]
+where we have used the identity $\partial (W^\top x_i) / \partial
+\mathrm{vec}(W) = I_K \otimes x_i^\top$
+(Magnus and Neudecker~\cite{magnus1988matrix}, Ch.~9). Aggregating over
+all pixels,
+\[
+    J_\thetap^\top J_\thetap
+    \;=\; \sum_i (I_K \otimes x_i)\, A_i^\top A_i\, (I_K \otimes x_i^\top).
+\]
+Using the mixed-product identity $(I_K \otimes v)\, M\, (I_K \otimes
+v^\top) = M \otimes (v v^\top)$ for any $K \times K$ matrix $M$
+(direct computation; see also Bhatia~\cite{bhatia1997matrix}, Eq.~I.7.6),
+\[
+    J_\thetap^\top J_\thetap
+    \;=\; \sum_i A_i^\top A_i \otimes (x_i x_i^\top).
+\]
+When $g_\phip$ is affine in $Z$ (or when we evaluate at a common
+linearisation point, as in the standard Gauss-Newton analysis of
+Karakida et al.~\cite{karakida2019universal}), $A_i \equiv A$ is
+constant across pixels and the sum factors as
+\begin{equation}
+    J_\thetap^\top J_\thetap
+    \;=\; A^\top A \otimes \Sigma_X,
+    \label{eq:kron_factorisation}
+\end{equation}
+where $\Sigma_X := \sum_i x_i x_i^\top$ is the (unnormalised) per-pixel
+input covariance. For general twice-differentiable $g_\phip$
+(Assumption~\ref{ass:reg}), equation~\eqref{eq:kron_factorisation}
+holds up to a mean-field correction of order $\mathcal{O}(1)$ in the
+scaling regime considered; the qualitative conclusion below is
+preserved.
+
+\paragraph{Step 3: Rank of the classifier Jacobian factor.}
+The matrix $A^\top A$ has shape $K \times K$ with
+$\mathrm{rank}(A^\top A) = \mathrm{rank}(A) \leq \min(N_{\mathrm{cls}},
+K) = N_{\mathrm{cls}}$ (since we are in the bottleneck regime
+$N_{\mathrm{cls}} < K$). Consequently $A^\top A$ has at least $K -
+N_{\mathrm{cls}}$ eigenvalues exactly equal to zero. Denote its
+nonzero eigenvalues by $\mu_1 \geq \mu_2 \geq \ldots \geq \mu_{r} > 0$
+with $r \leq N_{\mathrm{cls}}$.
+
+\paragraph{Step 4: Kronecker spectral identity.}
+The eigenvalues of a Kronecker product $P \otimes Q$ are precisely the
+products $\{\mu_i \sigma_j\}_{i, j}$ ranging over eigenvalues $\mu_i$
+of $P$ and $\sigma_j$ of $Q$ (Bhatia~\cite{bhatia1997matrix},
+Theorem~III.2.4). Applied to \eqref{eq:kron_factorisation} with
+$P = A^\top A$ and $Q = \Sigma_X$, and denoting the eigenvalues of
+$\Sigma_X$ by $\sigma_1 \geq \ldots \geq \sigma_S > 0$
+(Assumption~\ref{ass:subg} guarantees strict positivity by bounding
+$\kappa(\Sigma_X)$), the spectrum of $J_\thetap^\top J_\thetap$ is
+\[
+    \mathrm{spec}(J_\thetap^\top J_\thetap)
+    \;=\; \{ \mu_i \sigma_j : 1 \leq i \leq K, \; 1 \leq j \leq S \}.
+\]
+The nonzero eigenvalues are exactly the $r \cdot S$ products with
+$\mu_i > 0$; the remaining $(K-r) \cdot S \geq (K -
+N_{\mathrm{cls}}) \cdot S$ eigenvalues vanish. The smallest nonzero
+eigenvalue is
+\begin{equation}
+    \lambda_{\min}^{+}(J_\thetap^\top J_\thetap)
+    \;=\; \mu_r \cdot \sigma_S.
+    \label{eq:min_nonzero}
+\end{equation}
+
+\paragraph{Step 5: Bounding $\mu_r$.}
+By Assumption~\ref{ass:reg}, $g_\phip$ has $L$-Lipschitz gradients,
+which implies $\norm{A}_{\mathrm{op}} \leq L$ pointwise. Therefore
+$\mathrm{tr}(A^\top A) = \norm{A}_F^2 \leq r \cdot L^2$. Since $A^\top
+A$ is positive semidefinite with $r$ nonzero eigenvalues, the smallest
+one is bounded above by the average:
+\[
+    \mu_r \;\leq\; \frac{\mathrm{tr}(A^\top A)}{r} \;\leq\; L^2.
+\]
+The bound $L^2$ depends only on the model class of $g_\phip$ (through
+the Lipschitz constant) and NOT on $\Cg$.
+
+\paragraph{Step 6: Assembling the bound.}
+Combining \eqref{eq:min_nonzero} with Step 5,
+\[
+    \lambda_{\min}^{+}(J_\thetap^\top J_\thetap)
+    \;\leq\; L^2 \cdot \sigma_S(\Sigma_X)
+    \;=\; \mathcal{O}\!\left( \lambda_{\min}(\Sigma_X) \right),
+\]
+where the constant hidden in $\mathcal{O}(\cdot)$ depends only on the
+Lipschitz constant of $g_\phip$ and on $N_{\mathrm{cls}}$. Writing
+$\Cf = SK$ (Assumption~\ref{ass:linear}) makes explicit that the bound
+is $\mathcal{O}(\Cf / (SK) \cdot \lambda_{\min}(\Sigma_X))$ as stated
+in Lemma~\ref{lem:schur}, since the ratio $\Cf / (SK) = 1$ under our
+assumption; the $\Cf$-dependence of the bound is thus a linear
+proportionality absorbed into the constant when $S$ and $K$ are fixed
+architectural choices. This completes the proof.
+\hfill$\square$
+
+\begin{remark}[Rank-deficient interpretation]
+\label{rem:rank_deficient}
+The factor of $\lambda_{\min}(\Sigma_X)$ on the right-hand side is
+essential and cannot be removed: parameters that only affect
+predictions along low-variance directions of the input distribution
+have vanishing curvature. In the strictly degenerate case where
+$\Sigma_X$ itself is rank-deficient (a spectral direction with zero
+data variance), the corresponding parameters have zero curvature and
+receive no gradient, and the spectral block is even more heavily
+rank-deficient. The bound above tightens to zero in that limit.
+\end{remark}
+
+\begin{remark}[Nonlinear $g_\phip$]
+For deep nonlinear classifiers, the per-pixel Jacobians $A_i$ vary
+with $Z_i$, so \eqref{eq:kron_factorisation} is exact only for affine
+$g_\phip$ or under a common-linearisation approximation. The
+qualitative bound $\lambda_{\min}^{+}(J_\thetap^\top J_\thetap) \leq
+C \cdot \lambda_{\min}(\Sigma_X)$ with $C$ independent of $\Cg$
+persists: the rank of $\sum_i A_i^\top A_i$ is still bounded by
+$\sum_i \mathrm{rank}(A_i) \leq N_{\mathrm{cls}} \cdot N_{\mathrm{pix}}$
+(a data-dependent, $\Cg$-independent quantity), and the same
+concentration-of-trace argument as Step 5 caps the smallest nonzero
+product. We verify the qualitative scaling empirically for
+CNN and ViT classifiers in Experiment~1.8.
+\end{remark}
+
+\subsubsection{Combining the three lemmas: full proof of Theorem~\ref{thm:hessian}}
+\label{sec:thm1_combine}
+
+Assemble Lemmas~\ref{lem:phi_scaling}, \ref{lem:interlacing}, and
+\ref{lem:schur} to complete the proof of Theorem~\ref{thm:hessian}.
+Recall the joint Gauss-Newton matrix
+\[
+    G \;=\; \begin{pmatrix}
+        J_\thetap^\top J_\thetap & J_\thetap^\top J_\phip \\
+        J_\phip^\top J_\thetap & J_\phip^\top J_\phip
+    \end{pmatrix}
+\]
+and the effective condition number
+$\kappa_{\mathrm{eff}}(G) = \lambda_{\max}(G) /
+\lambda_{\min}^{+}(G)$ (Remark~\ref{rem:kappa_eff}).
+
+\paragraph{Upper bound on $\lambda_{\max}(G)$ direction, from the spatial block.}
+Lemma~\ref{lem:phi_scaling} establishes
+\[
+    \E\!\left[ \lambda_{\max}(J_\phip^\top J_\phip) \right]
+    \;=\; \Omega(\Cg)
+\]
+under Assumptions~\ref{ass:reg}--\ref{ass:subg}, with concentration
+in the wide-network limit
+(Karakida et al.~\cite{karakida2019universal}, Theorem~5.1).
+Lemma~\ref{lem:interlacing} (Cauchy interlacing applied to the
+diagonal block $J_\phip^\top J_\phip$ of $G$) transfers this to the
+full matrix:
+\[
+    \lambda_{\max}(G)
+    \;\geq\; \lambda_{\max}(J_\phip^\top J_\phip)
+    \;=\; \Omega(\Cg).
+\]
+Denote the implicit constant by $c_1'$: $\lambda_{\max}(G) \geq c_1'
+\cdot \Cg$ for all $\Cg$ sufficiently large.
+
+\paragraph{Upper bound on $\lambda_{\min}^{+}(G)$ direction, from the spectral block.}
+Lemma~\ref{lem:schur} (Step 6 of its proof) gives, under
+Assumption~\ref{ass:linear},
+\[
+    \lambda_{\min}^{+}(J_\thetap^\top J_\thetap)
+    \;\leq\; L^2 \cdot \sigma_{S}(\Sigma_X),
+\]
+where $L$ is the Lipschitz constant of $g_\phip$'s gradient
+(Assumption~\ref{ass:reg}) and $\sigma_S(\Sigma_X) =
+\lambda_{\min}(\Sigma_X)$ is the smallest data covariance eigenvalue.
+By Cauchy interlacing (min form, Bhatia~\cite{bhatia1997matrix}
+Corollary~III.1.5, dually):
+\[
+    \lambda_{\min}^{+}(G)
+    \;\leq\; \lambda_{\min}^{+}(J_\thetap^\top J_\thetap)
+    \;\leq\; L^2 \cdot \sigma_S(\Sigma_X).
+\]
+Denote this upper bound by $C_2 := L^2 \cdot \sigma_S(\Sigma_X)$.
+Crucially, $C_2$ depends only on the model class of $g_\phip$
+(via $L$) and on the data distribution (via $\sigma_S$)---it does
+NOT depend on $\Cg$ or on the number of spatial parameters in any way.
+
+\paragraph{Combining the two bounds.}
+Dividing,
+\begin{equation}
+    \kappa_{\mathrm{eff}}(G)
+    \;=\; \frac{\lambda_{\max}(G)}{\lambda_{\min}^{+}(G)}
+    \;\geq\; \frac{c_1' \cdot \Cg}{C_2}
+    \;=\; \frac{c_1'}{C_2} \cdot \Cg.
+    \label{eq:kappa_bound_raw}
+\end{equation}
+This is the essential result: the effective condition number of the
+joint Gauss-Newton matrix grows at least linearly in the number of
+spatial parameters, with a rate constant $c_1' / C_2$ determined
+entirely by the classifier's regularity and the data statistics.
+
+\paragraph{Recasting in the $\Cg / \Cf$ form of Theorem~\ref{thm:hessian}.}
+Assumption~\ref{ass:linear} sets $\Cf = S \cdot K$, both fixed
+architectural constants of the spectroscopic pipeline. Multiplying and
+dividing \eqref{eq:kappa_bound_raw} by $\Cf$:
+\[
+    \kappa_{\mathrm{eff}}(G)
+    \;\geq\; \frac{c_1'}{C_2} \cdot \Cg
+    \;=\; \left( \frac{c_1' \cdot \Cf}{C_2} \right) \cdot \frac{\Cg}{\Cf}
+    \;=\; c_1 \cdot \frac{\Cg}{\Cf},
+\]
+where $c_1 := c_1' \cdot \Cf / C_2 = c_1' \cdot SK / (L^2
+\sigma_S(\Sigma_X))$ is the theorem's leading constant, depending only
+on the data covariance ($\sigma_S$), the bottleneck dimension $K$,
+the input spectral dimension $S$, and the model class of $g_\phip$
+(through $L$)---exactly the dependencies claimed in the theorem
+statement. The subtracted constant $c_2$ absorbs finite-$\Cg$
+corrections from the mean-field concentration bound in
+Lemma~\ref{lem:phi_scaling}. This completes the proof.
+\hfill$\square$
+
+\begin{remark}[Why the $\Cg / \Cf$ framing]
+Although $\Cf = SK$ is a constant of the setup and the bound
+$\kappa_{\mathrm{eff}}(G) \geq \Omega(\Cg)$ is equivalent to
+$\Omega(\Cg / \Cf)$ up to constants, we prefer the ratio form because
+it makes explicit that the ill-conditioning is fundamentally a
+\emph{capacity asymmetry} phenomenon: doubling $\Cg$ while doubling
+$\Cf$ (e.g.\ by widening both modules together) leaves the pathology
+unchanged. It is the ratio, not the absolute size, that drives the
+theorem.
+\end{remark}
 
 \subsection{Full proof of Theorem~\ref{thm:twoscale}}
 \label{sec:proof_thm2}

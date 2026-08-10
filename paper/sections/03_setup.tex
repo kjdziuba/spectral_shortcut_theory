@@ -161,3 +161,30 @@ a symmetric matrix; $\kappa(A) = \lambda_{\max}(A)/\lambda_{\min}(A)$
 its condition number. We write $A \succeq B$ to mean $A - B$ is
 positive semidefinite. The symbol $\Omega(\cdot)$ is used in the
 standard asymptotic sense.
+
+\begin{remark}[Effective condition number for rank-deficient
+Gauss-Newton matrices]
+\label{rem:kappa_eff}
+The joint Gauss-Newton matrix $G$ considered in
+Theorem~\ref{thm:hessian} is typically rank-deficient in the
+bottleneck regime $N_{\mathrm{cls}} < K$: parameter directions
+orthogonal to the classifier's range have exactly zero curvature and
+receive no gradient. Consequently the strict smallest eigenvalue
+$\lambda_{\min}(G) = 0$ and the strict condition number is infinite.
+Throughout this paper we work instead with the \emph{effective}
+condition number
+\[
+    \kappa_{\mathrm{eff}}(G)
+    \;:=\; \frac{\lambda_{\max}(G)}{\lambda_{\min}^{+}(G)},
+\]
+where $\lambda_{\min}^{+}(G)$ denotes the smallest \emph{nonzero}
+eigenvalue---equivalently, the smallest eigenvalue of $G$ restricted
+to its range. This is the ratio the optimizer actually experiences on
+the loss-sensitive subspace, and is standard in numerical linear
+algebra (Horn and Johnson~\cite{horn2013matrix}, \S 5.1) and in
+modern Hessian / NTK analyses of over-parameterised networks
+(Sagun et al.~\cite{sagun2017empirical};
+Ghorbani et al.~\cite{ghorbani2019investigation}). All occurrences of
+$\kappa(G)$ in Theorem~\ref{thm:hessian} and its proof are to be read
+as $\kappa_{\mathrm{eff}}(G)$.
+\end{remark}
