@@ -4,7 +4,172 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
-## 2026-06-30 — EGR fixed-width sweep RESULT: real-but-weak
+## 2026-08-13 — Three-LLM external review: strategic pivot
+
+**Done**:
+- User ran an independent-soundness prompt through three LLMs (Claude,
+  ChatGPT, Gemini) on the compiled main.pdf.
+- All three converged on the same major theory issues. Not a soft
+  review.
+
+**Reviewer-converged theory holes**:
+- (1) **λ_max = Ω(C_g) is a √-factor too strong.** Karakida's actual
+  result is λ_max = Θ(width M), not Θ(params). For fixed-depth CNN/ViT
+  where params ~ M², the correct bound is λ_max ~ √C_g. Our own
+  Exp 1.1 empirical slope 0.70 sits in this √-supporting regime
+  (log 74 / log 510 ≈ 0.69).
+- (2) **Cauchy min-side interlacing step is invalid.** Counterexample:
+  G = [[1,1],[1,1]] has λ_min⁺=2; principal submatrix A=[1] has
+  λ_min⁺=1; "λ_min⁺(G) ≤ λ_min⁺(A)" fails 2 ≤ 1. Cauchy interlacing
+  is about ordered eigenvalues including zeros; deleting zeros is not
+  a Cauchy statement. The transfer step in our combine step is broken.
+- (3) **Kronecker factorization J_θᵀJ_θ = AᵀA ⊗ Σ_X requires A_i ≡ A
+  across pixels** — fails for real spatial CNN/ViT because output at
+  pixel i depends on Z_j at neighbours (convolutional/attention mixing).
+- (4) **Lipschitz assumption used on wrong derivative.** A2 bounds
+  gradients w.r.t. φ; the proof uses ||∂ŷ/∂Z||_op ≤ L, different
+  constant. Also input-Lipschitz of g_φ generally grows with width, so
+  not C_g-independent.
+- (5) **ε in Lemma 5.1 is zero** because H_θθ is rank-deficient. Fix:
+  use λ_min⁺ consistently.
+- (6) **Theorem 2's finite ∇L=0 contradicts CE dynamics** (Soudry
+  2018: loss decays 1/t, predictor diverges to max-margin). Need L2
+  regularization or directional restatement.
+
+**Citations/arithmetic fixes needed**:
+- "Berkeley Manifold" hallucinated author in Berisha 2019 entry.
+- Karakida theorem numbers (3.1/4.2/5.1) don't exist; real numbers
+  are Theorems 1, 3, 4.
+- Horn-Johnson §1.20 for Haynsworth is wrong; correct is §4.5.P or
+  §7.7.
+- C_g/C_f ≈ 325 vs real-data ≈ 108 mismatch.
+- Fisher-z aggregate t=14.65 is implausibly large; likely
+  pseudo-replication.
+
+**Novelty overclaims to walk back**:
+- Huang et al. ICML 2022 "modality competition" already proves joint
+  multi-modal training under-uses modalities. Distinct mechanism from
+  ours but "the first rigorous explanation" overclaims.
+- Chizat-Bach 2019 lazy training + Kirichenko 2023 DFR explain
+  "frozen features > joint" differently. Prescription "follows from
+  Theorem 2" should be softened to "consistent with."
+- µP / Tensor Programs (Yang & Hu 2021) formalizes width-dependent
+  gradient imbalance — bears on Prop 6.1 √(C_f/C_g) claim.
+
+**Strategic decision** (user):
+- Keep Nature MI target. PhD ends in ~7 months so Path C (empirical
+  paper first, theory later) is too slow.
+- Target 8-10 page main text + 15-20 page supplement, "short striking
+  and concrete like old ML papers." Nothing like 50 pages.
+- Willing to invest hours; but wants explanations at linalg 1+2 level
+  so I can supervise.
+
+**Key insight during the debrief**:
+- The √C_g correction is actually a STRENGTH not a weakness. Our
+  empirical slope 0.70 matches the corrected theorem better than the
+  original one. "Theory predicts √, we measure 0.70, agrees with
+  finite-width upper corrections."
+- The per-pixel Kronecker case is a corollary; the general spatial
+  bound uses residual-dimension rank ≤ H·W·(N_cls − 1), still
+  C_g-independent. Spatial-spectral claim survives.
+
+**Revised Path A** (35-45 hr total, spread over 10-15 sessions,
+targeting ~2 weeks):
+- Fix (1): restate Theorem 1 as κ_eff ≥ Ω(√C_g / C_2)
+- Fix (2): rewrite Lemma 4.3 for general spatial g_φ using
+  residual-dimension rank argument
+- Fix (3): repair Cauchy → range-space transfer via Schur/pseudo-inverse
+- Fix (4): reformulate Theorem 2 with L2 regularization or directional
+- Fix all citations, arithmetic, novelty positioning
+- Then finish Theorem 2 supplement proof, Exp 1.7/1.8, Section 8
+
+**Next session**: Fix (1) + Fix (2) together — restate Theorem 1 with
+√-scaling AND generalize Lemma 4.3 to spatial g_φ. Explained
+pedagogically at linalg 1+2 level so the user can supervise each step.
+
+---
+
+## 2026-07-29 — Lemma 4.3 draft + combine step (later reviewed and found flawed)
+
+**Done**:
+- Walkthrough Q6 answered: λ_min⁺(J_θᵀJ_θ) = μ_r · σ_S via Kronecker
+  spectral identity. Both factors C_g-independent.
+- Wrote full LaTeX Lemma 4.3 proof (6 steps) in supplement.tex
+  covering: Schur/Cauchy, Kronecker factorization,
+  rank ≤ N_cls, spectral identity, μ_r ≤ L², assembly.
+- Wrote combine step joining Lemmas 4.1, 4.2, 4.3 into Theorem 1's
+  κ_eff ≥ c_1 · C_g/C_f - c_2 bound.
+- Section 3: added Remark on effective condition number κ_eff =
+  λ_max / λ_min⁺, since the joint GN is rank-deficient whenever
+  N_cls < K.
+- Fixed pre-existing paper compilation blocker: \thetap / \phip macros
+  used \bm{\theta} which broke subscripts; wrapped \boldsymbol in
+  extra braces. Paper now compiles to 436 KB PDF.
+- Added Ghorbani 2019 + Magnus-Neudecker 1988 to references.bib.
+- Rewrote muddled SK-factor manipulation in main-text Theorem 1 proof.
+- Committed as 96db216; pushed main.pdf as b401969.
+
+**Session-later reviewer flags** (see 2026-08-13 entry above):
+- λ_max scaling exponent claim (linear instead of √) is wrong.
+- Cauchy min-side transfer is invalid.
+- Kronecker requires A_i ≡ A (not true for real CNN/ViT).
+- Lipschitz assumption conflated (A2 is on φ, we used on Z).
+- Karakida theorem numbers cited don't exist.
+- Horn-Johnson Theorem 1.20 attribution suspicious.
+
+**What survives**:
+- The walkthrough intuition — bottleneck kills gradient — is correct.
+- The Kronecker corollary works for per-pixel classifiers.
+- The κ_eff definition is standard and fine.
+- The main-text compile fix stays.
+
+---
+
+## 2026-07-21 to 2026-07-29 — Lemma 4.3 interactive walkthrough
+
+**Done** (multiple short sessions with breaks):
+- Set the scene: chain rule asymmetry
+  ∂L/∂θ = (∂L/∂ŷ) · (∂ŷ/∂Z) · (∂Z/∂θ) has one more factor than
+  ∂L/∂φ.
+- Q1: extra factor A = ∂ŷ/∂Z represents classifier sensitivity to
+  bottleneck.
+- Q2: rank(A) ≤ min(rows, cols) = min(N_cls, K) = 2 in synthetic.
+- Q3: rank(J_θ) ≤ rank(A) by matrix product rank rule.
+- Q4: J_θᵀJ_θ has ≤ 2 nonzero eigenvalues out of C_f ≈ 1024 → 1022
+  exact-zero eigenvalues.
+- Q5: κ = ∞ trivially; need κ_eff = λ_max/λ_min⁺.
+- Q6: smallest nonzero eigenvalue = μ_r · σ_S via Kronecker — neither
+  factor depends on C_g.
+- Established Lemma 4.3 intuition end-to-end. All these arguments
+  survive the reviewer feedback; the FORMALIZATION is what has holes.
+- User took breaks in the middle to refresh linear algebra via 3b1b
+  videos. Explanations tuned to visual/geometric intuition.
+- Follow-up conceptual questions: PSD matrix, rank of MᵀM, why
+  eigenvalue decomposition matters, Cauchy interlacing intuition,
+  why Σ_X shows up.
+
+---
+
+## 2026-06-30 to 2026-07-01 — Exp 1.6: Spectral Decoupling comparison + gap-of-time
+
+**Done 2026-06-30**:
+- Wrote exp1_6.py: 120 runs at D=256 (3 conditions × 4 noise × 5 seeds
+  with 4-λ sweep on SD).
+- Two workflows: research (7 parallel agents) + adversarial review
+  (3 skeptics + synthesis). Caught 6 real BLOCKERs before launch.
+- Result: joint vs frozen Wilcoxon T=6 p<0.0001 (41% collapse
+  reduction); joint vs SD(best λ) T=88 p=0.55 (no effect).
+- Committed + pushed as ed17f78.
+- Verdict: Pezeshki SD does NOT reduce the two-timescale collapse
+  that our freeze prescription targets.
+
+**Done 2026-07-01**:
+- Paper status snapshot for user: 65% to defensible submission.
+- Recommended next: Lemma 4.3 + combine (closes Theorem 1 proof).
+- Launched Lemma 4.3 walkthrough (paused frequently for user breaks
+  and linalg refreshers).
+
+---
 
 **Done**:
 - Ran exp1_4_fw (144 runs, D=256 fixed, noise × lr × wd × 6 seeds).
