@@ -18,8 +18,15 @@ Assumptions~\ref{ass:linear}--\ref{ass:gap}, there exist constants
 $c_1, c_2 > 0$ depending only on the data covariance, the bottleneck
 dimension $K$, and the model class of $g_\phip$ such that
 \[
-    \kappa(G)
-    \;\;\geq\;\; c_1 \cdot \frac{\Cg}{\Cf}
+    \kappa_{\mathrm{eff}}(G)
+    \;\;\geq\;\; c_1 \cdot \sqrt{\frac{\Cg}{\Cf}}
+    \;-\; c_2.
+\]
+Equivalently, if $g_\phip$ has fixed depth and characteristic width
+$M$ (so $\Cg = \Theta(M^2)$ for typical MLP, CNN, ViT architectures),
+\[
+    \kappa_{\mathrm{eff}}(G)
+    \;\;\geq\;\; \tilde{c}_1 \cdot \frac{M}{\sqrt{\Cf}}
     \;-\; c_2.
 \]
 \end{theorem}
@@ -32,12 +39,19 @@ supporting lemmas before presenting the proof.
 
 \begin{lemma}[Spatial block scaling]
 \label{lem:phi_scaling}
-Under Assumptions~\ref{ass:reg}--\ref{ass:subg}, the largest eigenvalue
-of the spatial Gauss-Newton block satisfies
+Under Assumptions~\ref{ass:reg}--\ref{ass:subg}, let $M$ denote the
+characteristic width of $g_\phip$ (channel count for a CNN,
+embedding dimension for a ViT, hidden layer width for an MLP). Then
+the largest eigenvalue of the spatial Gauss-Newton block satisfies
 \[
     \lambda_{\max}(J_\phip^\top J_\phip)
-    \;=\; \Omega(\Cg)
+    \;=\; \Omega(M)
     \qquad \text{in expectation over random initialization.}
+\]
+For fixed-depth $g_\phip$, $\Cg = \Theta(M^2)$, so equivalently
+\[
+    \lambda_{\max}(J_\phip^\top J_\phip)
+    \;=\; \Omega\!\left( \sqrt{\Cg} \right).
 \]
 \end{lemma}
 
@@ -67,22 +81,60 @@ interlacing theorem applied to principal submatrices
 (see e.g.\ Bhatia~\cite{bhatia1997matrix}, Corollary III.1.5).
 \end{remark}
 
-\begin{lemma}[Schur complement bound on the smallest eigenvalue]
+\begin{lemma}[Residual-dimension rank bound and smallest-eigenvalue cap]
 \label{lem:schur}
-Let $G = \begin{pmatrix} A & B \\ B^\top & D \end{pmatrix}$ with $D$
-positive definite. Let $S := A - B D^{-1} B^\top$ denote the Schur
-complement of $D$ in $G$. Then
+Let $J_\thetap \in \mathbb{R}^{N_{\mathrm{data}} HW N_{\mathrm{cls}}
+\times \Cf}$ denote the Jacobian of the softmax residual $r =
+\mathrm{softmax}(\hat{y}) - y_{\mathrm{onehot}}$ with respect to the
+spectral parameters $\thetap$, aggregated over $N_{\mathrm{data}}$
+training examples and all $HW$ pixels. Under
+Assumptions~\ref{ass:linear}--\ref{ass:inputlip}:
+
+\emph{(i) Rank bound.} The Gauss-Newton block of the spectral module
+has rank bounded by
 \[
-    \lambda_{\min}(G) \leq \lambda_{\min}(S),
+    \mathrm{rank}(J_\thetap^\top J_\thetap)
+    \;\leq\; \min\!\left( \Cf,\;\;
+        N_{\mathrm{data}} \cdot HW \cdot (N_{\mathrm{cls}} - 1)
+    \right).
 \]
-and under Assumption~\ref{ass:linear} the spectral block satisfies
+In the over-parameterised regime $\Cf > N_{\mathrm{data}} HW
+(N_{\mathrm{cls}} - 1)$, the block is rank-deficient with at least
+$\Cf - N_{\mathrm{data}} HW (N_{\mathrm{cls}} - 1)$ eigenvalues
+exactly equal to zero.
+
+\emph{(ii) Smallest positive eigenvalue cap.} There exists a
+constant $C_2 = C_2(\widetilde{L}, \lambda_{\max}(\Sigma_X),
+N_{\mathrm{cls}})$ independent of $\Cg$ (but depending on the depth
+of $g_\phip$ through $\widetilde{L}$) such that
 \[
-    \lambda_{\min}\!\left( J_\thetap^\top J_\thetap \right)
-    \;=\; \mathcal{O}\!\left( \frac{\Cf}{SK} \cdot \lambda_{\min}(\Sigma) \right)
+    \lambda_{\min}^{+}\!\left( J_\thetap^\top J_\thetap \right)
+    \;\leq\; \frac{C_2}{N_{\mathrm{data}} HW (N_{\mathrm{cls}} - 1)}.
 \]
-where $\Sigma$ is the per-pixel input covariance and $S$, $K$ are the
-spectral and bottleneck dimensions.
 \end{lemma}
+
+\begin{remark}
+Lemma~\ref{lem:schur}(i) is the per-pixel bottleneck extension of the
+classical Fisher-rank bound for softmax classification, going back to
+Amari~\cite{amari2016information} (rank-($N_{\mathrm{cls}} - 1$)
+Fisher of the categorical family); the sample-level $N(N_{\mathrm{cls}}
+- 1)$ formulation appears in Botev, Ritter, and
+Barber~\cite{botev2017practical}, and the empirical spectrum
+observation is due to Sagun et al.~\cite{sagun2017empirical} and
+Papyan~\cite{papyan2020traces}. Our contribution is the extension to
+compositional networks with a linear per-pixel bottleneck and
+arbitrary spatial classifier, plus the explicit $\Cg$-independence
+statement in part (ii).
+\end{remark}
+
+\begin{remark}[Gauss-Newton vs.\ full Hessian]
+Lemma~\ref{lem:schur} bounds the Gauss-Newton block $J_\thetap^\top
+J_\thetap$ (equivalently, the empirical Fisher). The full Hessian
+carries an additional residual-weighted second-derivative term $\sum_i
+r_i \cdot \partial^2 \ell_i / \partial \thetap^2$ that vanishes at
+convergence (Sagun et al.~\cite{sagun2017empirical}). The bound
+transfers to the full Hessian at any stationary point.
+\end{remark}
 
 \begin{remark}
 The Schur complement bound is classical; see Horn and
@@ -112,28 +164,27 @@ By Lemmas~\ref{lem:phi_scaling} and \ref{lem:interlacing},
 \[
     \lambda_{\max}(G)
     \;\geq\; \lambda_{\max}(J_\phip^\top J_\phip)
-    \;=\; \Omega(\Cg).
+    \;=\; \Omega\!\left( \sqrt{\Cg} \right),
 \]
+using $\Cg = \Theta(M^2)$ for fixed-depth architectures.
 By Lemma~\ref{lem:schur} (see Section~\ref{sec:proof_thm1} for the
 full derivation), the smallest nonzero eigenvalue of the spectral
 Gauss-Newton block is capped by a $\Cg$-independent constant $C_2$
 depending only on the data covariance and the classifier's Lipschitz
-constant. Cauchy interlacing (min form) transfers this bound to the
-full matrix:
+constant. Transfer to the full matrix via a range-space argument
+(Section~\ref{sec:proof_thm1}) gives
 \[
-    \lambda_{\min}^{+}(G)
-    \;\leq\; \lambda_{\min}^{+}\!\left( J_\thetap^\top J_\thetap \right)
-    \;\leq\; C_2.
+    \lambda_{\min}^{+}(G) \;\leq\; C_2.
 \]
-Combining, and using Assumption~\ref{ass:linear} to identify $\Cf = SK$
-(so $\Cf$ is a fixed architectural constant),
+Combining with the $\lambda_{\max}$ bound and identifying
+$\Cf = SK$ (Assumption~\ref{ass:linear}),
 \[
     \kappa_{\mathrm{eff}}(G)
     \;=\; \frac{\lambda_{\max}(G)}{\lambda_{\min}^{+}(G)}
-    \;\geq\; \frac{c_1' \cdot \Cg}{C_2}
-    \;=\; c_1 \cdot \frac{\Cg}{\Cf}
+    \;\geq\; \frac{c_1' \cdot \sqrt{\Cg}}{C_2}
+    \;=\; c_1 \cdot \sqrt{\frac{\Cg}{\Cf}}
 \]
-with $c_1 := c_1' \cdot \Cf / C_2$ depending only on the data
+with $c_1 := c_1' \cdot \sqrt{\Cf} / C_2$ depending only on the data
 covariance, the bottleneck dimension $K$, the input spectral dimension
 $S$, and the model class of $g_\phip$; a constant $c_2 \geq 0$ absorbs
 finite-$\Cg$ corrections from Karakida's concentration bound. This
@@ -149,11 +200,12 @@ consequences follow.
 \paragraph{Bounded learning rate forces timescale separation.}
 The maximum stable learning rate for first-order optimization is
 bounded above by $2 / \lambda_{\max}(G)$. Under
-Theorem~\ref{thm:hessian}, this bound scales as $\Omega(1/\Cg)$. With
+Theorem~\ref{thm:hessian}, this bound scales as $\Omega(1/\sqrt{\Cg})$. With
 such a small learning rate, updates to $\thetap$---whose Hessian block
-has eigenvalues bounded by $\mathcal{O}(\Cf / (SK))$---progress at a
-rate that is $\Omega(\Cg/\Cf)$-fold slower than updates to $\phip$.
-This is the dynamical regime analyzed in Section~\ref{sec:thm2}.
+has smallest nonzero eigenvalue bounded above by a $\Cg$-independent
+constant---progress at a rate that is $\Omega(\sqrt{\Cg/\Cf})$-fold
+slower than updates to $\phip$. This is the dynamical regime analyzed
+in Section~\ref{sec:thm2}.
 
 \paragraph{No remedy from optimizer tuning.}
 The condition number bound depends only on architectural parameters,

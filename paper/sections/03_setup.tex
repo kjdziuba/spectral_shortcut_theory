@@ -70,6 +70,50 @@ theorems become informative. Empirically it is satisfied with several
 orders of magnitude to spare in modern spectral-spatial architectures
 (in our motivating example, $\Cg/\Cf \approx 325$).
 
+\begin{assumption}[Bounded input Jacobian of the classifier]
+\label{ass:inputlip}
+There exists a constant $\widetilde{L} > 0$ depending on the depth of
+$g_\phip$, the bottleneck dimension $K$, the number of classes
+$N_{\mathrm{cls}}$, and the data distribution --- but \emph{not} on
+the characteristic width $M$ or the total spatial parameter count
+$\Cg$ --- such that
+\[
+    \sup_{\phip \in \Phi_{\mathrm{reg}},\ Z \in \mathcal{Z}_{\mathrm{reg}}}
+    \left\| \frac{\partial g_\phip(Z)}{\partial Z} \right\|_{\mathrm{op}}
+    \;\leq\; \widetilde{L},
+\]
+uniformly over the training-time parameter regime
+$\Phi_{\mathrm{reg}}$ and the induced feature domain
+$\mathcal{Z}_{\mathrm{reg}}$.
+\end{assumption}
+
+\begin{remark}[Why Assumption~\ref{ass:inputlip} is separate from Assumption~\ref{ass:reg}]
+Assumption~\ref{ass:reg} bounds the second derivatives of $g_\phip$
+with respect to \emph{parameters}~$\phip$ (the standard
+$L$-smoothness condition of the optimization literature).
+Assumption~\ref{ass:inputlip} bounds the first derivative with respect
+to \emph{input features} $Z$---a different object with a different
+constant. Parameter-side smoothness does not imply input-side
+Lipschitzness; we require both.
+
+At random Kaiming/Xavier initialization, Marchenko--Pastur
+theory~\cite{marchenko1967distribution} gives
+$\|\partial g_\phip/\partial Z\|_{\mathrm{op}} = \Theta(1)$ in width
+$M$ for standard CNN and MLP blocks. Under the maximal-update
+parameterization ($\mu$P) of Yang and
+Hu~\cite{yang2021tensor}, the bound persists throughout training as
+$M \to \infty$. Under standard-parameterization training with weight
+decay $\lambda > 0$ and bounded-norm iterates,
+Assumption~\ref{ass:inputlip} follows from the boundedness of
+$\|\phip\|$ combined with the per-layer product-of-operator-norms
+bound; the constant $\widetilde{L}$ depends multiplicatively on the
+depth $L$ but not on the width. Softmax self-attention is Lipschitz
+only on bounded inputs~\cite{kim2021lipschitz}, so
+$\mathcal{Z}_{\mathrm{reg}}$ should be taken compact whenever
+$g_\phip$ uses attention---this is guaranteed by LayerNorm before
+attention, which is standard practice.
+\end{remark}
+
 \subsection{Loss and gradients}
 
 We train with per-pixel cross-entropy:
