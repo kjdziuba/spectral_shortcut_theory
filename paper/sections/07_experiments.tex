@@ -37,8 +37,8 @@ parameter scales for other architectures) with $\Cf = 1024$ held
 fixed. For each $(D, \mathrm{seed})$ we compute the top eigenvalue of
 the spectral and spatial block Gauss-Newton matrices via power
 iteration (5 seeds per width). The predictions to be tested are
-$\lambda_{\max}(J_\phip^\top J_\phip) = \Omega(\Cg)$
-(Lemma~\ref{lem:phi_scaling}) and
+$\lambda_{\max}(J_\phip^\top J_\phip) = \Omega(M) =
+\Omega(\sqrt{\Cg})$ (Lemma~\ref{lem:phi_scaling}) and
 $\lambda_{\max}(J_\thetap^\top J_\thetap)$ approximately constant
 (Lemma~\ref{lem:schur}).
 
@@ -52,21 +52,24 @@ $\lambda_{\max}(J_\thetap^\top J_\thetap)$ approximately constant
           (from $0.62$ to $46$) as $\Cg$ grows by $510\times$.
     \item The empirical log-log slope of $\lambda_{\max}(J_\phip^\top
           J_\phip)$ vs.\ $\Cg$ is $0.70 \pm 0.05$ across the full
-          range. The Karakida prediction is slope $1$; we attribute
-          the gap to finite-width effects with the asymptote
-          approached only at much larger widths.
-    \item The condition number $\kappa = \lambda_\phi / \lambda_\theta$
+          range. The width-linear prediction of
+          Lemma~\ref{lem:phi_scaling} corresponds to slope $0.5$
+          against $\Cg$ (since $\Cg = \Theta(M^2)$); the measured
+          $0.70$ is consistent with the asymptotic prediction plus a
+          finite-width upward correction of the character reported in
+          Karakida et al.'s own numerical validation.
+    \item The module curvature disparity
+          $\mathcal{D}_{\mathrm{curv}} = \lambda_\phi / \lambda_\theta$
           grows from $40$ at $\Cg/\Cf = 0.3$ to $2{,}407$ at
-          $\Cg/\Cf = 152$. At the capacity ratio of our motivating
-          architecture ($\Cg/\Cf \approx 325$), this extrapolates to
-          $\kappa$ in the thousands.
+          $\Cg/\Cf = 152$. At the capacity ratios of real
+          spectroscopy pipelines (Section~\ref{sec:real}), this
+          extrapolates to disparities in the thousands.
 \end{itemize}
 
 The qualitative geometric prediction is verified: the spectral and
-spatial block eigenvalues diverge with capacity, producing a severely
-ill-conditioned joint loss landscape. The finite-size scaling exponent
-is somewhat smaller than the asymptotic linear prediction, which we
-discuss in the limitations.
+spatial block eigenvalues diverge with capacity, producing a severe
+module curvature disparity. The measured scaling exponent is
+consistent with the corrected width-linear asymptote.
 
 \paragraph{Headline figure.}
 Figure~\ref{fig:exp11_paired} (paired view: $\lambda_\phi$ and
@@ -102,9 +105,10 @@ should scale monotonically with capacity.
           accuracy is more stable.
 \end{itemize}
 This is the cleanest empirical validation of Theorem~\ref{thm:twoscale}:
-on the canonical CNN architecture, EGR exhibits exactly the
-capacity-monotonic exponential decay predicted by
-Proposition~\ref{prop:egr_monotonic}.
+on the canonical CNN architecture, the EGR exhibits exactly the
+capacity-monotonic collapse anticipated by
+Proposition~\ref{prop:egr_monotonic} and the starvation regime of
+Theorem~\ref{thm:twoscale}.
 
 \paragraph{Findings -- ViT.} On SpatialViT, training enters a full
 memorization regime: train loss reaches $0.01$--$0.03$ at all widths,
@@ -177,15 +181,31 @@ Under the \texttt{bayes} calibration we find:
           architecture.
     \item Frozen-spectral training on the full data achieves
           $0.61$, exploiting both modalities.
-    \item \textbf{Joint training catastrophically collapses to
-          $0.48$} -- below chance, below either single-modality
-          baseline, and $0.13$ points below the frozen variant.
+    \item \textbf{Joint training drops to $0.48$} -- below both
+          single-modality baselines ($0.53$) and $0.13$ points below
+          the frozen variant.
 \end{itemize}
-The collapse below the spectral-only baseline is the strongest
-result. End-to-end training does not merely fail to combine the two
-modalities -- it actively destroys the spectral information that the
-model demonstrably can use when trained on spectral-only data. This is
-the spectral-shortcut prediction made empirically falsifiable.
+Two honest caveats bound this result. First, the effect size is
+modest in absolute terms: with $3$ seeds and $128$ test samples the
+per-condition standard error is roughly $0.02$, so the $0.05$ gap to
+the single-modality baselines is resolvable but not dramatic, and
+$0.48$ is statistically indistinguishable from the $0.50$ chance
+floor. Second, the CNN reaches only $0.53$ on single-modality data
+against a $0.75$ calibration target, so the network operates far from
+the Bayes bound and part of the joint-training deficit could in
+principle reflect generic overfitting with more trainable parameters.
+What the direction of the result nevertheless establishes is that
+joint training does not merely fail to combine the two modalities: it
+undershoots baselines that demonstrably use only one, which is
+consistent with active corruption of the spectral pathway rather than
+mere under-use, and is inconsistent with the ``spectral features are
+simply irrelevant'' reading
+(Remark~\ref{rem:irrelevance_vs_starvation}). The frozen-vs-joint
+ordering, which is the theory's core prescription, holds in all three
+calibration modes (Table~\ref{tab:calib_modes}: $+0.13$, $+0.04$,
+$+0.09$); the undershoot below both single-modality baselines appears
+specifically in the \texttt{bayes} mode, where the modalities are
+matched most cleanly.
 
 \paragraph{Comparison of calibration modes.}
 Table~\ref{tab:calib_modes} compares the three calibration modes on two
@@ -216,10 +236,11 @@ modality equalization and the largest shortcut effect.}
 \paragraph{Conclusion.} The \texttt{bayes} calibration delivers the
 qualitative claim: when spectral and spatial signals carry equal
 information about the label (measured by what each modality alone can
-provide), end-to-end joint training collapses below the better
-single-modality baseline. Freezing the spectral module recovers the
-information that joint training squanders. This is the direct empirical
-demonstration of the spectral-shortcut conjecture suggested by
+provide), end-to-end joint training underperforms both single-modality
+baselines, while freezing the spectral module recovers information
+that joint training squanders. Subject to the effect-size caveats
+above, this is empirical support consistent with the
+spectral-shortcut mechanism suggested by
 Theorem~\ref{thm:twoscale}.
 
 \subsection{Robustness}

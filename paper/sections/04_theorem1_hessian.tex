@@ -1,12 +1,14 @@
 \section{Theorem 1: The Hessian Capacity Bound}
 \label{sec:thm1}
 
-This section establishes our first main result: the condition number of
-the joint Gauss-Newton matrix grows with the ratio of module capacities.
+This section establishes our first main result: the module curvature
+disparity $\mathcal{D}_{\mathrm{curv}}$
+(Definition~\ref{def:dcurv}) grows with the spatial module's width.
 The result is the geometric foundation for the dynamical analysis of
-Section~\ref{sec:thm2}: an ill-conditioned loss landscape induces a
-forced timescale separation between the modules, which Theorem~\ref{thm:twoscale}
-then shows leads to gradient starvation.
+Section~\ref{sec:thm2}: it identifies a capacity-dependent mechanism
+capable of generating disparate module learning rates. The dynamical
+starvation claim itself is stated separately in
+Theorem~\ref{thm:twoscale}, under its own explicit hypotheses.
 
 \subsection{Main result}
 
@@ -48,9 +50,9 @@ $\thetap$ near its initialization---is stated separately in
 Theorem~\ref{thm:twoscale}, under its own hypotheses.
 \end{remark}
 
-The proof decomposes the condition number bound into separate bounds on
-the largest and smallest eigenvalues of $G$. We state the three
-supporting lemmas before presenting the proof.
+The proof decomposes the disparity bound into separate bounds on the
+top eigenvalues of the two diagonal blocks. We state the supporting
+lemmas before presenting the proof.
 
 \subsection{Supporting lemmas}
 
@@ -73,14 +75,19 @@ For fixed-depth $g_\phip$, $\Cg = \Theta(M^2)$, so equivalently
 \end{lemma}
 
 \begin{remark}
-Lemma~\ref{lem:phi_scaling} is a direct application of the mean-field
-analysis of Karakida et al.~\cite{karakida2019universal}, who derive
-closed-form expressions for the leading eigenvalue of the Fisher
-Information Matrix of fully connected and convolutional networks with
-random Gaussian initialization. The scaling is linear in the parameter
-count when widths and depth are matched. We verify empirically in
-Section~\ref{sec:experiments} that the scaling persists for the
-architectures we consider (linear, CNN, ViT).
+Lemma~\ref{lem:phi_scaling} rests on the mean-field analysis of
+Karakida et al.~\cite{karakida2019universal}, who show that the
+leading eigenvalue of the Fisher Information Matrix of a
+fully connected network at random Gaussian initialization grows
+linearly in the network \emph{width}. The scaling variable is width,
+not parameter count: for fixed-depth architectures with
+$\Cg = \Theta(M^2)$, the equivalent parameter-count statement is
+$\lambda_{\max} = \Omega(\sqrt{\Cg})$. Karakida's derivation covers
+fully connected architectures under squared loss; we adopt the
+width-linear scaling as the asymptotic prediction for the CNN and ViT
+families as well, and verify empirically in
+Section~\ref{sec:experiments} that the measured scaling is consistent
+with it across all three architectures.
 \end{remark}
 
 \begin{lemma}[Eigenvalue interlacing for block matrices]
@@ -189,6 +196,55 @@ rates per module (Heusel et al.~\cite{heusel2017gans}; Borkar
 2008~\cite{borkar2008stochastic} Ch.~6) are the natural remedy at the
 optimizer level. We discuss this in Section~\ref{sec:discussion}.
 
+\subsection{Relation to classical ill-conditioning}
+\label{sec:classical_conditioning}
+
+Ill-conditioned optimization has classical causes with classical
+remedies, and it is natural to ask whether they apply here. They do
+not, because the disparity of Theorem~\ref{thm:hessian} is driven by
+the \emph{architecture}, not by the data or the parametrization of a
+single block.
+
+\paragraph{Feature normalization.}
+Scale asymmetry or collinearity among input features degrades the
+conditioning of $\Sigma_X$ and is cured by standardizing inputs.
+Assumption~\ref{ass:subg} already grants this cure: we assume
+$\kappa(\Sigma_X)$ bounded, i.e.\ well-conditioned (e.g.\ normalized)
+inputs. The disparity persists regardless, because its growth is
+driven by the width-scaling of the spatial block
+(Lemma~\ref{lem:phi_scaling}), which is untouched by any
+transformation of the input features.
+
+\paragraph{Weight decay.}
+Adding $\alpha \norm{w}^2$ to the loss shifts the Hessian by
+$\alpha I$, lifting every eigenvalue by $\alpha$ and famously
+repairing classical condition numbers. But the shift acts on
+\emph{both} blocks equally: the disparity becomes
+$(\lambda_{\max}(G_{\phip\phip}) + \alpha) /
+(\lambda_{\max}(G_{\thetap\thetap}) + \alpha)$, which remains
+$\Theta(M)$ for any fixed $\alpha$ as $M$ grows. Repairing the
+disparity would require $\alpha \sim \lambda_{\max}(G_{\phip\phip})$,
+a regularization strength that would dominate the data term and
+prevent fitting. Consistent with this, Experiment~1.6 finds that
+Pezeshki's Spectral Decoupling---an $L_2$ penalty on logits designed
+to combat saturation---does not reduce the joint-training collapse,
+while freezing does.
+
+\paragraph{Adaptive optimizers.}
+Adam and RMSProp precondition per-coordinate gradient magnitudes with
+a diagonal rescaling. A diagonal preconditioner can equalize
+per-parameter step sizes but does not restructure the eigenvalue
+disparity between the two blocks, which is a statement about the
+blocks' spectra rather than their diagonals. Empirically, the
+canonical dynamics experiment (Experiment~1.2) is run under Adam and
+the joint-vs-frozen gap persists at every width; we treat the stronger
+claim---that no shared-learning-rate adaptive method can remove the
+pathology---as a conjecture rather than a theorem. Optimizers with
+explicitly different learning rates per module (two-timescale update
+rules; Heusel et al.~\cite{heusel2017gans}) are the natural remedy at
+the optimizer level and correspond, in the limit, to our freezing
+prescription.
+
 \begin{remark}[Small eigenvalues: irrelevance vs.\ starvation]
 \label{rem:irrelevance_vs_starvation}
 A parameter direction can carry vanishing curvature for two very
@@ -218,7 +274,7 @@ For real spectroscopic data, distinguishing (a) from (b) requires
 demonstrating that a frozen pretrained spectral encoder outperforms
 one that has been jointly trained end-to-end on the same task. We
 report such experiments on FTIR and QCL tissue classification in
-Section~\ref{sec:real_data}. Our present study compares only two
+Section~\ref{sec:real}. Our present study compares only two
 concrete mitigation strategies (freezing the spectral module, and
 Pezeshki's Spectral
 Decoupling~\cite{pezeshki2021gradient}); broader comparisons against

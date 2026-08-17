@@ -14,8 +14,8 @@ many epochs of wasted compute, or after deployment.
 This section introduces the \emph{Effective Gradient Ratio} (EGR), a
 real-time diagnostic that detects gradient starvation as it occurs.
 EGR is a single scalar, computable inside any training loop at
-negligible cost, that converts the asymptotic prediction of
-Theorem~\ref{thm:twoscale} into a concrete observable.
+negligible cost, that converts the finite-time starvation prediction
+of Theorem~\ref{thm:twoscale} into a concrete observable.
 
 \subsection{Definition and basic properties}
 
@@ -48,34 +48,42 @@ this gives $\E[\EGR(0)] \approx 0.055$.
 initialization. Verify empirically in Experiment 1.1.}
 \end{remark}
 
-\subsection{Monotonicity along the slow-fast manifold}
+\subsection{Decay of the spectral gradient}
 
-\begin{proposition}[EGR decay]
+\begin{proposition}[Spectral gradient decay]
 \label{prop:egr_monotonic}
-Under the conditions of Theorem~\ref{thm:twoscale}, along the fast
-equilibrium manifold $\phip = \phip^\star(\thetap)$,
+Under the hypotheses of Theorem~\ref{thm:twoscale}
+(Assumptions~\ref{ass:linear}, \ref{ass:inputlip},
+and~\ref{ass:residual}),
 \[
-    \EGR(t) \;\;\leq\;\; \EGR(t_0) \cdot \exp\!\left( -\mu (t - t_0) \right)
+    \norm{\nabla_\thetap \loss(t)}
+    \;\leq\; \frac{B\,C}{1 + \mu t},
 \]
-for $t \geq t_0 \geq T_{\mathrm{fast}}$, where $\mu$ is the residual
-decay rate from Lemma~\ref{lem:residual}.
+where $B$ is the operator-norm cap of Lemma~\ref{lem:schur} and
+$C, \mu$ are the constants of Assumption~\ref{ass:residual}.
 \end{proposition}
 
-\begin{proof}[Proof sketch]
-By the chain-rule decomposition~\eqref{eq:chain},
-\[
-    \norm{\nabla_\thetap \loss} \leq \norm{\partial \hat{y}/\partial Z}_{\mathrm{op}}
-    \cdot \norm{\partial Z/\partial \thetap}_{\mathrm{op}} \cdot \norm{r}.
-\]
-On the fast manifold, the residual $r$ decays as
-$\norm{r} \leq C e^{-\mu t}$ by Lemma~\ref{lem:residual}, while
-$\norm{\nabla_\phip \loss}$ also depends on $r$ but is regularized by
-the spatial Hessian curvature, which under
-Theorem~\ref{thm:hessian} scales with $\Cg$. The ratio
-therefore decays at rate $\Omega(\mu)$.
-\TODO{Phase 4, W11: tighten the proof to give exact constants on the
-denominator's decay rate.}
+\begin{proof}
+By the chain rule~\eqref{eq:chain},
+$\norm{\nabla_\thetap \loss} \leq \norm{J_\thetap}_{\mathrm{op}}
+\norm{r} \leq B \norm{r}$, and Assumption~\ref{ass:residual} bounds
+$\norm{r(t)}$.
 \end{proof}
+
+\begin{remark}[From gradient decay to the EGR ratio]
+\label{rem:egr_ratio_caveat}
+Proposition~\ref{prop:egr_monotonic} bounds the \emph{numerator} of
+the EGR. The denominator $\norm{\nabla_\phip \loss} =
+\norm{J_\phip^\top r}$ is also proportional to the residual, so both
+quantities vanish together as the loss is fitted, and the behavior of
+their ratio is not determined by residual decay alone: it depends on
+the relative conditioning of the two Jacobians along the trajectory.
+We therefore treat the EGR trajectory as an empirical object,
+characterized in Section~\ref{sec:egr-empirical}, and use
+Proposition~\ref{prop:egr_monotonic} only for the absolute claim that
+the spectral module's learning signal decays polynomially while the
+loss is being fitted.
+\end{remark}
 
 \subsection{Threshold criterion}
 

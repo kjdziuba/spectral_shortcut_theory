@@ -1,193 +1,229 @@
-\section{Theorem 2: Two-Timescale Spurious Convergence}
+\section{Theorem 2: Finite-Time Spectral Starvation}
 \label{sec:thm2}
 
-Theorem~\ref{thm:hessian} establishes that the loss landscape is
-geometrically ill-conditioned under capacity asymmetry. This section
-translates that geometric pathology into a dynamical one: under joint
-SGD, the spectral parameters $\thetap$ are gradient-starved by the
-spatial parameters $\phip$ and the system converges to a stationary
-point at which the spectral module has not specialized to any
-meaningful feature representation. The proof combines two-timescale
-stochastic approximation (Borkar~\cite{borkar2008stochastic}) with the
-cross-entropy gradient starvation framework of Pezeshki et
-al.~\cite{pezeshki2021gradient}.
+Theorem~\ref{thm:hessian} is a geometric statement: as the spatial
+module widens, curvature concentrates in it and the spectral block's
+top curvature stays capped. This section states the dynamical
+consequence we actually observe in training---the spectral module
+barely moves during the period in which the training loss is being
+fit---as a theorem with \emph{explicit dynamical hypotheses}. We
+deliberately do not claim that the geometry of
+Theorem~\ref{thm:hessian} alone implies the dynamics: the bridge from
+curvature disparity to rate separation is stated as a hypothesis,
+motivated by Theorem~\ref{thm:hessian} and verified empirically in
+Section~\ref{sec:experiments}. Deriving it from the architecture is
+left as an open problem (Section~\ref{sec:discussion}).
 
-\subsection{Continuous-time limit and timescale separation}
+Two classical facts shape the formulation. First, for unregularized
+cross-entropy on separable data there is \emph{no finite minimizer}:
+the loss decays like $1/t$ while the parameters diverge along the
+max-margin direction (Soudry et al.~\cite{soudry2018implicit}).
+A theorem asserting convergence to a finite stationary point would
+therefore be vacuous or false in the regime modern networks inhabit.
+Second, the starvation phenomenon of Pezeshki et
+al.~\cite{pezeshki2021gradient} is fundamentally about which features
+receive learning signal \emph{during training}, not about the
+$t \to \infty$ limit. Both point the same way: the honest statement is
+a \emph{finite-time} bound on how far the spectral parameters can move
+before the shortcut pathway has fitted the labels.
 
-We analyze the continuous-time limit of joint SGD, in which the
-parameters $(\thetap_t, \phip_t)$ evolve according to the gradient
-flow
+\subsection{Setting and hypotheses}
+
+We analyze the continuous-time limit of joint training with a shared
+learning rate, in which the parameters $(\thetap_t, \phip_t)$ evolve
+by gradient flow
 \begin{equation}
 \label{eq:gf}
     \dot{\thetap}(t) = -\nabla_\thetap \loss(\thetap, \phip),
     \qquad
     \dot{\phip}(t) = -\nabla_\phip \loss(\thetap, \phip).
 \end{equation}
-This limit is standard under the Robbins-Monro step-size schedule and
-captures the leading-order dynamics for sufficiently small learning
-rates. The presence of stochastic gradient noise modifies the constants
-but not the qualitative behavior~\cite{borkar2008stochastic}.
+The discrete-SGD extension (Robbins--Monro tracking with noise
+entering the constants) is standard
+(Borkar~\cite{borkar2008stochastic}, Ch.~2) and discussed in the
+supplement.
 
-\begin{lemma}[Effective timescale]
-\label{lem:timescale}
-Define the effective timescale ratio
-\[
-    \varepsilon \;:=\; \frac{\lambda_{\min}(H_{\thetap\thetap})}
-                           {\lambda_{\max}(H_{\phip\phip})}.
-\]
-Under the conditions of Theorem~\ref{thm:hessian},
-$\varepsilon = \mathcal{O}(\Cf / \Cg)$ and hence $\varepsilon \to 0$
-in the regime of Assumption~\ref{ass:gap}.
-\end{lemma}
-
-\begin{proof}
-Immediate from Lemmas~\ref{lem:phi_scaling} and \ref{lem:schur}.
-\end{proof}
-
-After rescaling, the gradient flow~\eqref{eq:gf} takes the form of a
-singularly perturbed system
+Recall from the chain rule~\eqref{eq:chain} that
+$\nabla_\thetap \loss = J_\thetap^\top r$ where $r$ is the softmax
+residual, so
 \begin{equation}
-\label{eq:slowfast}
-    \dot{\phip}(t) = -\nabla_\phip \loss(\thetap, \phip),
-    \qquad
-    \dot{\thetap}(t) = -\varepsilon \cdot \nabla_\thetap^{\mathrm{rescaled}} \loss(\thetap, \phip),
+\label{eq:theta_grad_bound}
+    \norm{\dot{\thetap}(t)}
+    \;=\; \norm{J_\thetap(t)^\top r(t)}
+    \;\leq\; \norm{J_\thetap(t)}_{\mathrm{op}} \cdot \norm{r(t)}.
 \end{equation}
-where $\nabla_\thetap^{\mathrm{rescaled}}$ denotes the gradient
-in the geometry induced by the spectral Hessian block.
-
-\subsection{Fast equilibrium manifold}
-
-Under~\eqref{eq:slowfast}, $\phip$ moves on a fast timescale and
-$\thetap$ on a slow one. The classical singular perturbation theorem
-of Tikhonov (see~\cite{borkar2008stochastic}, Chapter 6, and
-\cite{heusel2017gans} for the machine-learning adaptation) implies that
-$\phip$ converges rapidly to a quasi-equilibrium manifold parametrized
-by $\thetap$.
-
-\begin{lemma}[Fast equilibrium]
-\label{lem:fast_eq}
-Under~\eqref{eq:slowfast} and the regularity Assumption~\ref{ass:reg},
-there exists a smooth manifold
-$\phip^\star: \R^{\Cf} \to \R^{\Cg}$ such that for any fixed
-$\thetap$, the fast dynamics $\dot{\phip} = -\nabla_\phip
-\loss(\thetap, \phip)$ converge to $\phip^\star(\thetap)$ in time
-$\mathcal{O}(1)$.
-\end{lemma}
-
-\begin{remark}
-$\phip^\star(\thetap)$ is the configuration of the spatial model that
-best classifies the data given the current (and from the spatial
-model's view, frozen) spectral features. Importantly, the cross-entropy
-saturation property described below operates \emph{on this manifold},
-not in an asymptotic limit.
-\end{remark}
-
-\subsection{Cross-entropy saturation and residual decay}
-
-The crucial dynamical step is that, along the fast manifold
-$\phip^\star(\thetap)$, the cross-entropy residual decays exponentially
-fast. This is the gradient starvation phenomenon of
-Pezeshki et al.~\cite{pezeshki2021gradient} specialized to our
-compositional setting.
-
-\begin{lemma}[Residual decay along the fast manifold]
-\label{lem:residual}
-Let $r(t) := \mathrm{softmax}(F_{\thetap, \phip^\star(\thetap)}(X))
-- y_{\mathrm{onehot}}$ denote the per-pixel cross-entropy residual
-under the fast equilibrium. Assume the spatial model has sufficient
-capacity to interpolate the training data \emph{using any feature map
-that contains a sufficient spatial signal}---a condition we make
-precise in the proof. Then
+Under Assumptions~\ref{ass:linear} and~\ref{ass:inputlip},
+Lemma~\ref{lem:schur} caps the first factor uniformly along the
+trajectory:
 \[
-    \norm{r(t)}^2 \;\leq\; C \cdot e^{-\mu t}
+    B \;:=\; \sup_t \norm{J_\thetap(t)}_{\mathrm{op}}
+    \;\leq\; \sqrt{C_\thetap}
+    \;=\; \widetilde{L}\,\sqrt{K \cdot \lambda_{\max}(\Sigma_X)},
 \]
-for constants $C, \mu > 0$ depending on the data and architecture.
-\end{lemma}
+a constant independent of the spatial width $M$ and parameter count
+$\Cg$. The remaining hypothesis concerns the second factor.
 
-\begin{remark}
-The proof of Lemma~\ref{lem:residual} closely follows the NTK analysis
-of \cite{pezeshki2021gradient} for cross-entropy losses. The key
-difference in our setting is that the dominant features along which the
-residual decays are spatially-encoded rather than learned-spectrally:
-the spatial model, having enough capacity to exploit positional and
-contextual structure in the input, achieves low training loss without
-requiring the spectral module to specialize.
-\TODO{Phase 3, W10: write the NTK-based residual decay proof in full,
-adapting Pezeshki Theorem 3.1 to the compositional setting. Verify the
-spatial-signal sufficiency condition holds in our synthetic experiments.}
+\begin{assumption}[Shortcut residual decay]
+\label{ass:residual}
+There exist constants $C \geq 1$ and $\mu > 0$ such that, along the
+joint trajectory~\eqref{eq:gf},
+\[
+    \norm{r(t)} \;\leq\; \frac{C}{1 + \mu t}.
+\]
+We refer to $\mu$ as the \emph{shortcut fitting rate}.
+\end{assumption}
+
+\begin{remark}[Why polynomial, and where $\mu$ comes from]
+\label{rem:residual_motivation}
+The $1/t$ envelope is the correct cross-entropy-compatible form: for
+logistic-type losses on separable data the training loss---and hence
+the residual norm---decays polynomially, not exponentially
+(Soudry et al.~\cite{soudry2018implicit}). An exponential envelope,
+where valid (e.g.\ regularized or non-separable regimes), only
+strengthens the conclusion below. The hypothesis encodes the
+\emph{shortcut} mechanism: the residual is driven down by the spatial
+module exploiting whatever signal is present in the feature map $Z$
+(positional and contextual structure), without requiring $f_\thetap$
+to specialize---the spatial-signal sufficiency discussed in
+Section~\ref{sec:thm2_hypotheses}. The rate $\mu$ is expected to
+\emph{grow} with spatial capacity: wider networks fit faster (in the
+NTK regime, the fitting rate is governed by the spatial kernel's
+smallest relevant eigenvalue, which grows with width; see
+Pezeshki et al.~\cite{pezeshki2021gradient}). We verify this
+empirically in Experiment~1.2, where time-to-fit shrinks monotonically
+with $D$. A derivation of $\mu(\Cg)$ for the linearized fast subsystem
+is given informal treatment in the supplement and is not needed for
+the theorem, which takes $\mu$ as given.
 \end{remark}
+
+\begin{definition}[Fitting time]
+\label{def:fitting_time}
+For a target residual level $\delta \in (0, C)$, the fitting time is
+\[
+    T_\delta \;:=\; \inf\{\, t \geq 0 : \norm{r(t)} \leq \delta \,\}.
+\]
+Under Assumption~\ref{ass:residual}, $T_\delta \leq (C/\delta - 1)/\mu$.
+\end{definition}
 
 \subsection{Main result}
 
-\begin{theorem}[Two-Timescale Spurious Convergence]
+\begin{theorem}[Finite-Time Spectral Starvation]
 \label{thm:twoscale}
-Under Assumptions~\ref{ass:linear}--\ref{ass:gap} and the spatial-signal
-sufficiency condition of Lemma~\ref{lem:residual}, the joint gradient
-flow~\eqref{eq:gf} converges to a point $(\thetap^\star, \phip^\star)$
-satisfying
+Under Assumptions~\ref{ass:linear}, \ref{ass:inputlip},
+and~\ref{ass:residual}, the gradient flow~\eqref{eq:gf} satisfies, for
+every horizon $T \geq 0$,
 \[
-    \nabla \loss(\thetap^\star, \phip^\star) = 0,
+    \norm{\thetap(T) - \thetap_0}
+    \;\leq\; \frac{B\,C}{\mu} \, \log(1 + \mu T),
 \]
-and
+and at the fitting time $T_\delta$,
 \[
-    \norm{\thetap^\star - \thetap_0} = \mathcal{O}(\varepsilon),
+    \norm{\thetap(T_\delta) - \thetap_0}
+    \;\leq\; \frac{B\,C}{\mu} \, \log\!\left(\frac{C}{\delta}\right).
 \]
-where $\thetap_0$ is the initialization. In particular, the spectral
-module is asymptotically pinned to a small neighborhood of its
-initialization, independently of the labels.
+In particular, writing $\varepsilon := B/\mu$ for the effective
+module-rate ratio, the spectral displacement by the time the training
+residual reaches level $\delta$ is
+$\mathcal{O}\!\left(\varepsilon \log(1/\delta)\right)$.
 \end{theorem}
 
-\begin{proof}[Proof sketch]
-By Lemma~\ref{lem:fast_eq}, after time $T_{\mathrm{fast}}$ of order
-$\mathcal{O}(1)$, the fast variable $\phip$ has converged to
-$\phip^\star(\thetap_0)$. By Lemma~\ref{lem:residual}, along this
-manifold the residual $r$ decays exponentially:
-$\norm{r(t)} \leq C e^{-\mu t}$.
-
-The slow-variable update~\eqref{eq:slowfast} satisfies
+\begin{proof}
+By~\eqref{eq:theta_grad_bound}, the operator-norm cap, and
+Assumption~\ref{ass:residual},
 \[
-    \norm{\dot{\thetap}(t)} = \varepsilon \cdot \norm{J_\thetap^\top r(t)}
-    \leq \varepsilon \cdot \norm{J_\thetap}_{\mathrm{op}} \cdot C \cdot e^{-\mu t}.
+    \norm{\dot{\thetap}(t)}
+    \;\leq\; B \cdot \norm{r(t)}
+    \;\leq\; \frac{B\,C}{1 + \mu t}.
 \]
-Integrating from $T_{\mathrm{fast}}$ to $\infty$,
+Integrating,
 \[
-    \norm{\thetap^\star - \thetap_0}
-    \leq \varepsilon \cdot \norm{J_\thetap}_{\mathrm{op}} \cdot C \cdot \frac{e^{-\mu T_{\mathrm{fast}}}}{\mu}
-    = \mathcal{O}(\varepsilon).
+    \norm{\thetap(T) - \thetap_0}
+    \;\leq\; \int_0^T \norm{\dot{\thetap}(t)}\, dt
+    \;\leq\; B\,C \int_0^T \frac{dt}{1 + \mu t}
+    \;=\; \frac{B\,C}{\mu} \log(1 + \mu T).
 \]
-The fixed-point condition $\nabla \loss = 0$ holds because
-both $r \to 0$ (so $\nabla_\thetap \loss \to 0$) and
-$\phip$ is at the fast equilibrium ($\nabla_\phip \loss = 0$ on the
-manifold).
+For the second claim, Definition~\ref{def:fitting_time} gives
+$1 + \mu T_\delta \leq C / \delta$, so $\log(1 + \mu T_\delta) \leq
+\log(C/\delta)$.
 \end{proof}
 
 \subsection{Interpretation}
 
-Theorem~\ref{thm:twoscale} formalizes the central claim of the paper.
-The point $(\thetap^\star, \phip^\star)$ is mathematically a critical
-point of the loss but is, in any practical sense, a failure: the
-spectral parameters have not departed materially from their
-initialization, and the spatial module has interpolated the labels
-using whatever spatial signal exists in the (near-random or pretrained)
-feature map. Whether the spectral module \emph{could have learned}
-useful features under freezing-then-decoupling or other interventions
-is precisely what our prescriptive remedy (Section~\ref{sec:discussion})
-addresses.
+Theorem~\ref{thm:twoscale} is a statement about \emph{training-time}
+behavior, which is what practice cares about: training runs end when
+the loss is fit (or by early stopping), not at $t = \infty$.
 
-\subsection{Comments on the assumptions}
+\paragraph{The starvation regime.}
+The displacement bound is the product of two factors with opposite
+capacity dependence. The numerator $B$ is capped independently of
+$\Cg$ (Lemma~\ref{lem:schur}): no matter how large the spatial module,
+the spectral gradient cannot exceed $B \norm{r}$. The fitting rate
+$\mu$ grows with spatial capacity
+(Remark~\ref{rem:residual_motivation}): wider shortcut pathways
+drive the residual down faster. Hence $\varepsilon = B/\mu \to 0$ as
+capacity grows, and the spectral module is increasingly pinned to its
+initialization \emph{for the entire useful duration of training}. This
+is the capacity-worsens-starvation prediction verified in
+Experiment~1.2, where the joint-vs-frozen gap grows monotonically with
+$D$.
 
-The spatial-signal sufficiency condition deserves comment. We require
-that the spatial model can interpolate the training labels using only
-the structure of the feature map $Z$ (e.g., positional cues, contextual
-patterns), without requiring $f_\thetap$ to specialize. In practice
-this condition is satisfied whenever the spatial model has sufficient
-capacity to overfit the training set---which is the norm for modern
-overparameterized ViTs and CNNs. We verify the condition empirically
-in Experiments~1.2 and 1.3 by showing that joint training reaches near-
-zero training loss with a spectral module that has not appreciably
-changed from initialization.
+\paragraph{What we do not claim.}
+We make no claim about the $t \to \infty$ limit. For unregularized
+cross-entropy on separable data no finite stationary point exists
+(Soudry et al.~\cite{soudry2018implicit}), and $\thetap$ may
+eventually move substantially over horizons exponentially longer than
+any practical training run ($T = \mathcal{O}(\varepsilon^{-q})$ still
+yields displacement $\mathcal{O}(\varepsilon \log(1/\varepsilon)) \to
+0$, but larger horizons are unconstrained). The finite-time framing is
+not a weakness: it is the phenomenon. A spectral module that receives
+its learning signal only after the loss has been fitted receives it
+too late to shape which features the classifier uses.
 
-\TODO{Phase 3, W10: Formalize the spatial-signal sufficiency condition.
-Likely route: bound on Rademacher complexity of $g_\phip \circ Z$ that
-guarantees zero-error interpolability without requiring rank growth in
-$Z$. Cross-check against \cite{pezeshki2021gradient} Section 3.}
+\paragraph{The logarithm is benign.}
+For any polynomial training horizon $T = \mathcal{O}(\varepsilon^{-q})$
+with fixed $q$, the displacement is
+$\mathcal{O}(\varepsilon \log(1/\varepsilon))$, which vanishes as
+$\varepsilon \to 0$. The bound is thus meaningful across every
+practically reachable horizon, not merely at a single stopping time.
+
+\subsection{On the hypotheses}
+\label{sec:thm2_hypotheses}
+
+\paragraph{The operator-norm cap is proven, not assumed.}
+The factor $B$ is supplied by Lemma~\ref{lem:schur} under
+Assumptions~\ref{ass:linear} and~\ref{ass:inputlip}; it is the point
+where Theorem~\ref{thm:hessian}'s geometry genuinely enters the
+dynamics.
+
+\paragraph{Residual decay encodes the shortcut.}
+Assumption~\ref{ass:residual} requires the training residual to fall
+at rate $\mu$ \emph{without} the spectral module specializing. This is
+plausible exactly when the spatial model can interpolate the training
+labels from the structure already present in $Z$ (positional cues,
+contextual patterns)---the spatial-signal sufficiency condition. In
+practice it is satisfied whenever the spatial model can overfit the
+training set, which is the norm for modern over-parameterized CNNs and
+ViTs. We verify it empirically in Experiments~1.2 and~1.3: joint
+training reaches near-zero training loss while the spectral module
+remains close to initialization.
+
+\paragraph{Rate separation is motivated, not derived.}
+Theorem~\ref{thm:hessian} shows curvature disparity grows with
+capacity; it does not by itself prove that $\mu$ grows or that the
+trajectory satisfies Assumption~\ref{ass:residual}. We keep the two
+theorems logically independent: Theorem~\ref{thm:hessian} identifies a
+capacity-dependent geometric mechanism \emph{capable} of generating
+disparate module learning rates; Theorem~\ref{thm:twoscale}
+characterizes the starvation dynamics \emph{when} such a separation is
+present. Experiments~1.1--1.3 test the mechanism and the dynamics
+separately. Deriving Assumption~\ref{ass:residual} from the
+architecture (e.g.\ via an NTK analysis of the fast subsystem at large
+width, adapting Pezeshki et al.~\cite{pezeshki2021gradient}) is a
+natural next step; a sketch is given in the supplement.
+
+\TODO{Supplement: (i) discrete-SGD extension of
+Theorem~\ref{thm:twoscale} via Robbins--Monro tracking
+(Borkar Ch.~2), noise entering the constants; (ii) informal NTK
+derivation of $\mu(\Cg)$ for the linearized fast subsystem;
+(iii) empirical verification that $\norm{r(t)}$ on our synthetic
+trajectories is enveloped by $C/(1+\mu t)$.}

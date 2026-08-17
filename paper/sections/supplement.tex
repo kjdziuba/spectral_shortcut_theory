@@ -12,19 +12,22 @@ We restate Theorem~\ref{thm:hessian} for reference:
 
 \begin{quote}
 \emph{Under Assumptions \ref{ass:linear}--\ref{ass:inputlip}, the
-effective condition number of the joint Gauss-Newton matrix satisfies
-$\kappa_{\mathrm{eff}}(G) \geq c_1 \cdot \sqrt{\Cg/\Cf} - c_2$ for
-some $c_1, c_2 > 0$ depending on the data covariance, the bottleneck
-dimension $K$, and the model class of $g_\phip$.}
+module curvature disparity satisfies
+$\mathcal{D}_{\mathrm{curv}}^{(M)} \geq c_1 \cdot M - c_2$, and for
+fixed-depth architectures with $\Cg = \Theta(M^2)$,
+$\mathcal{D}_{\mathrm{curv}} \geq c_1' \sqrt{\Cg/\Cf} - c_2$, for
+constants depending on the data covariance, the bottleneck dimension
+$K$, and the model class of $g_\phip$ but not on $M$ or $\Cg$.}
 \end{quote}
 
-The proof is structured as three lemmas: (i) the spatial block's top
-eigenvalue scales with $\sqrt{\Cg}$ (Lemma~\ref{lem:phi_scaling},
-Karakida-style mean-field FIM analysis); (ii) Cauchy interlacing
-transfers this scaling to the full Hessian
-(Lemma~\ref{lem:interlacing}); (iii) a residual-dimension rank bound
-caps the smallest positive eigenvalue by a $\Cg$-independent constant
-(Lemma~\ref{lem:schur}). We prove each in turn, then combine.
+The proof rests on two lemmas: (i) the spatial block's top eigenvalue
+scales linearly with width $M$ (Lemma~\ref{lem:phi_scaling},
+Karakida-style mean-field FIM analysis); (ii) the spectral block's
+top eigenvalue is capped by a $\Cg$-independent operator-norm bound
+(Lemma~\ref{lem:schur}). Cauchy interlacing
+(Lemma~\ref{lem:interlacing}) is retained as an auxiliary fact but is
+not load-bearing for the disparity bound. We prove each lemma in
+turn, then combine.
 
 \subsubsection{Proof of Lemma~\ref{lem:phi_scaling}}
 
@@ -303,14 +306,24 @@ Karakida's own numerical validation.
 \end{remark}
 
 
-\subsection{Full proof of Theorem~\ref{thm:twoscale}}
+\subsection{Supplementary material for Theorem~\ref{thm:twoscale}}
 \label{sec:proof_thm2}
 
-\TODO{Phase 3, weeks 8-10. Combine Borkar singular perturbation with
-Pezeshki residual decay. Proof skeleton: (i) ODE limits of SGD,
-(ii) timescale gap from Lemma 5.1, (iii) Tikhonov fast-manifold
-convergence, (iv) NTK residual decay along fast manifold,
-(v) slow-variable bound by Gronwall.}
+The main-text proof of Theorem~\ref{thm:twoscale} is complete for the
+gradient-flow model~\eqref{eq:gf}: the displacement bound follows by
+direct integration of the residual envelope, with the operator-norm
+cap supplied by Lemma~\ref{lem:schur}. The supplementary work
+concerns the hypotheses and the discrete extension.
+
+\TODO{Remaining supplement work for Theorem~\ref{thm:twoscale}:
+(i) discrete-SGD extension via Robbins--Monro tracking
+(Borkar~\cite{borkar2008stochastic}, Ch.~2, Thm.~2), with gradient
+noise entering the constants; (ii) informal NTK derivation of the
+shortcut fitting rate $\mu(\Cg)$ for the linearized fast subsystem,
+adapting Pezeshki et al.~\cite{pezeshki2021gradient}; (iii) empirical
+verification that measured residual trajectories on the synthetic
+problems are enveloped by $C/(1+\mu t)$, with fitted $\mu$ increasing
+in $D$ (data available from Experiment~1.2 logs).}
 
 \subsection{Empirical robustness}
 

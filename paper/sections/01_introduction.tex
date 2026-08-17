@@ -45,27 +45,33 @@ compositional architectures with asymmetric capacity. Two main
 theorems form our contribution.
 
 \begin{itemize}
-    \item \textbf{Theorem~\ref{thm:hessian} (Hessian Capacity Bound).}
-          We bound the condition number of the joint Gauss-Newton
-          matrix in terms of the ratio of module capacities. Under
-          asymmetry $\Cg \gg \Cf$, the loss landscape is geometrically
-          ill-conditioned with $\kappa(G) = \Omega(\Cg/\Cf)$. The
-          proof combines block matrix analysis (Schur complement) with
-          the mean-field FIM scaling of Karakida et
-          al.~\cite{karakida2019universal}.
-    \item \textbf{Theorem~\ref{thm:twoscale} (Two-Timescale Spurious
-          Convergence).} The geometric ill-conditioning induces an
-          implicit slow-fast dynamical system. The high-capacity
-          spatial module rapidly fits the data using shortcuts in the
-          (initially random) feature map, driving the cross-entropy
-          residual to zero exponentially fast. The slow spectral
-          module is gradient-starved before it can specialize. The
-          system converges to a stationary point at which the spectral
-          parameters have not moved appreciably from initialization.
-          The proof combines Borkar's two-timescale stochastic
-          approximation~\cite{borkar2008stochastic} with Pezeshki et
-          al.'s gradient starvation
-          framework~\cite{pezeshki2021gradient}.
+    \item \textbf{Theorem~\ref{thm:hessian} (Capacity-Induced Module
+          Curvature Disparity).} We prove that the ratio of the
+          spatial to the spectral Gauss-Newton block's top eigenvalue
+          grows linearly with the spatial module's width $M$
+          (equivalently, as $\sqrt{\Cg/\Cf}$ for fixed-depth
+          architectures): as the spatial module widens, curvature
+          concentrates in it while the spectral block's curvature
+          stays capped by a width-independent constant. The proof
+          combines the mean-field FIM scaling of Karakida et
+          al.~\cite{karakida2019universal} with an operator-norm
+          bound on the spectral block.
+    \item \textbf{Theorem~\ref{thm:twoscale} (Finite-Time Spectral
+          Starvation).} Under an explicit shortcut-fitting hypothesis
+          compatible with cross-entropy dynamics, the spectral
+          module's displacement from initialization by the time the
+          training residual reaches level $\delta$ is at most
+          $\mathcal{O}(\varepsilon \log(1/\delta))$, where
+          $\varepsilon$ is the ratio of the (capped) spectral gradient
+          scale to the shortcut fitting rate. As spatial capacity
+          grows, the shortcut fits faster while the spectral gradient
+          stays capped, so the spectral module is pinned near
+          initialization for the entire useful duration of training.
+          The formulation is finite-time by design: for unregularized
+          cross-entropy on separable data no finite stationary point
+          exists~\cite{soudry2018implicit}, and the starvation
+          phenomenon is a training-time effect, not an asymptotic
+          one.
 \end{itemize}
 
 \paragraph{A real-time diagnostic.}
@@ -79,11 +85,11 @@ diagnostic computable inside any training loop:
     \EGR(t) = \frac{\norm{\nabla_\thetap \loss(\thetap_t, \phip_t)}}
                    {\norm{\nabla_\phip \loss(\thetap_t, \phip_t)}}.
 \]
-Proposition~\ref{prop:egr_monotonic} establishes that EGR decays along
-the slow-fast manifold predicted by Theorem~\ref{thm:twoscale}.
-Empirically, the depth of the EGR collapse scales monotonically with
-capacity ratio, providing a quantitative, training-time observable for
-gradient starvation.
+Proposition~\ref{prop:egr_monotonic} establishes that the spectral
+gradient norm---the EGR's numerator---decays polynomially while the
+loss is being fitted. Empirically, the depth of the EGR collapse
+scales monotonically with capacity ratio, providing a quantitative,
+training-time observable for gradient starvation.
 
 \paragraph{Prescription.}
 The theory yields a direct prescription: freeze the spectral module,
