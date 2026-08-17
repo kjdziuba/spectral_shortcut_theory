@@ -145,290 +145,163 @@ proof. \hfill$\square$
 
 \subsubsection{Proof of Lemma~\ref{lem:schur}}
 
-We establish two claims. Part (i) is a rank bound derived from the
-softmax simplex constraint, aggregated over the pixel grid and
-dataset. Part (ii) is an upper bound on the smallest nonzero
-eigenvalue via a trace-over-rank argument, using
-Assumption~\ref{ass:inputlip} to bound the trace independently of
-$\Cg$.
+The proof factors the spectral Jacobian via the chain rule and
+bounds each factor's operator norm using
+Assumptions~\ref{ass:linear} and~\ref{ass:inputlip}.
 
-\paragraph{Convention on $\lambda_{\min}$.} The spectral block
-$J_\thetap^\top J_\thetap$ is rank-deficient whenever the residual
-dimension $N_{\mathrm{data}} HW (N_{\mathrm{cls}} - 1) < \Cf$
-(which is the over-parameterised regime relevant for large spatial
-classifiers). We interpret the bound on
-$\lambda_{\min}(J_\thetap^\top J_\thetap)$ throughout this proof as a
-bound on the smallest \emph{nonzero} eigenvalue $\lambda_{\min}^{+}$;
-the strict smallest eigenvalue is zero and any positive upper bound
-holds trivially. The condition number $\kappa$ appearing in
-Theorem~\ref{thm:hessian} is understood as the effective condition
-number $\kappa_{\mathrm{eff}}(G) = \lambda_{\max}(G) /
-\lambda_{\min}^{+}(G)$ per
-Remark~\ref{rem:kappa_eff} of Section~\ref{sec:setup}.
+\paragraph{Step 1: Chain-rule factorisation.}
+The residual $r$ is a composition $r(\thetap, \phip) = \tau(g_\phip(Z))$
+with $Z = f_\thetap(X)$, where $\tau(\hat{y}) = \mathrm{softmax}(\hat{y})
+- y_{\mathrm{onehot}}$ is the residual map from logits. The chain
+rule gives
+\[
+    J_\thetap
+    \;=\; \frac{\partial r}{\partial \thetap}
+    \;=\; J_\tau \cdot J_Z \cdot \frac{\partial Z}{\partial \thetap},
+\]
+with $J_\tau := \partial \tau / \partial \hat{y} = \mathrm{diag}(p) -
+p p^\top$ (the softmax Hessian, which satisfies
+$\|J_\tau\|_{\mathrm{op}} \leq 1$; see Botev, Ritter, and
+Barber~\cite{botev2017practical}) and $J_Z := \partial g_\phip / \partial Z$.
 
-\paragraph{Step 1: Per-pixel softmax null-space constraint.}
-For each pixel $i \in \{1, \dots, HW\}$ and each training example
-$n \in \{1, \dots, N_{\mathrm{data}}\}$, the softmax output
-$p_{n,i}(\thetap, \phip) \in \Delta^{N_{\mathrm{cls}} - 1}$ satisfies
-$\mathbf{1}^\top p_{n,i} \equiv 1$ identically in $\thetap$.
-Differentiating this identity in $\thetap$,
+\paragraph{Step 2: Operator-norm inequality.}
+Sub-multiplicativity of the operator norm gives
 \[
-    \mathbf{1}^\top \frac{\partial p_{n,i}}{\partial \thetap} \;=\; \mathbf{0}.
+    \|J_\thetap\|_{\mathrm{op}}
+    \;\leq\; \|J_\tau\|_{\mathrm{op}} \cdot \|J_Z\|_{\mathrm{op}}
+             \cdot \left\| \frac{\partial Z}{\partial \thetap} \right\|_{\mathrm{op}}
+    \;\leq\; 1 \cdot \widetilde{L} \cdot
+             \left\| \frac{\partial Z}{\partial \thetap} \right\|_{\mathrm{op}},
 \]
-The one-hot target $y_{n,i}$ also satisfies $\mathbf{1}^\top y_{n,i} =
-1$, so the residual $r_{n,i} := p_{n,i} - y_{n,i}$ inherits the same
-null-space constraint: $\mathbf{1}^\top r_{n,i} \equiv 0$ and
-$\mathbf{1}^\top \partial r_{n,i} / \partial \thetap = \mathbf{0}$.
-Consequently the per-pixel residual Jacobian block $\partial r_{n,i}
-/ \partial \thetap \in \mathbb{R}^{N_{\mathrm{cls}} \times \Cf}$ has
-row-rank at most $N_{\mathrm{cls}} - 1$: one linear dependency
-between its $N_{\mathrm{cls}}$ rows is guaranteed.
+using Assumption~\ref{ass:inputlip} on the middle factor.
 
-\paragraph{Step 2: Aggregation over pixels and dataset.}
-Stack the $N_{\mathrm{data}} HW$ per-pixel Jacobian blocks into
+\paragraph{Step 3: Bounding the input-Jacobian factor.}
+Under Assumption~\ref{ass:linear}, $Z_{n, h, w} = W^\top x_{n, h, w}$
+with $\thetap = \mathrm{vec}(W)$, $W \in \mathbb{R}^{S \times K}$. The
+per-pixel Jacobian is
+$\partial Z_{n,h,w} / \partial \mathrm{vec}(W) = I_K \otimes
+x_{n,h,w}^\top$
+(Magnus and Neudecker~\cite{magnus1988matrix}, Ch.~9). Stacking over
+the $N_{\mathrm{data}} HW$ pixel positions,
+$\partial Z / \partial \thetap \in \mathbb{R}^{N_{\mathrm{data}}
+HW K \times SK}$ has operator norm bounded by
 \[
-    J_\thetap \;=\; \frac{\partial r}{\partial \thetap}
-    \;\in\; \mathbb{R}^{N_{\mathrm{data}} HW N_{\mathrm{cls}} \times \Cf}.
+    \left\| \frac{\partial Z}{\partial \thetap} \right\|_{\mathrm{op}}^{2}
+    \;\leq\; K \cdot \lambda_{\max}(\Sigma_X),
 \]
-Each of the $N_{\mathrm{data}} HW$ blocks contributes at most
-$N_{\mathrm{cls}} - 1$ independent rows (Step 1), and no cross-block
-dependencies are imposed by the softmax simplex constraint. Hence
-\[
-    \mathrm{rank}(J_\thetap)
-    \;\leq\; N_{\mathrm{data}} \cdot HW \cdot (N_{\mathrm{cls}} - 1).
-\]
-Combining with the trivial column-rank bound
-$\mathrm{rank}(J_\thetap) \leq \Cf$ and the identity
-$\mathrm{rank}(J_\thetap^\top J_\thetap) = \mathrm{rank}(J_\thetap)$,
-we obtain claim (i) of the lemma:
-\begin{equation}
-    \mathrm{rank}(J_\thetap^\top J_\thetap)
-    \;\leq\; \min\!\left(\Cf,\; N_{\mathrm{data}} HW (N_{\mathrm{cls}} - 1)\right).
-    \label{eq:rank_ceiling}
-\end{equation}
-Denote the effective rank ceiling by $R := N_{\mathrm{data}} HW
-(N_{\mathrm{cls}} - 1)$, which is $\Cg$-independent.
+where $\Sigma_X$ is the aggregated per-pixel input Gram (empirical
+covariance) and Assumption~\ref{ass:subg} guarantees
+$\lambda_{\max}(\Sigma_X) < \infty$ with high probability.
 
-\paragraph{Step 3: Trace bound via encoder-bottleneck chain rule.}
-Under Assumption~\ref{ass:linear}, $\partial Z_i / \partial \thetap =
-I_K \otimes x_i^\top$
-(Magnus and Neudecker~\cite{magnus1988matrix}, Ch.~9). Under
-Assumption~\ref{ass:inputlip}, $\|\partial \hat{y}_i / \partial
-Z_i\|_{\mathrm{op}} \leq \widetilde{L}$ uniformly. For the softmax
-residual Jacobian at pixel $(n, i)$,
+\paragraph{Step 4: Assembling.}
+Combining Steps 2 and 3, and using $\lambda_{\max}(J_\thetap^\top
+J_\thetap) = \|J_\thetap\|_{\mathrm{op}}^{2}$,
 \[
-    \frac{\partial r_{n,i}}{\partial \thetap}
-    \;=\; \bigl[\mathrm{diag}(p_{n,i}) - p_{n,i} p_{n,i}^\top\bigr]
-    \cdot \frac{\partial \hat{y}_{n,i}}{\partial Z_{n,i}}
-    \cdot \frac{\partial Z_{n,i}}{\partial \thetap},
+    \lambda_{\max}(J_\thetap^\top J_\thetap)
+    \;\leq\; \widetilde{L}^{2} \cdot K \cdot \lambda_{\max}(\Sigma_X)
+    \;=:\; C_\thetap.
 \]
-with $\|\mathrm{diag}(p) - p p^\top\|_{\mathrm{op}} \leq 1$ (the softmax
-Hessian has operator norm at most $1$; see Botev, Ritter, and
-Barber~\cite{botev2017practical}). Taking the Frobenius norm,
-\[
-    \left\| \frac{\partial r_{n,i}}{\partial \thetap} \right\|_F^2
-    \;\leq\; \widetilde{L}^2 \cdot \|I_K \otimes x_{n,i}^\top\|_F^2
-    \;=\; \widetilde{L}^2 \cdot K \cdot \|x_{n,i}\|^2.
-\]
-Aggregating,
-\begin{equation}
-    \mathrm{tr}(J_\thetap^\top J_\thetap)
-    \;=\; \sum_{n, i} \left\| \frac{\partial r_{n,i}}{\partial \thetap}
-                       \right\|_F^2
-    \;\leq\; \widetilde{L}^2 K \cdot \sum_{n, i} \|x_{n,i}\|^2
-    \;\leq\; \widetilde{L}^2 K \cdot N_{\mathrm{data}} HW \cdot
-             \mathrm{tr}(\Sigma_X),
-    \label{eq:trace_bound}
-\end{equation}
-where $\Sigma_X$ is bounded by Assumption~\ref{ass:subg}. All factors
-on the right-hand side are $\Cg$-independent.
-
-\paragraph{Step 4: Trace/rank upper bound on $\lambda_{\min}^{+}$.}
-For any positive semidefinite matrix $A$ of rank $r$ with eigenvalues
-$0 = \lambda_1 = \ldots = \lambda_{n-r} < \lambda_{n-r+1} \leq \ldots
-\leq \lambda_n$, the arithmetic-mean inequality on the nonzero
-eigenvalues gives $\lambda_{n-r+1} \leq \mathrm{tr}(A) / r$.
-Applied to $J_\thetap^\top J_\thetap$ with $r = \mathrm{rank}$ from
-\eqref{eq:rank_ceiling} and trace bound \eqref{eq:trace_bound},
-\[
-    \lambda_{\min}^{+}(J_\thetap^\top J_\thetap)
-    \;\leq\; \frac{\mathrm{tr}(J_\thetap^\top J_\thetap)}{\mathrm{rank}(J_\thetap^\top J_\thetap)}
-    \;\leq\; \frac{\widetilde{L}^2 K \cdot N_{\mathrm{data}} HW \cdot
-             \mathrm{tr}(\Sigma_X)}
-             {N_{\mathrm{data}} HW (N_{\mathrm{cls}} - 1)}
-    \;=\; \frac{\widetilde{L}^2 K \cdot \mathrm{tr}(\Sigma_X)}
-                {N_{\mathrm{cls}} - 1}.
-\]
-Setting $C_2 := \widetilde{L}^2 K \cdot \mathrm{tr}(\Sigma_X)$ yields
-claim (ii) of the lemma. The constant $C_2$ depends on the input
-bottleneck dimension $K$, the classifier's depth-dependent input
-Lipschitz constant $\widetilde{L}$, and the trace of the data
-covariance $\mathrm{tr}(\Sigma_X)$---but not on $\Cg$, the width $M$,
-or the spatial parameter count. This completes the proof.
+The constant $C_\thetap$ depends on the classifier's input
+Lipschitz constant $\widetilde{L}$ (which may grow with the depth of
+$g_\phip$ but not with its width $M$; see the discussion of
+Assumption~\ref{ass:inputlip}), the bottleneck dimension $K$, and
+the top data-covariance eigenvalue $\lambda_{\max}(\Sigma_X)$. It
+does not depend on $M$ or on the spatial parameter count $\Cg$. This
+completes the proof.
 \hfill$\square$
 
-\begin{remark}[Corollary for per-pixel classifiers]
-\label{rem:kron_corollary}
-When $g_\phip$ is per-pixel (no spatial mixing), the per-pixel
-classifier Jacobians $A_i \equiv A$ coincide, and the aggregated block
-factors as $J_\thetap^\top J_\thetap = A^\top A \otimes \Sigma_X$ (per
-example). Bhatia's Kronecker spectral
-identity~\cite{bhatia1997matrix} then tightens the smallest positive
-eigenvalue to
-\[
-    \lambda_{\min}^{+}(J_\thetap^\top J_\thetap)
-    \;=\; \mu_r(A^\top A) \cdot \sigma_{\min}^{+}(\Sigma_X),
-\]
-where $\mu_r$ is the smallest nonzero eigenvalue of $A^\top A$. Both
-factors are $\Cg$-independent. This tighter Corollary is what our
-synthetic MLP experiments verify (Experiment~1.1); the general
-Lemma~\ref{lem:schur} bound is what applies to real CNN/ViT spatial
-classifiers.
+\begin{remark}[Why an operator-norm cap suffices]
+Earlier drafts of this proof attempted to bound the smallest positive
+eigenvalue $\lambda_{\min}^{+}(J_\thetap^\top J_\thetap)$, which
+required either an exact Kronecker factorisation (valid only for
+per-pixel classifiers) or a trace-over-rank argument via the softmax
+residual dimension. Both approaches survive only under additional
+structural assumptions on $g_\phip$. The operator-norm bound above
+is significantly simpler, applies to general nonlinear spatial
+classifiers (CNN, ViT), and is exactly what
+Theorem~\ref{thm:hessian} needs: a $\Cg$-independent cap on the
+spectral block's \emph{top} eigenvalue, so that
+$\mathcal{D}_{\mathrm{curv}} = \lambda_{\max}(J_\phip^\top
+J_\phip)/\lambda_{\max}(J_\thetap^\top J_\thetap) \geq
+\Omega(M)/C_\thetap$.
 \end{remark}
 
-\begin{remark}[Effective rank vs.\ rank ceiling]
-\label{rem:effective_rank}
-Lemma~\ref{lem:schur}(i) is a bound on the rank ceiling, not on the
-effective rank. Neural collapse~\cite{papyan2020prevalence} predicts
-that in the terminal training phase only $\approx N_{\mathrm{cls}} - 1$
-of the $N_{\mathrm{data}} HW (N_{\mathrm{cls}} - 1)$ residual
-directions carry non-negligible curvature, so the effective rank
-is much smaller than the ceiling. Our bound is therefore loose as a
-descriptor of curvature-carrying directions but tight as the rank
-ceiling; either interpretation suffices for
-Theorem~\ref{thm:hessian}, since both imply
-$\lambda_{\min}^{+}(J_\thetap^\top J_\thetap)$ is $\Cg$-independent.
+\begin{remark}[Softmax residual Hessian bound]
+The bound $\|\mathrm{diag}(p) - p p^\top\|_{\mathrm{op}} \leq 1$ is
+standard (Botev, Ritter, and Barber~\cite{botev2017practical}) and
+follows from the fact that $\mathrm{diag}(p) - p p^\top$ is the
+covariance of the categorical distribution, whose top eigenvalue is
+$\max_i p_i(1 - p_i) \leq 1/4$; the factor $1$ used here is a loose
+convenience.
 \end{remark}
 
-\begin{remark}[Softmax vs.\ sigmoid outputs]
-The rank bound $HW(N_{\mathrm{cls}} - 1)$ depends on the simplex
-constraint $\mathbf{1}^\top p = 1$, which holds for softmax and is
-preserved under label smoothing. For sigmoid / independent-Bernoulli
-multi-label losses the bound loosens to $HW N_{\mathrm{cls}}$
-(no simplex constraint). Our spectroscopic pipelines use softmax
-throughout, so the tighter bound applies.
-\end{remark}
-
-\subsubsection{Combining the three lemmas: full proof of Theorem~\ref{thm:hessian}}
+\subsubsection{Combining the lemmas: full proof of Theorem~\ref{thm:hessian}}
 \label{sec:thm1_combine}
 
-Assemble Lemmas~\ref{lem:phi_scaling}, \ref{lem:interlacing}, and
-\ref{lem:schur} to complete the proof of Theorem~\ref{thm:hessian}.
-Recall the joint Gauss-Newton matrix
+Assemble Lemmas~\ref{lem:phi_scaling} and~\ref{lem:schur} to complete
+the proof. By Lemma~\ref{lem:phi_scaling}, in expectation over random
+initialization,
 \[
-    G \;=\; \begin{pmatrix}
-        J_\thetap^\top J_\thetap & J_\thetap^\top J_\phip \\
-        J_\phip^\top J_\thetap & J_\phip^\top J_\phip
-    \end{pmatrix}
+    \lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)})
+    \;\geq\; c_\phi \cdot M
 \]
-and the effective condition number
-$\kappa_{\mathrm{eff}}(G) = \lambda_{\max}(G) /
-\lambda_{\min}^{+}(G)$ (Remark~\ref{rem:kappa_eff}).
-
-\paragraph{Upper bound on $\lambda_{\max}(G)$ direction, from the spatial block.}
-Lemma~\ref{lem:phi_scaling} establishes
+for a constant $c_\phi > 0$ determined by
+Karakida et al.~\cite{karakida2019universal} (Theorem~5.1 for
+concentration in the wide-network limit), depending on the depth of
+$g_\phip$ and the data covariance but not on $M$. By
+Lemma~\ref{lem:schur},
 \[
-    \E\!\left[ \lambda_{\max}(J_\phip^\top J_\phip) \right]
-    \;=\; \Omega(M)
-    \;=\; \Omega\!\left(\sqrt{\Cg}\right)
+    \lambda_{\max}(J_\thetap^\top J_\thetap) \;\leq\; C_\thetap
 \]
-under Assumptions~\ref{ass:reg}--\ref{ass:subg} for fixed-depth
-architectures with $\Cg = \Theta(M^2)$, with concentration in the
-wide-network limit
-(Karakida et al.~\cite{karakida2019universal}, Theorem~5.1).
-Lemma~\ref{lem:interlacing} (Cauchy interlacing applied to the
-diagonal block $J_\phip^\top J_\phip$ of $G$) transfers this to the
-full matrix:
-\[
-    \lambda_{\max}(G)
-    \;\geq\; \lambda_{\max}(J_\phip^\top J_\phip)
-    \;=\; \Omega\!\left(\sqrt{\Cg}\right).
-\]
-Denote the implicit constant by $c_1'$: $\lambda_{\max}(G) \geq c_1'
-\cdot \sqrt{\Cg}$ for all $\Cg$ sufficiently large.
-
-\paragraph{Upper bound on $\lambda_{\min}^{+}(G)$ direction, from the spectral block.}
-Lemma~\ref{lem:schur} (Step 6 of its proof) gives, under
-Assumption~\ref{ass:linear},
-\[
-    \lambda_{\min}^{+}(J_\thetap^\top J_\thetap)
-    \;\leq\; L^2 \cdot \sigma_{S}(\Sigma_X),
-\]
-where $L$ is the Lipschitz constant of $g_\phip$'s gradient
-(Assumption~\ref{ass:reg}) and $\sigma_S(\Sigma_X) =
-\lambda_{\min}(\Sigma_X)$ is the smallest data covariance eigenvalue.
-By Cauchy interlacing (min form, Bhatia~\cite{bhatia1997matrix}
-Corollary~III.1.5, dually):
-\[
-    \lambda_{\min}^{+}(G)
-    \;\leq\; \lambda_{\min}^{+}(J_\thetap^\top J_\thetap)
-    \;\leq\; L^2 \cdot \sigma_S(\Sigma_X).
-\]
-Denote this upper bound by $C_2 := L^2 \cdot \sigma_S(\Sigma_X)$.
-Crucially, $C_2$ depends only on the model class of $g_\phip$
-(via $L$) and on the data distribution (via $\sigma_S$)---it does
-NOT depend on $\Cg$ or on the number of spatial parameters in any way.
-
-\paragraph{Combining the two bounds.}
-Dividing,
+with $C_\thetap$ independent of $M$ and $\Cg$. Dividing,
 \begin{equation}
-    \kappa_{\mathrm{eff}}(G)
-    \;=\; \frac{\lambda_{\max}(G)}{\lambda_{\min}^{+}(G)}
-    \;\geq\; \frac{c_1' \cdot \sqrt{\Cg}}{C_2}
-    \;=\; \frac{c_1'}{C_2} \cdot \sqrt{\Cg}.
-    \label{eq:kappa_bound_raw}
+    \mathcal{D}_{\mathrm{curv}}^{(M)}
+    \;=\; \frac{\lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)})}
+                {\lambda_{\max}(J_\thetap^\top J_\thetap)}
+    \;\geq\; \frac{c_\phi \cdot M}{C_\thetap}
+    \;=\; c_1 \cdot M,
+    \label{eq:disparity_bound}
 \end{equation}
-This is the essential result: the effective condition number of the
-joint Gauss-Newton matrix grows at least as $\sqrt{\Cg}$
-(equivalently, linearly in the spatial module's characteristic
-width $M$), with a rate constant $c_1' / C_2$ determined entirely by
-the classifier's regularity and the data statistics.
-
-\paragraph{Recasting in the $\sqrt{\Cg / \Cf}$ form of Theorem~\ref{thm:hessian}.}
-Assumption~\ref{ass:linear} sets $\Cf = S \cdot K$, both fixed
-architectural constants of the spectroscopic pipeline. Multiplying and
-dividing \eqref{eq:kappa_bound_raw} by $\sqrt{\Cf}$:
-\[
-    \kappa_{\mathrm{eff}}(G)
-    \;\geq\; \frac{c_1'}{C_2} \cdot \sqrt{\Cg}
-    \;=\; \left( \frac{c_1' \cdot \sqrt{\Cf}}{C_2} \right) \cdot
-                            \sqrt{\frac{\Cg}{\Cf}}
-    \;=\; c_1 \cdot \sqrt{\frac{\Cg}{\Cf}},
-\]
-where $c_1 := c_1' \cdot \sqrt{\Cf} / C_2 = c_1' \cdot \sqrt{SK} / (L^2
-\sigma_S(\Sigma_X))$ is the theorem's leading constant, depending only
-on the data covariance ($\sigma_S$), the bottleneck dimension $K$,
-the input spectral dimension $S$, and the model class of $g_\phip$
-(through $L$)---exactly the dependencies claimed in the theorem
-statement. The subtracted constant $c_2$ absorbs finite-$\Cg$
-corrections from the mean-field concentration bound in
-Lemma~\ref{lem:phi_scaling}. This completes the proof.
+where $c_1 := c_\phi / C_\thetap$ depends only on the classifier's
+depth, the classifier's input Lipschitz constant $\widetilde{L}$,
+the bottleneck dimension $K$, the input spectral dimension $S$, and
+the data-covariance eigenvalues---exactly the dependencies claimed in
+the theorem statement. A subtracted constant $c_2 \geq 0$ absorbs
+finite-$M$ corrections from the Karakida concentration bound. Under
+$\Cg = \Theta(M^2)$, $M = \Theta(\sqrt{\Cg})$ and the ratio form
+$\mathcal{D}_{\mathrm{curv}} \geq c_1' \sqrt{\Cg / \Cf} - c_2$
+follows on multiplying and dividing by $\sqrt{\Cf}$. This completes
+the proof.
 \hfill$\square$
 
-\begin{remark}[Width vs.\ parameter-count scaling]
-The $\sqrt{\Cg}$ scaling reflects the fact that Karakida's underlying
-result~\cite{karakida2019universal} bounds $\lambda_{\max}$ in terms
-of the network's characteristic \emph{width} $M$, not its total
-parameter count. For a fixed-depth architecture with $\Cg =
-\Theta(M^2)$, the equivalent statement is $\lambda_{\max} \sim
-\sqrt{\Cg}$. The paper's Experiment~1.1, which sweeps width $D$ from
-$16$ to $8192$ at fixed depth, measures a log--log slope of $\approx
-0.70$ against $\Cg$---consistent with the asymptotic $0.5$
-($\sqrt{\Cg}$) prediction plus a mild finite-width upward correction
-of the same character reported in Karakida's own numerical
-validation.
+\begin{remark}[What Theorem~\ref{thm:hessian} does and does not claim]
+\label{rem:thm1_scope}
+Theorem~\ref{thm:hessian} is a scaling law for the curvature ratio
+between two Gauss-Newton blocks; it does not claim that the full
+joint Gauss-Newton matrix has a large condition number in the strict
+$\lambda_{\max}/\lambda_{\min}$ sense (which is trivially infinite
+under rank-deficiency), nor that joint gradient descent produces
+disparate effective learning rates (which is the separate content of
+Theorem~\ref{thm:twoscale}, under its own hypotheses). The scaling
+$\mathcal{D}_{\mathrm{curv}} \geq \Omega(\sqrt{\Cg / \Cf})$ is a
+purely geometric statement about how curvature concentrates in the
+downstream module as the spatial network widens.
 \end{remark}
 
-\begin{remark}[Why the $\sqrt{\Cg / \Cf}$ framing]
-Although $\Cf = SK$ is a constant of the setup and the bound
-$\kappa_{\mathrm{eff}}(G) \geq \Omega(\sqrt{\Cg})$ is equivalent to
-$\Omega(\sqrt{\Cg / \Cf})$ up to constants, we prefer the ratio form
-because it makes explicit that the ill-conditioning is fundamentally
-a \emph{capacity asymmetry} phenomenon: doubling both $\Cg$ and
-$\Cf$ (e.g.\ by widening both modules together) leaves the pathology
-unchanged. It is the ratio, not the absolute size, that drives the
-theorem.
+\begin{remark}[Width scaling and the empirical exponent]
+The $\sqrt{\Cg}$ scaling reflects the fact that Karakida's
+underlying result~\cite{karakida2019universal} bounds
+$\lambda_{\max}(J_\phip^\top J_\phip)$ in terms of the network's
+characteristic \emph{width} $M$, not its total parameter count. For
+a fixed-depth architecture with $\Cg = \Theta(M^2)$, the equivalent
+scaling is $\lambda_{\max}(J_\phip^\top J_\phip) \sim \sqrt{\Cg}$.
+Experiment~1.1 sweeps width $D$ from $16$ to $8192$ at fixed depth
+and measures a log--log slope of $\approx 0.70$ against $\Cg$,
+consistent with the asymptotic $0.5$ prediction plus a mild
+finite-width upward correction of the same character reported in
+Karakida's own numerical validation.
 \end{remark}
+
 
 \subsection{Full proof of Theorem~\ref{thm:twoscale}}
 \label{sec:proof_thm2}

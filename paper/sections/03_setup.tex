@@ -206,29 +206,35 @@ its condition number. We write $A \succeq B$ to mean $A - B$ is
 positive semidefinite. The symbol $\Omega(\cdot)$ is used in the
 standard asymptotic sense.
 
-\begin{remark}[Effective condition number for rank-deficient
-Gauss-Newton matrices]
-\label{rem:kappa_eff}
-The joint Gauss-Newton matrix $G$ considered in
-Theorem~\ref{thm:hessian} is typically rank-deficient in the
-bottleneck regime $N_{\mathrm{cls}} < K$: parameter directions
-orthogonal to the classifier's range have exactly zero curvature and
-receive no gradient. Consequently the strict smallest eigenvalue
-$\lambda_{\min}(G) = 0$ and the strict condition number is infinite.
-Throughout this paper we work instead with the \emph{effective}
-condition number
+\begin{definition}[Module curvature disparity]
+\label{def:dcurv}
+The \emph{module curvature disparity} of the joint Gauss-Newton
+matrix is
 \[
-    \kappa_{\mathrm{eff}}(G)
-    \;:=\; \frac{\lambda_{\max}(G)}{\lambda_{\min}^{+}(G)},
+    \mathcal{D}_{\mathrm{curv}}(G)
+    \;:=\; \frac{\lambda_{\max}(G_{\phip\phip})}
+                {\lambda_{\max}(G_{\thetap\thetap})}
+    \;=\; \frac{\lambda_{\max}(J_{\phip}^\top J_{\phip})}
+                {\lambda_{\max}(J_{\thetap}^\top J_{\thetap})},
 \]
-where $\lambda_{\min}^{+}(G)$ denotes the smallest \emph{nonzero}
-eigenvalue---equivalently, the smallest eigenvalue of $G$ restricted
-to its range. This is the ratio the optimizer actually experiences on
-the loss-sensitive subspace, and is standard in numerical linear
-algebra (Horn and Johnson~\cite{horn2013matrix}, \S 5.1) and in
-modern Hessian / NTK analyses of over-parameterised networks
-(Sagun et al.~\cite{sagun2017empirical};
-Ghorbani et al.~\cite{ghorbani2019investigation}). All occurrences of
-$\kappa(G)$ in Theorem~\ref{thm:hessian} and its proof are to be read
-as $\kappa_{\mathrm{eff}}(G)$.
+the ratio of the spatial Gauss-Newton block's top eigenvalue to the
+spectral block's top eigenvalue.
+\end{definition}
+
+\begin{remark}[Why disparity, not condition number]
+\label{rem:disparity_vs_kappa}
+Theorem~\ref{thm:hessian} is a purely geometric statement about how
+curvature concentrates between the two modules as the spatial network
+widens. It is not a joint-Hessian condition-number bound: the joint
+Gauss-Newton $G$ is rank-deficient (parameter directions orthogonal
+to the classifier's range have exactly zero curvature), so
+$\kappa(G) = \lambda_{\max}(G)/\lambda_{\min}(G)$ is trivially
+infinite. The disparity $\mathcal{D}_{\mathrm{curv}}$ is
+well-defined regardless of rank structure, uses only well-behaved
+operator-norm quantities, and is exactly the ratio measured in
+Experiment~1.1. Its growth with spatial capacity is the geometric
+mechanism that motivates the two-timescale dynamical analysis of
+Theorem~\ref{thm:twoscale}, but the dynamical claim requires its own
+hypotheses and does not follow from $\mathcal{D}_{\mathrm{curv}}$
+alone.
 \end{remark}

@@ -10,26 +10,43 @@ then shows leads to gradient starvation.
 
 \subsection{Main result}
 
-\begin{theorem}[Hessian Capacity Bound]
+\begin{theorem}[Capacity-Induced Module Curvature Disparity]
 \label{thm:hessian}
-Let $G = J^\top J$ denote the Gauss-Newton matrix of the loss
-\eqref{eq:loss} at a parameter $(\thetap, \phip)$. Under
-Assumptions~\ref{ass:linear}--\ref{ass:gap}, there exist constants
-$c_1, c_2 > 0$ depending only on the data covariance, the bottleneck
-dimension $K$, and the model class of $g_\phip$ such that
+Consider the compositional model $F_{\thetap,\phip} = g_\phip \circ
+f_\thetap$ with fixed-dimensional linear spectral module $f_\thetap$
+(Assumption~\ref{ass:linear}) and a family of spatial networks
+$g_\phip^{(M)}$ indexed by characteristic width $M$
+(channels for a CNN, embedding dimension for a ViT, hidden width for
+an MLP). Under
+Assumptions~\ref{ass:linear}--\ref{ass:inputlip}, there exist
+constants $c_1, c_2 > 0$ depending on the data covariance, the
+bottleneck dimension $K$, the input spectral dimension $S$, and the
+depth of $g_\phip$---but not on $M$ or on the spatial parameter count
+$\Cg$---such that
 \[
-    \kappa_{\mathrm{eff}}(G)
-    \;\;\geq\;\; c_1 \cdot \sqrt{\frac{\Cg}{\Cf}}
-    \;-\; c_2.
+    \mathcal{D}_{\mathrm{curv}}^{(M)}
+    \;=\; \frac{\lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)})}
+                {\lambda_{\max}(J_\thetap^\top J_\thetap)}
+    \;\geq\; c_1 \cdot M - c_2
 \]
-Equivalently, if $g_\phip$ has fixed depth and characteristic width
-$M$ (so $\Cg = \Theta(M^2)$ for typical MLP, CNN, ViT architectures),
+in expectation over random Gaussian initialization. Equivalently, for
+fixed-depth architectures with $\Cg = \Theta(M^2)$,
 \[
-    \kappa_{\mathrm{eff}}(G)
-    \;\;\geq\;\; \tilde{c}_1 \cdot \frac{M}{\sqrt{\Cf}}
-    \;-\; c_2.
+    \mathcal{D}_{\mathrm{curv}}^{(M)}
+    \;\geq\; c_1' \cdot \sqrt{\Cg / \Cf} - c_2.
 \]
 \end{theorem}
+
+\begin{remark}[Interpretation]
+Theorem~\ref{thm:hessian} states that as the spatial network widens,
+its top Gauss-Newton eigenvalue grows without bound while the
+spectral module's top Gauss-Newton eigenvalue remains capped by a
+$\Cg$-independent constant. Curvature increasingly concentrates in
+the downstream module. This is a purely geometric fact about the
+Hessian; the dynamical consequence---that joint training pins
+$\thetap$ near its initialization---is stated separately in
+Theorem~\ref{thm:twoscale}, under its own hypotheses.
+\end{remark}
 
 The proof decomposes the condition number bound into separate bounds on
 the largest and smallest eigenvalues of $G$. We state the three
@@ -81,149 +98,107 @@ interlacing theorem applied to principal submatrices
 (see e.g.\ Bhatia~\cite{bhatia1997matrix}, Corollary III.1.5).
 \end{remark}
 
-\begin{lemma}[Residual-dimension rank bound and smallest-eigenvalue cap]
+\begin{lemma}[Spectral block operator-norm cap]
 \label{lem:schur}
-Let $J_\thetap \in \mathbb{R}^{N_{\mathrm{data}} HW N_{\mathrm{cls}}
-\times \Cf}$ denote the Jacobian of the softmax residual $r =
-\mathrm{softmax}(\hat{y}) - y_{\mathrm{onehot}}$ with respect to the
-spectral parameters $\thetap$, aggregated over $N_{\mathrm{data}}$
-training examples and all $HW$ pixels. Under
-Assumptions~\ref{ass:linear}--\ref{ass:inputlip}:
-
-\emph{(i) Rank bound.} The Gauss-Newton block of the spectral module
-has rank bounded by
+Under Assumptions~\ref{ass:linear} (linear per-pixel $f_\thetap$)
+and~\ref{ass:inputlip} (bounded input Jacobian
+$\|\partial g_\phip / \partial Z\|_{\mathrm{op}} \leq \widetilde{L}$
+uniformly in $\Cg$), the spectral Gauss-Newton block satisfies
 \[
-    \mathrm{rank}(J_\thetap^\top J_\thetap)
-    \;\leq\; \min\!\left( \Cf,\;\;
-        N_{\mathrm{data}} \cdot HW \cdot (N_{\mathrm{cls}} - 1)
-    \right).
+    \lambda_{\max}(J_\thetap^\top J_\thetap)
+    \;=\; \|J_\thetap\|_{\mathrm{op}}^{2}
+    \;\leq\; \widetilde{L}^{2} \cdot K \cdot \lambda_{\max}(\Sigma_X)
+    \;=:\; C_\thetap,
 \]
-In the over-parameterised regime $\Cf > N_{\mathrm{data}} HW
-(N_{\mathrm{cls}} - 1)$, the block is rank-deficient with at least
-$\Cf - N_{\mathrm{data}} HW (N_{\mathrm{cls}} - 1)$ eigenvalues
-exactly equal to zero.
-
-\emph{(ii) Smallest positive eigenvalue cap.} There exists a
-constant $C_2 = C_2(\widetilde{L}, \lambda_{\max}(\Sigma_X),
-N_{\mathrm{cls}})$ independent of $\Cg$ (but depending on the depth
-of $g_\phip$ through $\widetilde{L}$) such that
-\[
-    \lambda_{\min}^{+}\!\left( J_\thetap^\top J_\thetap \right)
-    \;\leq\; \frac{C_2}{N_{\mathrm{data}} HW (N_{\mathrm{cls}} - 1)}.
-\]
+where $C_\thetap$ depends on the classifier's input Lipschitz
+constant $\widetilde{L}$, the bottleneck dimension $K$, and the top
+eigenvalue of the per-pixel input covariance $\Sigma_X$---but not on
+the spatial width $M$ or the spatial parameter count $\Cg$.
 \end{lemma}
 
 \begin{remark}
-Lemma~\ref{lem:schur}(i) is the per-pixel bottleneck extension of the
-classical Fisher-rank bound for softmax classification, going back to
-Amari~\cite{amari2016information} (rank-($N_{\mathrm{cls}} - 1$)
-Fisher of the categorical family); the sample-level $N(N_{\mathrm{cls}}
-- 1)$ formulation appears in Botev, Ritter, and
-Barber~\cite{botev2017practical}, and the empirical spectrum
-observation is due to Sagun et al.~\cite{sagun2017empirical} and
-Papyan~\cite{papyan2020traces}. Our contribution is the extension to
-compositional networks with a linear per-pixel bottleneck and
-arbitrary spatial classifier, plus the explicit $\Cg$-independence
-statement in part (ii).
-\end{remark}
-
-\begin{remark}[Gauss-Newton vs.\ full Hessian]
-Lemma~\ref{lem:schur} bounds the Gauss-Newton block $J_\thetap^\top
-J_\thetap$ (equivalently, the empirical Fisher). The full Hessian
-carries an additional residual-weighted second-derivative term $\sum_i
-r_i \cdot \partial^2 \ell_i / \partial \thetap^2$ that vanishes at
-convergence (Sagun et al.~\cite{sagun2017empirical}). The bound
-transfers to the full Hessian at any stationary point.
-\end{remark}
-
-\begin{remark}
-The Schur complement bound is classical; see Horn and
-Johnson~\cite{horn2013matrix}, Theorem 1.20. The second statement
-uses the linearity of $f_\thetap$ to derive the Kronecker
-factorisation $J_\thetap^\top J_\thetap = A^\top A \otimes \Sigma_X$
-(under a common-linearisation assumption on $A = \partial \hat{y} /
-\partial Z$); combined with the Bhatia spectral identity for
-Kronecker products, this yields the explicit bound
-$\lambda_{\min}^{+}(J_\thetap^\top J_\thetap) \leq L^2 \cdot
-\lambda_{\min}(\Sigma_X)$ where $L$ is the classifier's gradient
-Lipschitz constant. See Section~\ref{sec:proof_thm1} for the full
-derivation.
+Lemma~\ref{lem:schur} follows from the chain-rule identity
+$J_\thetap = J_Z \cdot (\partial Z / \partial \thetap)$ combined with
+$\|J_Z\|_{\mathrm{op}} \leq \widetilde{L}$
+(Assumption~\ref{ass:inputlip}) and the exact form of $\partial Z /
+\partial \thetap$ under linearity of $f_\thetap$
+(Assumption~\ref{ass:linear}, giving $\partial Z / \partial \thetap =
+I_K \otimes X^\top$ with $\|\partial Z / \partial
+\thetap\|_{\mathrm{op}}^{2} \leq K \cdot \lambda_{\max}(\Sigma_X)$).
+The bound is on the operator norm (equivalently, the top eigenvalue),
+which is well-behaved under rank-deficiency of the block---avoiding
+the smallest-eigenvalue and Kronecker-factorisation machinery of
+earlier drafts. See Section~\ref{sec:proof_thm1} for details.
 \end{remark}
 
 \subsection{Proof of Theorem~\ref{thm:hessian}}
 
 \begin{proof}[Proof of Theorem~\ref{thm:hessian}]
-The Gauss-Newton matrix admits the block decomposition
+By Lemma~\ref{lem:phi_scaling}, in expectation over random Gaussian
+initialization,
 \[
-    G = \begin{pmatrix}
-        J_\thetap^\top J_\thetap & J_\thetap^\top J_\phip \\
-        J_\phip^\top J_\thetap & J_\phip^\top J_\phip
-    \end{pmatrix}.
+    \lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)}) \;\geq\; c_\phi \cdot M
 \]
-By Lemmas~\ref{lem:phi_scaling} and \ref{lem:interlacing},
+for a constant $c_\phi > 0$ depending only on the depth of $g_\phip$
+and the data covariance, with concentration in the wide-network limit
+(Karakida et al.~\cite{karakida2019universal}, Theorem~5.1). By
+Lemma~\ref{lem:schur},
 \[
-    \lambda_{\max}(G)
-    \;\geq\; \lambda_{\max}(J_\phip^\top J_\phip)
-    \;=\; \Omega\!\left( \sqrt{\Cg} \right),
+    \lambda_{\max}(J_\thetap^\top J_\thetap) \;\leq\; C_\thetap
 \]
-using $\Cg = \Theta(M^2)$ for fixed-depth architectures.
-By Lemma~\ref{lem:schur} (see Section~\ref{sec:proof_thm1} for the
-full derivation), the smallest nonzero eigenvalue of the spectral
-Gauss-Newton block is capped by a $\Cg$-independent constant $C_2$
-depending only on the data covariance and the classifier's Lipschitz
-constant. Transfer to the full matrix via a range-space argument
-(Section~\ref{sec:proof_thm1}) gives
+for a constant $C_\thetap > 0$ independent of $M$. Dividing,
 \[
-    \lambda_{\min}^{+}(G) \;\leq\; C_2.
+    \mathcal{D}_{\mathrm{curv}}^{(M)}
+    \;=\; \frac{\lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)})}
+                {\lambda_{\max}(J_\thetap^\top J_\thetap)}
+    \;\geq\; \frac{c_\phi \cdot M}{C_\thetap}
+    \;=\; c_1 \cdot M
 \]
-Combining with the $\lambda_{\max}$ bound and identifying
-$\Cf = SK$ (Assumption~\ref{ass:linear}),
-\[
-    \kappa_{\mathrm{eff}}(G)
-    \;=\; \frac{\lambda_{\max}(G)}{\lambda_{\min}^{+}(G)}
-    \;\geq\; \frac{c_1' \cdot \sqrt{\Cg}}{C_2}
-    \;=\; c_1 \cdot \sqrt{\frac{\Cg}{\Cf}}
-\]
-with $c_1 := c_1' \cdot \sqrt{\Cf} / C_2$ depending only on the data
-covariance, the bottleneck dimension $K$, the input spectral dimension
-$S$, and the model class of $g_\phip$; a constant $c_2 \geq 0$ absorbs
-finite-$\Cg$ corrections from Karakida's concentration bound. This
-completes the proof.
+with $c_1 := c_\phi / C_\thetap$. A constant $c_2 \geq 0$ absorbs
+finite-$M$ corrections from Karakida's concentration bound. Under
+$\Cg = \Theta(M^2)$ (fixed-depth architectures), $M = \Theta(\sqrt{\Cg})$
+and the ratio form $c_1' \cdot \sqrt{\Cg / \Cf}$ follows on multiplying
+and dividing by $\sqrt{\Cf}$. This completes the proof.
 \end{proof}
 
 \subsection{Implications}
 
-Theorem~\ref{thm:hessian} establishes that the loss landscape is
-\emph{geometrically pathological} whenever $\Cg \gg \Cf$. Two immediate
-consequences follow.
+Theorem~\ref{thm:hessian} establishes that curvature concentrates in
+the downstream spatial module as its width grows. We highlight two
+implications, and separate them explicitly from the dynamical
+consequences of Section~\ref{sec:thm2}.
 
-\paragraph{Bounded learning rate forces timescale separation.}
-The maximum stable learning rate for first-order optimization is
-bounded above by $2 / \lambda_{\max}(G)$. Under
-Theorem~\ref{thm:hessian}, this bound scales as $\Omega(1/\sqrt{\Cg})$. With
-such a small learning rate, updates to $\thetap$---whose Hessian block
-has smallest nonzero eigenvalue bounded above by a $\Cg$-independent
-constant---progress at a rate that is $\Omega(\sqrt{\Cg/\Cf})$-fold
-slower than updates to $\phip$. This is the dynamical regime analyzed
-in Section~\ref{sec:thm2}.
+\paragraph{Geometric mechanism, not a dynamical claim.}
+$\mathcal{D}_{\mathrm{curv}} \gg 1$ identifies a
+\emph{potential} for disparate module learning rates: the spatial
+Gauss-Newton block admits directions of arbitrarily large curvature
+while the spectral block does not. Whether joint gradient descent
+actually produces disparate effective learning rates depends on
+additional dynamical hypotheses (e.g., that the spatial module
+converges quickly on the fast manifold), which we introduce and
+verify in Section~\ref{sec:thm2}. Theorem~\ref{thm:hessian} does not,
+by itself, prove that $\thetap$ is pinned to initialization.
 
-\paragraph{No remedy from optimizer tuning.}
-The condition number bound depends only on architectural parameters,
-not on the optimizer or schedule. Adaptive methods (Adam, RMSProp)
-rescale gradients but cannot remove the underlying curvature
-asymmetry; they redistribute the timescale gap rather than eliminating
-it. We discuss this further in Section~\ref{sec:discussion}.
+\paragraph{No remedy from optimizer tuning of the shared learning rate.}
+The disparity bound depends only on architectural parameters, not on
+the choice of optimizer or the shared step-size schedule. Adaptive
+methods (Adam, RMSProp) rescale per-coordinate gradient magnitudes
+but do not alter the underlying eigenvalue disparity between the two
+blocks. Two-timescale optimizers with explicitly different learning
+rates per module (Heusel et al.~\cite{heusel2017gans}; Borkar
+2008~\cite{borkar2008stochastic} Ch.~6) are the natural remedy at the
+optimizer level. We discuss this in Section~\ref{sec:discussion}.
 
-\subsection{Comments on tightness}
+\subsection{Empirical support}
 
-The bound in Theorem~\ref{thm:hessian} is a \emph{lower bound} on the
-condition number. In practice the empirical condition number can be
-substantially larger because $\lambda_{\min}(G)$ is often dominated by
-near-degenerate directions in the spectral block that the bound does
-not capture. Experiment~1.1 in Section~\ref{sec:experiments} measures
-$\kappa(G)$ empirically across a range of capacity ratios and confirms
-that the predicted scaling holds with a slope close to the theoretical
-prediction.
+Experiment~1.1 in Section~\ref{sec:experiments} measures
+$\mathcal{D}_{\mathrm{curv}}^{(M)}$ directly across a range of spatial
+widths and confirms monotonic growth with $M$. The observed
+log-log slope $\approx 0.70$ against $\Cg$ falls between the
+asymptotic prediction of Lemma~\ref{lem:phi_scaling} ($0.5$) and the
+naive linear-in-parameters prediction ($1.0$), consistent with a
+finite-width upward correction of the same character reported in
+Karakida's own numerical validation~\cite{karakida2019universal}.
 
 \begin{remark}[Defense against linear triviality]
 \label{rem:not_pca}
