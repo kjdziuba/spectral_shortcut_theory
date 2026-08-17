@@ -189,6 +189,43 @@ rates per module (Heusel et al.~\cite{heusel2017gans}; Borkar
 2008~\cite{borkar2008stochastic} Ch.~6) are the natural remedy at the
 optimizer level. We discuss this in Section~\ref{sec:discussion}.
 
+\begin{remark}[Small eigenvalues: irrelevance vs.\ starvation]
+\label{rem:irrelevance_vs_starvation}
+A parameter direction can carry vanishing curvature for two very
+different reasons: (a) the direction genuinely does not affect
+predictions on the task at hand (``irrelevance''), in which case zero
+gradient is the correct outcome and the parameter should not be
+learned; or (b) the direction \emph{would} affect predictions if the
+optimizer could reach it, but the compositional geometry buries the
+gradient signal behind the bottleneck (``starvation''). The
+Gauss-Newton bounds of Theorem~\ref{thm:hessian} alone cannot
+distinguish between these interpretations: both produce
+$\Cg$-independent small curvature in the spectral block.
+
+The synthetic experiments in Section~\ref{sec:experiments} are
+designed to distinguish these hypotheses by construction. In
+Experiment~1.3 we generate data where each of the two modalities alone
+carries information sufficient to solve the task (single-modality
+baselines reach $\approx 0.53$ on a binary classification, above the
+$0.50$ chance floor). Joint training on the same data does not merely
+under-use the spectral channel: it undershoots the weaker of the two
+single-modality baselines. The gap is modest in absolute terms on this
+synthetic problem---an important honest caveat---but its direction is
+inconsistent with interpretation~(a), under which joint training
+would at worst match the stronger single-modality baseline.
+
+For real spectroscopic data, distinguishing (a) from (b) requires
+demonstrating that a frozen pretrained spectral encoder outperforms
+one that has been jointly trained end-to-end on the same task. We
+report such experiments on FTIR and QCL tissue classification in
+Section~\ref{sec:real_data}. Our present study compares only two
+concrete mitigation strategies (freezing the spectral module, and
+Pezeshki's Spectral
+Decoupling~\cite{pezeshki2021gradient}); broader comparisons against
+modality-specific learning rates, gradient surgery, GradNorm-style
+loss balancing, and related interventions are important future work.
+\end{remark}
+
 \subsection{Empirical support}
 
 Experiment~1.1 in Section~\ref{sec:experiments} measures
