@@ -1,4 +1,4 @@
-\section{Theorem 1: The Hessian Capacity Bound}
+\section{Theorem 1: Capacity-Induced Module Curvature Disparity}
 \label{sec:thm1}
 
 This section establishes our first main result: the module curvature
@@ -20,7 +20,8 @@ f_\thetap$ with fixed-dimensional linear spectral module $f_\thetap$
 $g_\phip^{(M)}$ indexed by characteristic width $M$
 (channels for a CNN, embedding dimension for a ViT, hidden width for
 an MLP). Under
-Assumptions~\ref{ass:linear}--\ref{ass:inputlip} and the head
+Assumptions~\ref{ass:linear}, \ref{ass:reg}, \ref{ass:subg},
+and~\ref{ass:inputlip}, together with the head
 hypothesis of Lemma~\ref{lem:phi_scaling} below (a dense classifier
 head over a penultimate feature vector of dimension $\Theta(M)$ with
 concentrated squared norm at initialization), there exist
@@ -31,13 +32,13 @@ spectral dimension $S$, and the architecture class of $g_\phip$
 spatial parameter count $\Cg$---such that
 \[
     \mathcal{D}_{\mathrm{curv}}^{(M)}
-    \;=\; \frac{\lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)})}
-                {\lambda_{\max}(J_\thetap^\top J_\thetap)}
+    \;=\; \frac{\lambda_{\max}(G^{(M)}_{\phip\phip})}
+                {\lambda_{\max}(G_{\thetap\thetap})}
     \;\geq\; c_1 \cdot M - c_2
 \]
 in expectation over random Kaiming (variance-scaled Gaussian)
-initialization. Equivalently, for
-fixed-depth architectures with $\Cg = \Theta(M^2)$,
+initialization. Equivalently, for architecture families with
+$\Cg = \Theta(M^2)$,
 \[
     \mathcal{D}_{\mathrm{curv}}^{(M)}
     \;\geq\; c_1' \cdot \sqrt{\Cg / \Cf} - c_2.
@@ -127,36 +128,44 @@ interlacing theorem applied to principal submatrices
 \end{remark}
 
 \begin{lemma}[Spectral block operator-norm cap]
-\label{lem:schur}
-Under Assumptions~\ref{ass:linear} (linear per-pixel $f_\thetap$)
-and~\ref{ass:inputlip} (bounded input Jacobian
+\label{lem:opcap}
+Under Assumptions~\ref{ass:linear} (linear per-pixel $f_\thetap$),
+\ref{ass:subg} (bounded input second moment), and~\ref{ass:inputlip}
+(bounded input Jacobian
 $\|\partial g_\phip / \partial Z\|_{\mathrm{op}} \leq \widetilde{L}$
-uniformly in $\Cg$), the spectral Gauss-Newton block satisfies
+uniformly in $\Cg$), the spectral logit Jacobian and Gauss-Newton
+block satisfy
 \[
-    \lambda_{\max}(J_\thetap^\top J_\thetap)
-    \;=\; \|J_\thetap\|_{\mathrm{op}}^{2}
-    \;\leq\; \widetilde{L}^{2} \cdot K \cdot \lambda_{\max}(\Sigma_X)
+    \lambda_{\max}(G_{\thetap\thetap})
+    \;\leq\; \|J_\thetap\|_{\mathrm{op}}^{2}
+    \;\leq\; \widetilde{L}^{2} \cdot \lambda_{\max}(\Sigma_X)
     \;=:\; C_\thetap,
 \]
-where $C_\thetap$ depends on the classifier's input Lipschitz
-constant $\widetilde{L}$, the bottleneck dimension $K$, and the top
-eigenvalue of the per-pixel input covariance $\Sigma_X$---but not on
-the spatial width $M$ or the spatial parameter count $\Cg$.
+where $C_\thetap$ depends only on the classifier's input Lipschitz
+constant $\widetilde{L}$ and the top eigenvalue of the mean per-pixel
+input Gram $\Sigma_X$ of~\eqref{eq:sigma_x}---not on the spatial
+width $M$, the spatial parameter count $\Cg$, or the dataset size
+$N$. The same bound holds for the residual-Gram convention, since
+$H_\tau^2 \preceq H_\tau \preceq I$.
 \end{lemma}
 
 \begin{remark}
-Lemma~\ref{lem:schur} follows from the chain-rule identity
-$J_\thetap = J_Z \cdot (\partial Z / \partial \thetap)$ combined with
-$\|J_Z\|_{\mathrm{op}} \leq \widetilde{L}$
+Lemma~\ref{lem:opcap} follows from the chain-rule identity
+$J_\thetap = J_Z \cdot (\partial Z / \partial \thetap)$ for the logit
+Jacobian, combined with $\|J_Z\|_{\mathrm{op}} \leq \widetilde{L}$
 (Assumption~\ref{ass:inputlip}) and the exact form of $\partial Z /
 \partial \thetap$ under linearity of $f_\thetap$
-(Assumption~\ref{ass:linear}, giving $\partial Z / \partial \thetap =
-I_K \otimes X^\top$ with $\|\partial Z / \partial
-\thetap\|_{\mathrm{op}}^{2} \leq K \cdot \lambda_{\max}(\Sigma_X)$).
-The bound is on the operator norm (equivalently, the top eigenvalue),
-which is well-behaved under rank-deficiency of the block---avoiding
-the smallest-eigenvalue and Kronecker-factorisation machinery of
-earlier drafts. See Section~\ref{sec:proof_thm1} for details.
+(Assumption~\ref{ass:linear}, giving the per-pixel factor $I_K
+\otimes x_n^\top$, whose $N$-normalized stacking has
+$\|\partial Z / \partial \thetap\|_{\mathrm{op}}^{2} =
+\lambda_{\max}(\Sigma_X)$ exactly, by
+$I_K \otimes \Sigma_X$). Passing from the logit Jacobian to the
+Gauss-Newton block or the residual Jacobian only inserts factors of
+$H_\tau \preceq I$ and can only decrease the bound. The bound is on
+the operator norm (equivalently, the top eigenvalue), which is
+well-behaved under rank-deficiency of the block---avoiding the
+smallest-eigenvalue and Kronecker-factorisation machinery discussed
+in Section~\ref{sec:proof_thm1}.
 \end{remark}
 
 \subsection{Proof of Theorem~\ref{thm:hessian}}
@@ -170,7 +179,7 @@ By Lemma~\ref{lem:phi_scaling}, in expectation over random Kaiming
 for a constant $c_\phi > 0$ independent of $M$ (depending on the
 initialization scheme, the activation, the head dimensions, and the
 data distribution; supplement Section~\ref{sec:proof_thm1}). By
-Lemma~\ref{lem:schur},
+Lemma~\ref{lem:opcap},
 \[
     \lambda_{\max}(J_\thetap^\top J_\thetap) \;\leq\; C_\thetap
 \]

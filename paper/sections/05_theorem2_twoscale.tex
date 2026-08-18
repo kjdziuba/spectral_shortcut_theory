@@ -52,25 +52,60 @@ residual, so
     \;=\; \norm{J_\thetap(t)^\top r(t)}
     \;\leq\; \norm{J_\thetap(t)}_{\mathrm{op}} \cdot \norm{r(t)}.
 \end{equation}
-Under Assumptions~\ref{ass:linear} and~\ref{ass:inputlip},
-Lemma~\ref{lem:schur} caps the first factor uniformly along the
-trajectory:
-\[
-    B \;:=\; \sup_t \norm{J_\thetap(t)}_{\mathrm{op}}
+Fix a horizon $T > 0$ and suppose the trajectory remains in the
+regime of Assumption~\ref{ass:inputlip}, i.e.\
+$\phip(t) \in \Phi_{\mathrm{reg}}$ and $Z(t) \in
+\mathcal{Z}_{\mathrm{reg}}$ for all $t \leq T$
+(\emph{trajectory containment}). Under
+Assumptions~\ref{ass:linear}, \ref{ass:subg},
+and~\ref{ass:inputlip}, Lemma~\ref{lem:opcap} then caps the first
+factor over that horizon:
+\begin{equation}
+\label{eq:bt}
+    B_T \;:=\; \sup_{t \leq T} \norm{J_\thetap(t)}_{\mathrm{op}}
     \;\leq\; \sqrt{C_\thetap}
-    \;=\; \widetilde{L}\,\sqrt{K \cdot \lambda_{\max}(\Sigma_X)},
-\]
-a constant independent of the spatial width $M$ and parameter count
-$\Cg$. The remaining hypothesis concerns the second factor.
+    \;=\; \widetilde{L}\,\sqrt{\lambda_{\max}(\Sigma_X)},
+\end{equation}
+a constant independent of the spatial width $M$, the parameter count
+$\Cg$, and the horizon $T$. (Even without containment,
+$B_T < \infty$ for every finite $T$ by continuity of $J_\thetap$
+along the flow; containment is what makes the cap
+\emph{$M$-independent}, which is the load-bearing property.) We write
+$B$ for $B_T$ when the horizon is clear. The remaining hypothesis
+concerns the second factor.
+
+\begin{remark}[Containment and the unregularized separable regime]
+\label{rem:containment}
+Trajectory containment is a genuine restriction. In the
+unregularized separable regime that motivates the polynomial
+envelope below, $\norm{\phip(t)} \to \infty$ logarithmically
+(Soudry et al.~\cite{soudry2018implicit}), so a bound on
+$\|\partial g_\phip/\partial Z\|_{\mathrm{op}}$ that is uniform over
+\emph{all} $t$ cannot be assumed. Two standard settings restore it:
+weight decay or norm constraints (bounded iterates), and the
+maximal-update parameterization~\cite{yang2021tensor} (bound uniform
+in width). In the pure max-margin limit, $\widetilde{L}$ grows at
+most logarithmically in $T$, which turns the displacement bound of
+Theorem~\ref{thm:twoscale} into
+$\mathcal{O}(\varepsilon \log^2(1/\delta))$---the same conclusion up
+to a log factor.
+\end{remark}
 
 \begin{assumption}[Shortcut residual decay]
 \label{ass:residual}
 There exist constants $C \geq 1$ and $\mu > 0$ such that, along the
 joint trajectory~\eqref{eq:gf},
 \[
-    \norm{r(t)} \;\leq\; \frac{C}{1 + \mu t}.
+    \norm{r(t)} \;\leq\; \frac{C}{1 + \mu t},
 \]
-We refer to $\mu$ as the \emph{shortcut fitting rate}.
+where $\norm{r(t)}$ is the root-mean-square per-pixel residual
+of~\eqref{eq:jacobians}. We refer to $\mu$ as the \emph{shortcut
+fitting rate}. The constants $C$ and $\mu$ may depend on the
+initialization, the data, and the architecture---in particular
+$\mu$ is expected to grow with spatial capacity
+(Remark~\ref{rem:residual_motivation})---and are not assumed uniform
+over any family; the theorem holds for any trajectory admitting such
+an envelope.
 \end{assumption}
 
 \begin{remark}[Why polynomial, and where $\mu$ comes from]
@@ -109,38 +144,41 @@ Under Assumption~\ref{ass:residual}, $T_\delta \leq (C/\delta - 1)/\mu$.
 
 \begin{theorem}[Finite-Time Spectral Starvation]
 \label{thm:twoscale}
-Under Assumptions~\ref{ass:linear}, \ref{ass:inputlip},
-and~\ref{ass:residual}, the gradient flow~\eqref{eq:gf} satisfies, for
-every horizon $T \geq 0$,
+Fix a horizon $T \geq 0$ and suppose the gradient flow~\eqref{eq:gf}
+is contained in $\Phi_{\mathrm{reg}} \times
+\mathcal{Z}_{\mathrm{reg}}$ up to time $T$. Under
+Assumptions~\ref{ass:linear}, \ref{ass:subg}, \ref{ass:inputlip},
+and~\ref{ass:residual}, with $B_T$ as in~\eqref{eq:bt}, the flow
+satisfies
 \[
     \norm{\thetap(T) - \thetap_0}
-    \;\leq\; \frac{B\,C}{\mu} \, \log(1 + \mu T),
+    \;\leq\; \frac{B_T\,C}{\mu} \, \log(1 + \mu T),
 \]
-and at the fitting time $T_\delta$,
+and, whenever $T \geq T_\delta$, at the fitting time $T_\delta$,
 \[
     \norm{\thetap(T_\delta) - \thetap_0}
-    \;\leq\; \frac{B\,C}{\mu} \, \log\!\left(\frac{C}{\delta}\right).
+    \;\leq\; \frac{B_T\,C}{\mu} \, \log\!\left(\frac{C}{\delta}\right).
 \]
-In particular, writing $\varepsilon := B/\mu$ for the effective
+In particular, writing $\varepsilon := B_T/\mu$ for the effective
 module-rate ratio, the spectral displacement by the time the training
 residual reaches level $\delta$ is
 $\mathcal{O}\!\left(\varepsilon \log(1/\delta)\right)$.
 \end{theorem}
 
 \begin{proof}
-By~\eqref{eq:theta_grad_bound}, the operator-norm cap, and
-Assumption~\ref{ass:residual},
+By~\eqref{eq:theta_grad_bound}, the operator-norm cap~\eqref{eq:bt},
+and Assumption~\ref{ass:residual}, for every $t \leq T$,
 \[
     \norm{\dot{\thetap}(t)}
-    \;\leq\; B \cdot \norm{r(t)}
-    \;\leq\; \frac{B\,C}{1 + \mu t}.
+    \;\leq\; B_T \cdot \norm{r(t)}
+    \;\leq\; \frac{B_T\,C}{1 + \mu t}.
 \]
 Integrating,
 \[
     \norm{\thetap(T) - \thetap_0}
     \;\leq\; \int_0^T \norm{\dot{\thetap}(t)}\, dt
-    \;\leq\; B\,C \int_0^T \frac{dt}{1 + \mu t}
-    \;=\; \frac{B\,C}{\mu} \log(1 + \mu T).
+    \;\leq\; B_T\,C \int_0^T \frac{dt}{1 + \mu t}
+    \;=\; \frac{B_T\,C}{\mu} \log(1 + \mu T).
 \]
 For the second claim, Definition~\ref{def:fitting_time} gives
 $1 + \mu T_\delta \leq C / \delta$, so $\log(1 + \mu T_\delta) \leq
@@ -156,7 +194,7 @@ the loss is fit (or by early stopping), not at $t = \infty$.
 \paragraph{The starvation regime.}
 The displacement bound is the product of two factors with opposite
 capacity dependence. The numerator $B$ is capped independently of
-$\Cg$ (Lemma~\ref{lem:schur}): no matter how large the spatial module,
+$\Cg$ (Lemma~\ref{lem:opcap}): no matter how large the spatial module,
 the spectral gradient cannot exceed $B \norm{r}$. The fitting rate
 $\mu$ grows with spatial capacity
 (Remark~\ref{rem:residual_motivation}): wider shortcut pathways
@@ -190,7 +228,7 @@ practically reachable horizon, not merely at a single stopping time.
 \label{sec:thm2_hypotheses}
 
 \paragraph{The operator-norm cap is proven, not assumed.}
-The factor $B$ is supplied by Lemma~\ref{lem:schur} under
+The factor $B$ is supplied by Lemma~\ref{lem:opcap} under
 Assumptions~\ref{ass:linear} and~\ref{ass:inputlip}; it is the point
 where Theorem~\ref{thm:hessian}'s geometry genuinely enters the
 dynamics.

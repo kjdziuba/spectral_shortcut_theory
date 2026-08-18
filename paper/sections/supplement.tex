@@ -29,7 +29,7 @@ scales linearly with width $M$ (Lemma~\ref{lem:phi_scaling}, proved
 by an explicit witness direction in the head weights, with Karakida
 et al.'s mean-field law as the sharp asymptotic benchmark); (ii) the
 spectral block's top eigenvalue is capped by a $\Cg$-independent
-operator-norm bound (Lemma~\ref{lem:schur}). Cauchy interlacing
+operator-norm bound (Lemma~\ref{lem:opcap}). Cauchy interlacing
 (Lemma~\ref{lem:interlacing}) is retained as an auxiliary fact but is
 not load-bearing for the disparity bound. We prove each lemma in
 turn, then combine.
@@ -260,71 +260,93 @@ $\lambda_{\max}(M) \geq \tilde{v}^\top M \tilde{v} / \norm{\tilde{v}}^2
 = \lambda_{\max}(A)$. The same argument for $D$ completes the
 proof. \hfill$\square$
 
-\subsubsection{Proof of Lemma~\ref{lem:schur}}
+\subsubsection{Proof of Lemma~\ref{lem:opcap}}
 
 The proof factors the spectral Jacobian via the chain rule and
 bounds each factor's operator norm using
-Assumptions~\ref{ass:linear} and~\ref{ass:inputlip}.
+Assumptions~\ref{ass:linear}, \ref{ass:subg}, and~\ref{ass:inputlip}.
+We bound the \emph{logit} Jacobian $J_\thetap = \partial \hat{y} /
+\partial \thetap$ of~\eqref{eq:jacobians}; the Gauss-Newton block and
+the residual Jacobian then inherit the bound, since both insert
+factors of $H_\tau$ with $0 \preceq H_\tau \preceq I$
+(Step~4).
 
 \paragraph{Step 1: Chain-rule factorisation.}
-The residual $r$ is a composition $r(\thetap, \phip) = \tau(g_\phip(Z))$
-with $Z = f_\thetap(X)$, where $\tau(\hat{y}) = \mathrm{softmax}(\hat{y})
-- y_{\mathrm{onehot}}$ is the residual map from logits. The chain
-rule gives
+With $Z = f_\thetap(X)$ and $\hat{y} = g_\phip(Z)$, the chain rule
+gives
 \[
     J_\thetap
-    \;=\; \frac{\partial r}{\partial \thetap}
-    \;=\; J_\tau \cdot J_Z \cdot \frac{\partial Z}{\partial \thetap},
+    \;=\; \frac{\partial \hat{y}}{\partial \thetap}
+    \;=\; J_Z \cdot \frac{\partial Z}{\partial \thetap},
+    \qquad J_Z := \partial g_\phip / \partial Z .
 \]
-with $J_\tau := \partial \tau / \partial \hat{y} = \mathrm{diag}(p) -
-p p^\top$ (the softmax Jacobian, which satisfies
-$\|J_\tau\|_{\mathrm{op}} \leq 1$; see Botev, Ritter, and
-Barber~\cite{botev2017practical}) and $J_Z := \partial g_\phip / \partial Z$.
+(For the residual map $r(\thetap,\phip) = \tau(g_\phip(Z))$ with
+$\tau(\hat{y}) = \mathrm{softmax}(\hat{y}) - y_{\mathrm{onehot}}$,
+the same computation carries the extra left factor
+$J_\tau := \partial \tau / \partial \hat{y} = \mathrm{diag}(p) -
+p p^\top = H_\tau$, the softmax Jacobian, which satisfies
+$\|H_\tau\|_{\mathrm{op}} \leq 1$; see Botev, Ritter, and
+Barber~\cite{botev2017practical}.)
 
 \paragraph{Step 2: Operator-norm inequality.}
 Sub-multiplicativity of the operator norm gives
 \[
     \|J_\thetap\|_{\mathrm{op}}
-    \;\leq\; \|J_\tau\|_{\mathrm{op}} \cdot \|J_Z\|_{\mathrm{op}}
+    \;\leq\; \|J_Z\|_{\mathrm{op}}
              \cdot \left\| \frac{\partial Z}{\partial \thetap} \right\|_{\mathrm{op}}
-    \;\leq\; 1 \cdot \widetilde{L} \cdot
+    \;\leq\; \widetilde{L} \cdot
              \left\| \frac{\partial Z}{\partial \thetap} \right\|_{\mathrm{op}},
 \]
-using Assumption~\ref{ass:inputlip} on the middle factor.
+using Assumption~\ref{ass:inputlip} on the first factor.
 
-\paragraph{Step 3: Bounding the input-Jacobian factor.}
-Under Assumption~\ref{ass:linear}, $Z_{n, h, w} = W^\top x_{n, h, w}$
+\paragraph{Step 3: The input-Jacobian factor, exactly.}
+Under Assumption~\ref{ass:linear}, $Z_n = W^\top x_n$
 with $\thetap = \mathrm{vec}(W)$, $W \in \mathbb{R}^{S \times K}$. The
 per-pixel Jacobian is
-$\partial Z_{n,h,w} / \partial \mathrm{vec}(W) = I_K \otimes
-x_{n,h,w}^\top$
+$\partial Z_n / \partial \mathrm{vec}(W) = I_K \otimes x_n^\top$
 (Magnus and Neudecker~\cite{magnus1988matrix}, Ch.~9). Stacking over
-the $N_{\mathrm{data}} HW$ pixel positions,
-$\partial Z / \partial \thetap \in \mathbb{R}^{N_{\mathrm{data}}
-HW K \times SK}$ has operator norm bounded by
+the $N$ pixel positions with the $N^{-1/2}$ normalization
+of~\eqref{eq:jacobians} gives $\partial Z / \partial \thetap \in
+\mathbb{R}^{NK \times SK}$ with
+\[
+    \left( \frac{\partial Z}{\partial \thetap} \right)^{\!\top}
+    \frac{\partial Z}{\partial \thetap}
+    \;=\; \frac{1}{N}\sum_{n=1}^{N} \left( I_K \otimes x_n \right)
+          \left( I_K \otimes x_n^\top \right)
+    \;=\; I_K \otimes \Sigma_X ,
+\]
+hence, \emph{exactly},
 \[
     \left\| \frac{\partial Z}{\partial \thetap} \right\|_{\mathrm{op}}^{2}
-    \;\leq\; K \cdot \lambda_{\max}(\Sigma_X),
+    \;=\; \lambda_{\max}(I_K \otimes \Sigma_X)
+    \;=\; \lambda_{\max}(\Sigma_X),
 \]
-where $\Sigma_X$ is the aggregated per-pixel input Gram (empirical
-covariance) and Assumption~\ref{ass:subg} guarantees
-$\lambda_{\max}(\Sigma_X) < \infty$ with high probability.
+with $\Sigma_X$ the mean per-pixel input Gram of~\eqref{eq:sigma_x};
+Assumption~\ref{ass:subg} guarantees
+$\lambda_{\max}(\Sigma_X) < \infty$ with high probability, with a
+limit independent of $N$. Note that no factor of $K$ appears: the
+Kronecker structure replicates the same spectrum $K$ times rather
+than accumulating it.
 
 \paragraph{Step 4: Assembling.}
-Combining Steps 2 and 3, and using $\lambda_{\max}(J_\thetap^\top
-J_\thetap) = \|J_\thetap\|_{\mathrm{op}}^{2}$,
+Combining Steps 2 and 3,
 \[
-    \lambda_{\max}(J_\thetap^\top J_\thetap)
-    \;\leq\; \widetilde{L}^{2} \cdot K \cdot \lambda_{\max}(\Sigma_X)
-    \;=:\; C_\thetap.
+    \|J_\thetap\|_{\mathrm{op}}^{2}
+    \;\leq\; \widetilde{L}^{2} \cdot \lambda_{\max}(\Sigma_X)
+    \;=:\; C_\thetap .
 \]
-The constant $C_\thetap$ depends on the classifier's input
-Lipschitz constant $\widetilde{L}$ (which may grow with the depth of
-$g_\phip$ but not with its width $M$; see the discussion of
-Assumption~\ref{ass:inputlip}), the bottleneck dimension $K$, and
-the top data-covariance eigenvalue $\lambda_{\max}(\Sigma_X)$. It
-does not depend on $M$ or on the spatial parameter count $\Cg$. This
-completes the proof.
+For the Gauss-Newton block, $G_{\thetap\thetap} = J_\thetap^\top
+H_\tau J_\thetap \preceq J_\thetap^\top J_\thetap$ since
+$H_\tau \preceq I$, so $\lambda_{\max}(G_{\thetap\thetap}) \leq
+C_\thetap$; for the residual Jacobian,
+$\|H_\tau J_\thetap\|_{\mathrm{op}} \leq \|J_\thetap\|_{\mathrm{op}}$
+gives the same cap. The constant $C_\thetap$ depends on the
+classifier's input Lipschitz constant $\widetilde{L}$ (which may grow
+with the depth of $g_\phip$ but not with its width $M$; see the
+discussion of Assumption~\ref{ass:inputlip}) and the top eigenvalue
+of the mean input Gram $\lambda_{\max}(\Sigma_X)$. It does not depend
+on $M$, on the spatial parameter count $\Cg$, or on the dataset size
+$N$. This completes the proof.
 \hfill$\square$
 
 \begin{remark}[Why an operator-norm cap suffices]
@@ -355,7 +377,7 @@ computations.
 \subsubsection{Combining the lemmas: full proof of Theorem~\ref{thm:hessian}}
 \label{sec:thm1_combine}
 
-Assemble Lemmas~\ref{lem:phi_scaling} and~\ref{lem:schur} to complete
+Assemble Lemmas~\ref{lem:phi_scaling} and~\ref{lem:opcap} to complete
 the proof. By Lemma~\ref{lem:phi_scaling}, in expectation over random
 Kaiming (variance-scaled Gaussian) initialization,
 \[
@@ -368,7 +390,7 @@ the witness bound in the proof of Lemma~\ref{lem:phi_scaling}
 Karakida et al.'s~\cite{karakida2019universal} proportional-width
 model class, their Theorem~4 sharpens the width-linear rate to an
 exact law. By
-Lemma~\ref{lem:schur},
+Lemma~\ref{lem:opcap},
 \[
     \lambda_{\max}(J_\thetap^\top J_\thetap) \;\leq\; C_\thetap
 \]
@@ -431,7 +453,7 @@ forms must not be conflated; the theorem's native variable is $M$.
 The main-text proof of Theorem~\ref{thm:twoscale} is complete for the
 gradient-flow model~\eqref{eq:gf}: the displacement bound follows by
 direct integration of the residual envelope, with the operator-norm
-cap supplied by Lemma~\ref{lem:schur}. The supplementary work
+cap supplied by Lemma~\ref{lem:opcap}. The supplementary work
 concerns the hypotheses and the discrete extension.
 
 \TODO{Remaining supplement work for Theorem~\ref{thm:twoscale}:

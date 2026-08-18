@@ -4,6 +4,57 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-18 (later) — T3 theory-hygiene batch
+
+**All eight T3 items done** (A12, A13, A23, A35, A36, A22, A61; A39 was
+already done in T2), plus six opportunistic fixes:
+
+- **A12 normalization**: Sigma_X is now unambiguously the MEAN empirical
+  per-pixel Gram (eq:sigma_x), the loss is 1/N-averaged over all N =
+  N_data*H*W pixels, and r/J carry the matching N^{-1/2} normalization
+  so grad = J^T r holds exactly. Consequence: **C_theta = L~^2 *
+  lambda_max(Sigma_X)** — the factor K is GONE. It was pure slack: the
+  Kronecker identity (dZ/dtheta)^T(dZ/dtheta) = I_K kron Sigma_X is
+  EXACT, and Kronecker replicates the spectrum rather than accumulating
+  it. Every constant in the paper is now dataset-size independent.
+- **A13 Jacobians**: 03 now defines both objects once — logit Jacobian J
+  and residual Jacobian J^res = H_tau J — fixes the GGN convention
+  G = J^T H_tau J (eq:ggn), and states the transfers (H_tau^2 <= H_tau
+  <= I) so lem:opcap covers all three conventions. eq:chain remark
+  corrected re where the softmax enters.
+- **A23 Thm 2**: B -> B_T (finite horizon) with explicit trajectory
+  containment in the hypotheses, plus rem:containment acknowledging
+  that in the unregularized separable regime ||phi|| diverges, naming
+  the two settings that restore the cap (weight decay / muP), and
+  noting the max-margin limit costs only a log factor
+  (eps log^2(1/delta)).
+- **A22 Prop 6.1**: DOWNGRADED from a proposition to an unnumbered
+  heuristic (eq:egr_init) with all three failure modes stated
+  (E[ratio] vs ratio of E, muP-dependence, bottleneck ignored) and the
+  in-manuscript TODO removed. Its only load-bearing role — setting the
+  scale for the RELATIVE alert threshold — survives, since the alert
+  compares against each run's own measured EGR(0).
+- **A35/A36/A61**: D_curv evaluated at random init and tied to
+  eq:block_hessian; assumption lists made explicit everywhere (ass:gap
+  now flagged as not used in any proof, only delimiting the regime of
+  interest); C and mu declared trajectory/architecture-dependent.
+- **Bonus**: A57 (lem:schur -> lem:opcap project-wide rename — the
+  fossil that caused Section 2's misdescription), A54, A14 third site,
+  A16 (slow-fast manifold scrubbed), A37-partial (Section 4 retitled
+  to "Capacity-Induced Module Curvature Disparity"), and author
+  directive D4 implemented as rem:loss_scope (how much of each theorem
+  depends on cross-entropy: Thm 1 essentially loss-agnostic, Thm 2's
+  polynomial envelope CE-on-separable-specific).
+
+Verification: wf_405ae374-c50 (2 adversarial agents on the exact
+identity, the end-to-end normalization, and cross-file consistency).
+Compiles clean; only fig:exp11_paired remains undefined (A10, Phase P5).
+
+**Next:** T4 ratio recount from the real BlockViT v2 checkpoint (A4/A5),
+then T5 freeze gate — **switch back to Fable for T5**.
+
+---
+
 ## 2026-08-18 — Phase T1+T2 complete: integrity batch + width-native Lemma 4.1 proof
 
 **T1 integrity batch (A2, A3, A30, A44, A56, A58) — DONE:**
@@ -55,9 +106,6 @@ Running session-by-session log. Newest entries at the top.
   (wf_9d7f7921-a7f) on the witness proof + cross-file consistency.
 - Paper compiles clean; only remaining warning is fig:exp11_paired
   (A10, Phase P5).
-
-**Next:** T3 theory-hygiene batch (A12, A13, A23, A35, A36, A22, A61),
-then T4 ratio recount from BlockViT checkpoint, then T5 freeze gate.
 
 ---
 

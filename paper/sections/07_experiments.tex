@@ -44,14 +44,14 @@ explicitly. The predictions to be tested are
 $\lambda_{\max}(J_\phip^\top J_\phip) = \Omega(M)$
 (Lemma~\ref{lem:phi_scaling}) and
 $\lambda_{\max}(J_\thetap^\top J_\thetap)$ approximately constant
-(Lemma~\ref{lem:schur}).
+(Lemma~\ref{lem:opcap}).
 
 \paragraph{Findings.} Across 50 measurements:
 \begin{itemize}
     \item $\lambda_{\max}(J_\thetap^\top J_\thetap)$ is flat at
           $\approx 0.02$ over the full range of $D$ -- the spectral
           block does not grow with the spatial capacity, consistent
-          with Lemma~\ref{lem:schur}.
+          with Lemma~\ref{lem:opcap}.
     \item $\lambda_{\max}(J_\phip^\top J_\phip)$ grows by $74\times$
           (from $0.62$ to $46$) as $\Cg$ grows by $510\times$.
     \item The empirical log-log slope of $\lambda_{\max}(J_\phip^\top
@@ -96,9 +96,10 @@ growing curvature with $D$, isolating the asymmetry to the spatial side.
 We train the compositional model under joint and frozen-spectral
 conditions across multiple capacities and architectures, logging the
 EGR every step. The predictions to be tested are
-Proposition~\ref{prop:egr_monotonic} (EGR decays along the
-slow-fast manifold) and the consequence that the EGR collapse depth
-should scale monotonically with capacity.
+Proposition~\ref{prop:egr_monotonic} (the spectral gradient norm
+decays as $C/(1 + \mu t)$ while the loss is fitted) and the
+consequence that the EGR collapse depth should scale monotonically
+with capacity.
 
 \paragraph{Findings — CNN.} On SpatialCNN at widths $D \in \{16, 64,
 256, 1024\}$ with 3 seeds each:

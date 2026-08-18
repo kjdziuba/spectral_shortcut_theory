@@ -55,10 +55,28 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
   survey" (verify metadata in P4, add to bib). Frozen results become a
   PREDICTION the paper tests, not the premise.
 - **D2 — Capacity-ratio reversal (extend E-scope)**: answer the reviewer
-  question "what if spectral is as big as spatial / spatial smaller?"
-  The supplement's Cg/Cf sweep stub is extended to cover ratio <= 1
-  (reversal + parity conditions). Theorem 1 predicts the pathology fades
-  as the ratio shrinks — this is a testable prediction, run it in E4.
+  question "what if spectral is as big as spatial / spatial smaller /
+  why not just equalize the two?" The theory's answer is ASYMMETRIC and
+  should be stated explicitly in the paper (new subsection in 04 or 09):
+  - **Growing Cf does NOT help.** The cap C_theta = L~^2 lambda_max(Sigma_X)
+    contains no Cf. The spectral block's curvature is set by the
+    bottleneck K, the data, and the spatial module's input sensitivity
+    L~ — not by how many spectral parameters exist. Adding spectral
+    parameters spreads the same gradient budget thinner. This is a
+    SHARP, COUNTERINTUITIVE, FALSIFIABLE prediction.
+  - **Shrinking Cg DOES help** (D_curv >= c1*M is monotone in M), but it
+    trades away the spatial capacity the pipeline exists for — spatial
+    context carries real signal (O'Leary et al.; Mosig group).
+  - So it is not a size-matching problem but a POSITIONAL asymmetry:
+    the spatial module sits adjacent to the loss, the spectral module
+    behind a bottleneck; curvature concentrates near the loss. Equal
+    parameter counts do not equalize position.
+  Experiments (E4): (a) sweep Cf UP at fixed Cg through parity and
+  beyond -> predict the gap PERSISTS (if it vanishes, the theory is
+  wrong in an important way — highest-value falsification test in the
+  paper); (b) sweep Cg DOWN toward Cf -> predict gap fades but accuracy
+  drops, quantifying the trade. Replaces the supplement's vague
+  "smallest capacity ratio where the pathology disappears" stub.
 - **D3 — Prescription hedging + end-phase deep research (new task S0)**:
   soften the absolute "the theory yields a direct prescription: freeze"
   language (09, 01) — freezing is one validated-in-synthetic mitigation,
@@ -109,12 +127,23 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       predicted, 0.70 sublinear undershoot reported honestly).
       Bonus: A39, A63, A14-partial (02), A24-partial (07 relabel),
       A53-partial fixed.
-- [ ] T3. Theory-hygiene: Sigma_X normalization convention fixed everywhere
-      (A12); residual-vs-logit Jacobian unified (A13); finite-horizon B_T +
-      trajectory containment for Thm 2 (A23); D_curv evaluation point (A35);
-      assumption lists corrected (A36); softmax-Hessian 1/4 -> 1/2 (A39);
-      Prop 6.1 downgraded to informal motivation or proven (A22);
-      trajectory-dependence of C, mu stated (A61). ~1 day.
+- [x] T3. DONE 2026-08-18. Sigma_X fixed as the MEAN empirical Gram with
+      1/N-normalized loss/Jacobians throughout; C_theta = L~^2
+      lambda_max(Sigma_X) — factor K dropped (it was slack; the Kronecker
+      identity is exact) and all constants now dataset-size independent
+      (A12). Logit vs residual Jacobian both defined once in 03, GGN
+      convention G = J^T H_tau J fixed, transfers stated (A13). Thm 2
+      restated with finite-horizon B_T + explicit trajectory containment
+      + max-margin log-factor remark (A23). D_curv evaluated at random
+      init, blocks tied to eq:block_hessian (A35). Assumption lists made
+      explicit; ass:gap marked not-used-in-proofs (A36). Prop 6.1
+      DOWNGRADED to an unnumbered heuristic with its three failure modes
+      stated and its TODO removed (A22). C, mu declared
+      trajectory-dependent (A61). A39 already done in T2.
+      Bonus: A57 (lem:schur -> lem:opcap project-wide), A54 (exponential
+      -> margin/time), A14 third site (03 condition-number sentence),
+      A16 (slow-fast manifold scrubbed from 03 and 07), A37-partial
+      (Section 4 retitled), plus D4 (loss-scope remark rem:loss_scope).
 - [ ] T4. Ratio recount from the real BlockViT v2 checkpoint, reconcile 13M
       vs companion's 18.3M, propagate corrected ~108 (or actual) to 03/06/08
       + EGR(0) prediction (A4, A5). ~half day.
@@ -247,7 +276,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 3-5 days (Nat MI restructure) or 1-2 days (conference-shape cleanup)
 
-### A12 [MAJOR] — 03_setup.tex:57-61, 120-124; 04_theorem1_hessian.tex:117-134; 05_theorem2_twoscale.tex:46-64; supplement.tex:181-198
+### A12 [MAJOR — FIXED 2026-08-18 (T3)] — 03_setup.tex:57-61, 120-124; 04_theorem1_hessian.tex:117-134; 05_theorem2_twoscale.tex:46-64; supplement.tex:181-198
 
 **Issue**: Sigma_X is glossed as both the aggregated sum-Gram and the empirical covariance — objects differing by a factor N_data*HW — making lem:schur's bound false under one reading and its constant C_theta dataset-size-dependent under the other, the K factor in the bound is pure slack (B^T B = I_K kron sum x_i x_i^T exactly), and eq:loss's 1/HW never reappears in the gradient identity.
 
@@ -255,7 +284,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 2-3 hours
 
-### A13 [MAJOR] — 03_setup.tex:170-174; 04:127-138; 05 eq:theta_grad_bound; supplement.tex:76-79 vs 155-168
+### A13 [MAJOR — FIXED 2026-08-18 (T3)] — 03_setup.tex:170-174; 04:127-138; 05 eq:theta_grad_bound; supplement.tex:76-79 vs 155-168
 
 **Issue**: J is defined as the residual Jacobian in 03/lem:schur but used as the logit Jacobian in phi_scaling's FIM identity and 05's gradient identity, so D_curv's numerator and denominator bounds are derived for different matrices, and the main-text chain-rule remark omits the softmax factor J_tau.
 
@@ -263,7 +292,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 1-2 hours
 
-### A14 [MAJOR — 02 SITE FIXED 2026-08-18; 03:166-168 and 07:7 remain (P3)] — 02_related_work.tex:51-57; 03_setup.tex:166-168; 07_experiments.tex:7
+### A14 [MAJOR — 02 and 03 SITES FIXED 2026-08-18; 07:7 remains (P3)] — 02_related_work.tex:51-57; 03_setup.tex:166-168; 07_experiments.tex:7
 
 **Issue**: Three prose sites still describe Theorem 1 with the retired Schur-complement/condition-number framing — including 03's 'bounds the condition number of H', which rem:disparity_vs_kappa ('kappa(G) is trivially infinite') directly contradicts 60 lines later.
 
@@ -279,7 +308,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 15 minutes
 
-### A16 [MAJOR] — 03_setup.tex:191-197; 07_experiments.tex:85-88
+### A16 [MAJOR — FIXED 2026-08-18 (T3: 03 and 07 sites)] — 03_setup.tex:191-197; 07_experiments.tex:85-88
 
 **Issue**: Both promise EGR monotonicity 'along the slow-fast manifold' — retired vocabulary appearing nowhere in Sections 5-6 — while Prop 6.2 bounds only the numerator and rem:egr_ratio_caveat explicitly disclaims any ratio claim, so the promises read as a walk-back.
 
@@ -327,7 +356,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 2-3 hours
 
-### A22 [MAJOR] — 06_egr.tex lines 31-49 (prop:egr_init and remark)
+### A22 [MAJOR — FIXED 2026-08-18 (T3: downgraded to heuristic)] — 06_egr.tex lines 31-49 (prop:egr_init and remark)
 
 **Issue**: Proposition 6.1 (E[EGR(0)] = Theta(sqrt(C_f/C_g))) is stated as a formal result with no proof anywhere, contains a live in-manuscript TODO, promises an empirical verification that was never performed (Exp 1.1 measures eigenvalues, not gradient norms), silently exchanges E[ratio] for a ratio of expectations, and is parametrization-dependent (would differ under muP, which the paper cites).
 
@@ -335,7 +364,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 1 hour (downgrade) or 1 day (proof)
 
-### A23 [MAJOR] — 05_theorem2_twoscale.tex:55-64 with 03_setup.tex:105-110
+### A23 [MAJOR — FIXED 2026-08-18 (T3)] — 05_theorem2_twoscale.tex:55-64 with 03_setup.tex:105-110
 
 **Issue**: B := sup_t over the infinite horizon is justified in 03 only via weight decay and bounded-norm iterates — exactly what the Soudry unregularized-separable regime motivating the 1/t envelope excludes (there ||phi(t)|| diverges and the cap provably fails) — and the theorem never hypothesizes the trajectory stays in Phi_reg x Z_reg.
 
@@ -431,7 +460,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 1 hour
 
-### A35 [MODERATE] — 03_setup.tex def:dcurv lines 209-222; 04_theorem1_hessian.tex:28-34
+### A35 [MODERATE — FIXED 2026-08-18 (T3)] — 03_setup.tex def:dcurv lines 209-222; 04_theorem1_hessian.tex:28-34
 
 **Issue**: D_curv is defined with no evaluation point, uses G_phiphi/G_thetatheta without formal introduction, and the theorem's 'in expectation over random Gaussian initialization' never states whether E[D_curv] or E[numerator]/cap is bounded.
 
@@ -439,7 +468,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 45 minutes
 
-### A36 [MODERATE] — 04_theorem1_hessian.tex:22-23, 110-124; 05_theorem2_twoscale.tex:112; supplement.tex:196-197
+### A36 [MODERATE — FIXED 2026-08-18 (T3)] — 04_theorem1_hessian.tex:22-23, 110-124; 05_theorem2_twoscale.tex:112; supplement.tex:196-197
 
 **Issue**: Assumption bookkeeping is wrong: lem:schur and Theorem 2 silently rely on ass:subg for lambda_max(Sigma_X) without listing it, while Theorem 1's assumption range sweeps in ass:gap, which the proof never uses.
 
@@ -447,7 +476,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 30 minutes
 
-### A37 [MODERATE] — main.tex theorem environments (lines 16-24); 04_theorem1_hessian.tex:1; main.aux
+### A37 [MODERATE — TITLE FIXED 2026-08-18 (T3); theorem counters remain (P6)] — main.tex theorem environments (lines 16-24); 04_theorem1_hessian.tex:1; main.aux
 
 **Issue**: All theorem-like environments share one counter, so thm:hessian renders as 'Theorem 12' and thm:twoscale as 'Theorem 25' — nothing in the PDF is ever 'Theorem 1/2' despite constant prose references — and Section 4's title still carries the old 'Hessian Capacity Bound' name.
 
@@ -583,7 +612,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 15 minutes
 
-### A54 [MINOR] — 03_setup.tex lines 126-132
+### A54 [MINOR — FIXED 2026-08-18 (T3)] — 03_setup.tex lines 126-132
 
 **Issue**: 'Residual vanishes exponentially as predictions saturate' is true in the logit margin but re-plants the retired exponential-in-time intuition that Theorem 2's polynomial-decay refactor specifically abandoned.
 
@@ -607,7 +636,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 20 minutes
 
-### A57 [MINOR] — 04_theorem1_hessian.tex:109 etc.; supplement.tex:13-21 vs 04:24-27
+### A57 [MINOR — FIXED 2026-08-18 (T3: lem:schur -> lem:opcap)] — 04_theorem1_hessian.tex:109 etc.; supplement.tex:13-21 vs 04:24-27
 
 **Issue**: The stale label lem:schur (no Schur complement remains — the fossil that caused 02's misdescription) would signal old framing if source is shared, and the supplement's Theorem 1 restatement omits S from the constant-dependency list.
 
@@ -639,7 +668,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 5 minutes
 
-### A61 [MINOR] — 05_theorem2_twoscale.tex lines 66-74
+### A61 [MINOR — FIXED 2026-08-18 (T3)] — 05_theorem2_twoscale.tex lines 66-74
 
 **Issue**: ass:residual never states that C and mu are trajectory/initialization-dependent constants, while the capacity claims quantify over architectures.
 

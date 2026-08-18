@@ -28,25 +28,32 @@ The numerator and denominator are computable directly from gradients
 accumulated during the standard backward pass. EGR is unitless and
 invariant to the choice of learning rate.
 
-\begin{proposition}[Initial value]
-\label{prop:egr_init}
-At initialization, under random Gaussian weights with variance scaled
-in the standard way (e.g.\ Kaiming initialization),
-\[
-    \E[\EGR(0)] = \Theta\!\left( \sqrt{\Cf / \Cg} \right).
-\]
-\end{proposition}
-
-\begin{remark}
-Proposition~\ref{prop:egr_init} captures the intuition that at
-initialization, the gradient norms reflect the parameter counts of each
-module: $\norm{\nabla_\phip \loss}^2 \sim \Cg$ in expectation while
-$\norm{\nabla_\thetap \loss}^2 \sim \Cf$. The square root arises from
-the norm. For our motivating architecture with $\Cg/\Cf \approx 325$,
-this gives $\E[\EGR(0)] \approx 0.055$.
-\TODO{Phase 4, W11: derive the exact constants under Kaiming
-initialization. Verify empirically in Experiment 1.1.}
-\end{remark}
+\paragraph{Initial value: a heuristic.}
+A useful rule of thumb for the starting point of the diagnostic is
+\begin{equation}
+\label{eq:egr_init}
+    \EGR(0) \;\sim\; \sqrt{\Cf / \Cg}
+    \qquad \text{(heuristic, not a theorem).}
+\end{equation}
+The reasoning is a parameter-counting one: at variance-scaled
+initialization each module's gradient has entries of comparable
+typical magnitude, so the squared gradient norms scale with the
+number of parameters carrying them,
+$\norm{\nabla_\phip \loss}^2 \sim \Cg$ against
+$\norm{\nabla_\thetap \loss}^2 \sim \Cf$, and the square root comes
+from passing to norms. We state~\eqref{eq:egr_init} as a heuristic
+rather than a proposition for three reasons: it exchanges the
+expectation of a ratio for the ratio of expectations without a
+concentration argument; the per-entry-magnitude premise is
+parametrization-dependent and would change under $\mu$P, which we
+cite elsewhere~\cite{yang2021tensor}; and the spectral module's
+gradient additionally passes through the bottleneck, which the count
+ignores. Its role in this paper is limited to setting the scale for
+the \emph{relative} threshold of Definition~\ref{def:alert}, which
+compares $\EGR(t)$ against the measured $\EGR(0)$ of the run at hand
+and so does not depend on~\eqref{eq:egr_init} being sharp. The
+corresponding numerical value for our motivating architecture follows
+from the capacity ratio reported in Section~\ref{sec:real}.
 
 \subsection{Decay of the spectral gradient}
 
@@ -59,7 +66,7 @@ and~\ref{ass:residual}),
     \norm{\nabla_\thetap \loss(t)}
     \;\leq\; \frac{B\,C}{1 + \mu t},
 \]
-where $B$ is the operator-norm cap of Lemma~\ref{lem:schur} and
+where $B$ is the operator-norm cap of Lemma~\ref{lem:opcap} and
 $C, \mu$ are the constants of Assumption~\ref{ass:residual}.
 \end{proposition}
 

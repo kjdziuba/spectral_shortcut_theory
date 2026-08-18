@@ -56,8 +56,20 @@ $L$-Lipschitz gradients.
 
 \begin{assumption}[Sub-Gaussian inputs]
 \label{ass:subg}
-Per-pixel inputs $\{x_{h,w}\}$ are sub-Gaussian with second moment
-$\Sigma = \E[x_{h,w} x_{h,w}^\top]$ of bounded condition number.
+Per-pixel inputs $\{x_{h,w}\}$ are sub-Gaussian with population second
+moment $\Sigma = \E[x_{h,w} x_{h,w}^\top]$ of bounded condition
+number. We write
+\begin{equation}
+\label{eq:sigma_x}
+    \Sigma_X \;:=\; \frac{1}{N} \sum_{n=1}^{N} x_n x_n^\top,
+    \qquad N \;:=\; N_{\mathrm{data}} H W,
+\end{equation}
+for the corresponding \emph{mean} empirical Gram over all pixels of
+all images ($x_n$ enumerating the pixel spectra), so that
+$\lambda_{\max}(\Sigma_X) \to \lambda_{\max}(\Sigma) < \infty$ as
+$N \to \infty$. Every constant below is stated in terms of
+$\lambda_{\max}(\Sigma_X)$ and is therefore independent of the
+dataset size.
 \end{assumption}
 
 \begin{assumption}[Capacity gap]
@@ -65,10 +77,12 @@ $\Sigma = \E[x_{h,w} x_{h,w}^\top]$ of bounded condition number.
 $\Cg / \Cf \to \infty$.
 \end{assumption}
 
-Assumption~\ref{ass:gap} is the structural condition under which our
-theorems become informative. Empirically it is satisfied with several
-orders of magnitude to spare in modern spectral-spatial architectures
-(in our motivating example, $\Cg/\Cf \approx 325$).
+Assumption~\ref{ass:gap} is not used in any proof: it is the
+structural regime in which our theorems become \emph{informative}
+rather than merely true, and we state it to delimit scope.
+Empirically it is satisfied with room to spare in modern
+spectral-spatial architectures (in our motivating example,
+$\Cg/\Cf \approx 325$).
 
 \begin{assumption}[Bounded input Jacobian of the classifier]
 \label{ass:inputlip}
@@ -120,20 +134,47 @@ attention, which is standard practice.
 
 \subsection{Loss and gradients}
 
-We train with per-pixel cross-entropy:
+We train with per-pixel cross-entropy, averaged over all $N$ pixel
+positions of the dataset:
 \begin{equation}
 \label{eq:loss}
-    \loss(\thetap, \phip) = \frac{1}{HW} \sum_{h=1}^{H} \sum_{w=1}^{W}
-    \mathrm{CE}\!\left( F_{\thetap,\phip}(X)_{:,h,w},\ y_{h,w} \right),
+    \loss(\thetap, \phip) = \frac{1}{N} \sum_{n=1}^{N}
+    \mathrm{CE}\!\left( \hat{y}_n,\ y_n \right),
+    \qquad \hat{y}_n = F_{\thetap,\phip}(X)_n ,
 \end{equation}
-where $y_{h,w} \in \{1, \dots, N_{\mathrm{cls}}\}$ is the ground-truth
+where $y_n \in \{1, \dots, N_{\mathrm{cls}}\}$ is the ground-truth
 class. Cross-entropy plays an essential role in
 Section~\ref{sec:thm2}: its gradient with respect to the logits
 $\hat{y}$ is the prediction residual
-$r = \mathrm{softmax}(\hat{y}) - y_{\mathrm{onehot}}$, which vanishes
-exponentially as predictions saturate. We discuss other loss functions
+$r_n = \mathrm{softmax}(\hat{y}_n) - y_{n,\mathrm{onehot}}$, which
+vanishes exponentially in the logit margin as predictions
+saturate---and hence, on separable data, polynomially in training
+time (Section~\ref{sec:thm2}). We discuss other loss functions
 sharing this vanishing-residual property in
 Section~\ref{sec:discussion}.
+
+\paragraph{Normalization convention.}
+Consistently with~\eqref{eq:loss}, we collect the per-pixel
+quantities into $N$-normalized stacked objects: the residual vector
+$r := N^{-1/2} (r_1, \dots, r_N)$, so that $\norm{r}$ is the
+root-mean-square per-pixel residual, and the \emph{logit Jacobian}
+\begin{equation}
+\label{eq:jacobians}
+    J_\bullet \;:=\; N^{-1/2}\,
+    \frac{\partial (\hat{y}_1, \dots, \hat{y}_N)}{\partial \bullet},
+    \qquad \bullet \in \{\thetap, \phip\},
+\end{equation}
+so that $\nabla_\bullet \loss = J_\bullet^\top r$ exactly. Two
+Jacobian-like objects appear in the literature and we fix both here:
+$J_\bullet$ above (logit Jacobian), and the \emph{residual Jacobian}
+$J_\bullet^{\mathrm{res}} := \partial r / \partial \bullet =
+H_\tau J_\bullet$, where
+$H_\tau := \mathrm{diag}(p) - p p^\top$ is the softmax Jacobian
+(blockwise over pixels). Since $0 \preceq H_\tau \preceq I$, any
+operator-norm bound on $J_\bullet$ applies a fortiori to
+$J_\bullet^{\mathrm{res}}$. All Gram matrices, and $\Sigma_X$
+in~\eqref{eq:sigma_x}, use this same $1/N$ normalization, so no
+constant in this paper depends on the dataset size.
 
 The gradient of $\loss$ with respect to the spatial parameters is
 computed by standard backpropagation. The gradient with respect to the
@@ -141,10 +182,15 @@ spectral parameters $\thetap$ admits the chain-rule decomposition
 \begin{equation}
 \label{eq:chain}
     \nabla_\thetap \loss
-    = \underbrace{\frac{\partial \loss}{\partial \hat{y}}}_{\text{residual}}
+    = \underbrace{\frac{\partial \loss}{\partial \hat{y}}}_{\text{residual } r}
     \cdot \underbrace{\frac{\partial \hat{y}}{\partial Z}}_{\text{spatial Jacobian}}
-    \cdot \underbrace{\frac{\partial Z}{\partial \thetap}}_{\text{input}}.
+    \cdot \underbrace{\frac{\partial Z}{\partial \thetap}}_{\text{input}} ,
 \end{equation}
+where the softmax enters through the first factor, $\partial \loss /
+\partial \hat{y} = r$ (the residual \emph{is} the softmax-weighted
+loss gradient; the factor $H_\tau$ appears explicitly only when
+differentiating $r$ itself, as in
+$J^{\mathrm{res}}$ above and in the Gauss-Newton blocks below).
 The three factors play distinct roles in our analysis. The residual is
 small when predictions are confident. The spatial Jacobian depends on
 the current state of $\phip$ and thus changes throughout training. The
@@ -152,6 +198,26 @@ final factor is the input itself and is stationary. The product
 structure implies that if the residual decays to zero, the gradient to
 $\thetap$ vanishes regardless of the other two factors. This
 observation underlies Theorem~\ref{thm:twoscale}.
+
+\begin{remark}[How much of this depends on cross-entropy?]
+\label{rem:loss_scope}
+The two theorems depend on the loss to different degrees.
+Theorem~\ref{thm:hessian} is essentially loss-agnostic: the softmax
+Jacobian $H_\tau$ enters its proof only through the two-sided bound
+$c_p P_\perp \preceq H_\tau \preceq I$, which contributes constants
+and no $M$-dependence. Under squared error the inner matrix is the
+identity and the argument simplifies, giving the same width-linear
+disparity. Theorem~\ref{thm:twoscale} is more loss-specific: the
+polynomial residual envelope of Assumption~\ref{ass:residual} is the
+characteristic behavior of logistic-type losses on separable data
+(Soudry et al.~\cite{soudry2018implicit}), whereas squared error on a
+well-conditioned target admits a faster (exponential) envelope. As
+noted after Assumption~\ref{ass:residual}, a faster envelope only
+tightens the displacement bound; the mechanism---a fast module
+driving the residual down and starving a slow one through the shared
+factor---is not specific to cross-entropy, though the $\log(1/\delta)$
+rate is.
+\end{remark}
 
 \subsection{The block Hessian}
 
@@ -167,15 +233,33 @@ two parameter groups:
 \end{equation}
 with $H_{\thetap\thetap} \in \R^{\Cf \times \Cf}$,
 $H_{\phip\phip} \in \R^{\Cg \times \Cg}$, and cross blocks of
-appropriate sizes. Theorem~\ref{thm:hessian} bounds the condition
-number of $H$ in terms of $\Cg / \Cf$ by separately bounding the
-spectrum of each block.
+appropriate sizes. Theorem~\ref{thm:hessian} bounds the \emph{ratio}
+of the two diagonal blocks' top eigenvalues
+(Definition~\ref{def:dcurv}) in terms of the spatial width, by
+bounding each block separately---not the condition number of $H$,
+which is a different and, here, degenerate quantity
+(Remark~\ref{rem:disparity_vs_kappa}).
 
-For optimization-rate analysis it is often more tractable to work with
-the Gauss-Newton approximation $G = J^\top J$, where $J = [J_\thetap,
-J_\phip]$ is the Jacobian of the per-pixel residuals. The two matrices
-coincide near interpolation, and Theorem~\ref{thm:hessian} is stated
-for $G$.
+For curvature analysis we work with the generalized Gauss-Newton
+matrix, which for softmax cross-entropy is
+\begin{equation}
+\label{eq:ggn}
+    G \;=\; J^\top H_\tau J,
+    \qquad J = [\,J_\thetap,\ J_\phip\,],
+\end{equation}
+with $J$ the ($N$-normalized) logit Jacobian of~\eqref{eq:jacobians}
+and $H_\tau$ the softmax Jacobian
+(Botev et al.~\cite{botev2017practical}). $G$ is the positive
+semidefinite part of $H$ that survives at interpolation, and
+$H = G$ exactly when the residual vanishes.
+Theorem~\ref{thm:hessian} is stated for the diagonal blocks
+$G_{\thetap\thetap} = J_\thetap^\top H_\tau J_\thetap$ and
+$G_{\phip\phip} = J_\phip^\top H_\tau J_\phip$. The
+residual-Gram variant $J^{\mathrm{res}\top} J^{\mathrm{res}} =
+J^\top H_\tau^2 J$ obeys the same bounds in both directions
+(upper: $H_\tau^2 \preceq I$; lower: supplement
+Section~\ref{sec:proof_thm1}), so the results are insensitive to
+which convention a reader prefers.
 
 \subsection{The Effective Gradient Ratio}
 
@@ -194,10 +278,11 @@ Effective Gradient Ratio is
 
 \begin{remark}
 EGR is a unitless quantity directly computable inside any training
-loop with negligible overhead. Section~\ref{sec:egr} establishes its
-monotonicity along the slow-fast manifold (a consequence of
-Theorem~\ref{thm:twoscale}) and proposes a threshold criterion for
-detecting gradient starvation onset.
+loop with negligible overhead. Section~\ref{sec:egr} bounds the decay
+of its numerator---the spectral gradient norm---by $C/(1 + \mu t)$
+as a consequence of Theorem~\ref{thm:twoscale}, characterizes the
+ratio's trajectory empirically, and proposes a threshold criterion
+for detecting gradient starvation onset.
 \end{remark}
 
 \subsection{Notational conventions}
@@ -212,17 +297,19 @@ standard asymptotic sense.
 
 \begin{definition}[Module curvature disparity]
 \label{def:dcurv}
-The \emph{module curvature disparity} of the joint Gauss-Newton
-matrix is
+For the Gauss-Newton matrix $G$ of~\eqref{eq:ggn} with diagonal
+blocks $G_{\phip\phip}, G_{\thetap\thetap}$ indexed as
+in~\eqref{eq:block_hessian}, the \emph{module curvature disparity} is
 \[
     \mathcal{D}_{\mathrm{curv}}(G)
     \;:=\; \frac{\lambda_{\max}(G_{\phip\phip})}
-                {\lambda_{\max}(G_{\thetap\thetap})}
-    \;=\; \frac{\lambda_{\max}(J_{\phip}^\top J_{\phip})}
-                {\lambda_{\max}(J_{\thetap}^\top J_{\thetap})},
+                {\lambda_{\max}(G_{\thetap\thetap})},
 \]
-the ratio of the spatial Gauss-Newton block's top eigenvalue to the
-spectral block's top eigenvalue.
+the ratio of the spatial block's top eigenvalue to the spectral
+block's. Unless stated otherwise, $\mathcal{D}_{\mathrm{curv}}$ is
+evaluated at random initialization $(\thetap_0, \phip_0)$, which is
+where Theorem~\ref{thm:hessian} bounds it and where
+Experiment~1.1 measures it.
 \end{definition}
 
 \begin{remark}[Why disparity, not condition number]
