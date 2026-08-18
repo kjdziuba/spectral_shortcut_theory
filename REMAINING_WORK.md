@@ -17,6 +17,98 @@ Verification: 31 findings CONFIRMED, 2 partially confirmed, 0 refuted.
 
 Verification confirmed 31 of the 33 verify-worthy findings outright and partially confirmed the remaining two (none were refuted), leaving 64 total findings: 11 blockers, 19 majors, 23 moderates, and 11 minors. Three integrity items are existential given that the previous review already caught a fabricated author: the "Manifold, Berkeley" bib entry is still in references.bib, five citation sites reference Karakida theorems (3.1/4.2/5.1) that do not exist in the actual AISTATS paper, and the "Figures 2-3, exponent in [0.5, 0.8]" attribution is now verified fabricated against the source, which has two figures and reports agreement with the linear law. Load-bearing quantitative content is broken in three verified places: the supplement still proves the retired Omega(C_g) lemma (with a reversed inequality in Step 3), the C_g/C_f ~ 325 ratio is arithmetically false from the paper's own numbers (real value ~108, and C_g itself is unreconciled with the companion's 18.3M), and the 0.70 scaling-exponent story manufactures agreement by inverting the direction of the discrepancy for architectures whose C_g is provably Theta(M) — while Section 9 tells a third contradictory version. Section 8 additionally presents four table rows with no artifact backing anywhere (one of which, frozen Sliding Win 0.95, would beat the companion paper's bolded best result), makes an ordering claim its own table falsifies, and the manuscript is not submission-complete: no abstract, 11 rendering TODO blocks, empty supplement robustness stubs, zero figures with a dangling headline-figure reference, and a shape roughly 3x over the Nature MI format. The good news is that the refactored theorem statements, Theorem 2's proof, Exp 1.1's non-slope numbers, Exp 1.3's headline means, and most of Section 6.5's statistics reproduce exactly from the artifacts, so the path to submission is a set of well-defined fix clusters (Karakida proof rewrite, ratio recount, exponent reframe, artifact-backed Section 8 rebuild, remnant-prose sweep) rather than new science — but the venue decision and the Exp 1.7/1.8 runs sit on the critical path and should start this week.
 
+## Decisions (2026-08-18, author)
+
+- **Venue**: target ML conferences. ICLR 2027 primary (abstract Sep 18, 2026;
+  paper ~Sep 25; decisions Dec/Jan) -> ICML 2027 fallback (late Jan) -> TMLR
+  backstop. Nature MI retired as target, retained as writing standard.
+  This RESOLVES A47 and re-scopes A11/A46 (ICLR format: ~9 pp + appendix,
+  which the current draft maps onto far better than Nat MI's 3.5k words).
+- **Approach**: theory first, freeze it, then (re)run experiments to test the
+  frozen theory. No empirical claim survives unless backed by an artifact.
+- **A6 resolution**: keep the theory, fix the measurement. Theorem 1 stays
+  width-native (D_curv >= c1*M). The sqrt(C_g/C_f) form becomes an explicitly
+  per-architecture corollary (fixed-depth Theta(M^2) families only). Exp 1.1
+  is rerun plotting against M directly (slope-1.0 prediction, no conversion
+  ambiguity) and extended with a fixed-depth MxM architecture so the
+  parameter-count corollary is tested in its own class. Existing 0.70 datum
+  reported honestly as sublinear vs the slope-1.0-in-M prediction for the
+  shallow MLP.
+- **A7/A8 resolution**: Section 8 rebuilt from artifacts only. Unbacked rows
+  cut immediately; all variants rerun via Exp 1.7/1.8 against real
+  spectral_tokenization checkpoints; companion paper cited for what it
+  actually contains (fixes A29); nothing claimed until numbers exist.
+  A dedicated post-theory-freeze critique pass on Section 8 added (T-gate).
+
+## Venue acceptance estimates (conditioned on full fix list + Exp 1.7/1.8 supporting the story)
+
+| Venue | Estimate | Timing | Note |
+|---|---|---|---|
+| ICLR 2027 | 30-35% | abstract Sep 18 2026, decisions Dec/Jan | primary; best genre fit |
+| ICML 2027 | 25-30% | ~late Jan 2027 | fallback with ICLR reviews folded in |
+| NeurIPS 2027 | 25-30% | ~May 2027, decisions post-PhD | second fallback |
+| TMLR | 55-65% | rolling | criteria-based; honesty-first style fits; backstop |
+| Nature Comms | 10-15% | months | needs full restructure |
+| Nature MI | 5-10% | months | genre mismatch; retired |
+
+## Theory-first execution plan (supersedes the auditor's 14-step order)
+
+**Phase T — freeze the theory (week 1)**
+- [ ] T1. Integrity batch: A3 (bib author, 10 min), A2 (real Karakida thm
+      numbers), A30 (delete fabricated Figures-2-3 attribution), A44 (bib
+      metadata), A56/A58 (loss-transfer flag, Bai-Yin cite). ~half day.
+- [ ] T2. Lemma 4.1 supplement proof rewritten width-native around real
+      Karakida Thms 1+4, fixing the reversed Step-3 inequality (A1) and
+      implementing the A6 width-native framing in 04/07/09/supplement
+      (one consistent story). ~1 day.
+- [ ] T3. Theory-hygiene: Sigma_X normalization convention fixed everywhere
+      (A12); residual-vs-logit Jacobian unified (A13); finite-horizon B_T +
+      trajectory containment for Thm 2 (A23); D_curv evaluation point (A35);
+      assumption lists corrected (A36); softmax-Hessian 1/4 -> 1/2 (A39);
+      Prop 6.1 downgraded to informal motivation or proven (A22);
+      trajectory-dependence of C, mu stated (A61). ~1 day.
+- [ ] T4. Ratio recount from the real BlockViT v2 checkpoint, reconcile 13M
+      vs companion's 18.3M, propagate corrected ~108 (or actual) to 03/06/08
+      + EGR(0) prediction (A4, A5). ~half day.
+- [ ] T5. THEORY FREEZE GATE: external-reviewer pass on Sections 3-6 +
+      supplement only. Fix what it finds. Then the theory is frozen.
+
+**Phase E — experiments to test the frozen theory (weeks 2-3)**
+- [ ] E1. Exp 1.1 v3: measure GN blocks (not full Hessian — A24), plot vs M,
+      add fixed-depth MxM architecture; D_curv branding in code/CSVs (A64).
+- [ ] E2. Exp 1.2 rerun persisting per-run EGR CSVs so every quoted number
+      is reproducible (A19); state metric for ViT claim (A60).
+- [ ] E3. Exp 1.7 real-data EGR + Exp 1.8 real-data D_curv on
+      spectral_tokenization checkpoints (launch EARLY - longest pole).
+      Produces every Section 8 row or the row dies (A7).
+- [ ] E4. Robustness: run the SGD/noise/S variations Section 7 claims, or
+      delete the claims (A18). Fisher-z replaced with seed-clustered
+      analysis (A21). Sync 6.5 stats to CSVs (A34).
+- [ ] E5. Optional per A26: one nonlinear-f_theta run, or soften the claim.
+
+**Phase P — rebuild the paper on frozen theory + fresh artifacts (weeks 3-4)**
+- [ ] P1. Section 7: Exp 1.6 subsection written in (A17); Exp 1.2/1.3
+      numbers from new artifacts; corrected SEs (A20); setup honesty (A53).
+- [ ] P2. Section 8 rebuild, artifacts only, companion cited correctly
+      (A7, A8, A29, A51, A52) + separate critique pass per decision.
+- [ ] P3. Remnant-prose sweep against frozen theorems (A14, A15, A16, A25,
+      A41, A42, A43, A48, A49, A54, A55, A57, A62, A63).
+- [ ] P4. Related work: Huang 2022 into 2.4 (A27), four anchors (A28), 2024
+      multimodal wave (A45), remote-sensing cites or soften (A50),
+      layer-wise-Hessian adjacents (A33), quote fixes (A32).
+- [ ] P5. Figures: regenerate D_curv-branded exp1_1 + Exp 1.7 EGR figures,
+      place all headline figures, kill Figure ?? (A10).
+- [ ] P6. Structure for ICLR: theorem numbering (A37), drop unused
+      lem:interlacing or mark auxiliary (A38), universality hedges (A31),
+      EGR framing (A40), 09 remedies paragraph (A49).
+
+**Phase S — submission (week 4.5)**
+- [ ] S1. Abstract written (150-250 words), all TODOs resolved, supplement
+      stubs completed or deleted (A9).
+- [ ] S2. ICLR formatting, reproducibility statement, code release prep
+      (re-scoped A11/A46).
+- [ ] S3. Full compile + final external-reviewer pass on the complete PDF.
+
 ## Findings table
 
 ### A1 [BLOCKER] — paper/sections/supplement.tex lines 32-117 (esp. 34, 69-91, 105-107)
@@ -59,7 +151,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 30 minutes (after A4)
 
-### A6 [BLOCKER] — 07_experiments.tex:53-60; 04_theorem1_hessian.tex:287-294; supplement.tex:119-132; 09_discussion.tex:60-67
+### A6 [BLOCKER — APPROACH DECIDED: width-native reframe + Theta(M^2) arch added, see Decisions] — 07_experiments.tex:53-60; 04_theorem1_hessian.tex:287-294; supplement.tex:119-132; 09_discussion.tex:60-67
 
 **Issue**: The scaling-exponent story is false for every tested architecture — C_g = Theta(D) for the SpatialMLP (verified C_g/D = 19.06 constant from D=16 to 8192), so the width-linear prediction implies slope 1.0 vs C_g and the measured 0.702 +/- 0.007 UNDERSHOOTS it (the paper inverts the discrepancy to manufacture agreement with an 'asymptotic 0.5 plus upward correction' narrative), while Section 9 tells a third, contradictory story.
 
@@ -67,7 +159,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 3-4 hours (reframe) or 1-2 days (rerun)
 
-### A7 [BLOCKER] — 08_real_data.tex Table tab:real (lines 39-60) and lines 27-33, 62-83
+### A7 [BLOCKER — APPROACH DECIDED: full rerun via Exp 1.7/1.8, rows cut until backed] — 08_real_data.tex Table tab:real (lines 39-60) and lines 27-33, 62-83
 
 **Issue**: Four of seven table rows (frozen random 0.70, frozen PCA-128 0.78, frozen Sliding Win 0.95, fine-tuned 0.79) have no artifact backing anywhere in either repository, the 0.95 would beat the companion paper's bolded best result (0.896) — a direct cross-paper contradiction — the headline 'strongest single datapoint' rests on an unbacked 0.025 gap with no error bars, and the text says 'five variants' against a seven-row table.
 
@@ -75,7 +167,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 2-3 hours (cut) or 2-4 days (run variants)
 
-### A8 [BLOCKER] — 08_real_data.tex lines 84-88 vs Table tab:real
+### A8 [BLOCKER — APPROACH DECIDED: claim rewritten after Section 8 rebuild] — 08_real_data.tex lines 84-88 vs Table tab:real
 
 **Issue**: The claim that the variant ordering is 'exactly what the theory predicts: any frozen variant beats any joint or fine-tuned variant' is falsified by the table directly above it — fine-tuned (0.79) beats frozen random (0.70) and frozen PCA-128 (0.78), and the column is not monotone top-to-bottom.
 
@@ -99,7 +191,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 3-5 hours
 
-### A11 [BLOCKER] — main.tex whole-paper structure (~9.9k words main body, monolithic theorem-proof format)
+### A11 [RE-SCOPED: ICLR format (~9pp + appendix), not Nat MI 3.5k words] — main.tex whole-paper structure (~9.9k words main body, monolithic theorem-proof format)
 
 **Issue**: The draft is roughly 3x over Nature MI's 3,500-word Article limit in the wrong genre shape (formal theorem-proof main text, TODO abstract vs a 150-word limit, no Results/Methods split) — a guaranteed desk rejection on format alone if the Nat MI target stands (moot on a pivot to ICLR 2027/AISTATS/TMLR).
 
@@ -379,7 +471,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 30 minutes
 
-### A46 [MODERATE] — submission package (no files yet)
+### A46 [RE-SCOPED: ICLR reproducibility statement + code release, not Nature Portfolio pack] — submission package (no files yet)
 
 **Issue**: Nature Portfolio compliance items are unprepared: Reporting Summary, code/data availability statements with concrete access routes (the real-data section uses in-house clinical tissue data, so ethics/availability documentation is mandatory), compute/hyperparameter reporting, and a broad-readership cover letter.
 
@@ -387,7 +479,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 1-2 days
 
-### A47 [MODERATE] — venue plan (decision item)
+### A47 [RESOLVED 2026-08-18 — venue decided: ICLR 2027 primary] — venue plan (decision item)
 
 **Issue**: The venue decision is on the critical path for the ~2-month deadline: Nat MI needs the full A11 restructure with no promised timeline, while ICLR 2027 (abstract Sep 18, decisions Dec 16) maps almost directly onto the current shape, with AISTATS 2027, TMLR, and Nature Communications as verified alternatives.
 
@@ -531,7 +623,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 1-2 hours
 
-## Recommended order (interleaved with pre-existing planned work)
+## Auditor's original 14-step order (superseded by the theory-first plan above; kept for reference)
 
 1. STEP 1 (this week, ~1h): Venue decision — A47/A11. Choose Nat MI vs ICLR 2027 vs Nature Communications; the word/figure budget gates every structural fix downstream. Recommended: ICLR 2027 primary.
 
