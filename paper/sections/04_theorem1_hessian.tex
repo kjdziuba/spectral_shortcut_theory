@@ -23,8 +23,8 @@ an MLP). Under
 Assumptions~\ref{ass:linear}, \ref{ass:reg}, \ref{ass:subg},
 and~\ref{ass:inputlip}, together with the head
 hypothesis of Lemma~\ref{lem:phi_scaling} below (a dense classifier
-head over a penultimate feature vector of dimension $\Theta(M)$ with
-concentrated squared norm at initialization), there exist
+head over penultimate features of dimension $\Theta(M)$ that are
+correlated across inputs at initialization), there exist
 constants $c_1, c_2 > 0$ depending on the data distribution, the
 initialization scheme, the bottleneck dimension $K$, the input
 spectral dimension $S$, and the architecture class of $g_\phip$
@@ -68,19 +68,22 @@ Let $M$ denote the characteristic width of $g_\phip$ (channel count
 for a CNN, embedding dimension for a ViT, hidden layer width for an
 MLP), let $N_{cls} \geq 2$, and suppose $g_\phip$ ends in a dense
 classifier head over penultimate features
-$h_n \in \mathbb{R}^{M_h}$ with $M_h = \Theta(M)$ whose mean Gram
-$S_h := N^{-1}\sum_n h_n h_n^\top$ satisfies
+$h_n \in \mathbb{R}^{M_h}$ with $M_h = \Theta(M)$ whose
+softmax-weighted mean Gram
+$S_h^{p} := N^{-1}\sum_n p^{(n)}_{\min} h_n h_n^\top$
+(Equation~\eqref{eq:feature_gram}) satisfies
 \[
-    \lambda_{\max}(S_h) \;\geq\; q_h M_h
+    \lambda_{\max}(S_h^{p}) \;\geq\; q_h M_h
     \quad\text{with probability } \geq 1 - \delta_h
 \]
 over the random initialization, for constants $q_h > 0$ and
-$\delta_h < 1/4$ independent of $M$ (the \emph{head hypothesis}:
-the features carry a common direction of $\Theta(M)$ energy across
-inputs; it holds at Kaiming initialization for any nonnegative or
-nonzero-mean activation, and coincides with the condition
-$\kappa_2 > 0$ under which Karakida et al.'s width-linear law
-itself holds---see the supplement). Then, under
+$\delta_h < 1$ independent of $M$ (the \emph{head hypothesis}: the
+features carry a common direction of $\Theta(M)$ energy across
+inputs, on pixels whose initial predictions are non-degenerate. It
+is a cross-input \emph{correlation} condition, not a per-vector norm
+condition, and is closely related to the quantity $\kappa_2$
+carrying the width-linear term in Karakida et al.'s
+law---see the supplement). Then, under
 Assumptions~\ref{ass:reg}--\ref{ass:subg}, the spatial Gauss-Newton
 block of~\eqref{eq:ggn} satisfies
 \[
@@ -98,11 +101,13 @@ $\lambda_{\max}(G_{\phip\phip}) = \Omega(\sqrt{\Cg})$.
 
 \begin{remark}
 Lemma~\ref{lem:phi_scaling} is proved in the supplement
-(Section~\ref{sec:proof_thm1}) by an explicit witness: a head-weight
-direction aligned with the penultimate feature vector $h(x)$ of a
-single classified pixel. At variance-scaled initialization
-$\norm{h}^2 = \Theta(M)$, and passing the softmax inner matrix costs
-only a constant, forcing $\lambda_{\max} = \Omega(M)$. The
+(Section~\ref{sec:proof_thm1}) by an explicit witness: the rank-one
+head-weight perturbation $V = c\, u^\top$, where $c$ is a unit class
+contrast and $u$ the dominant direction of the feature ensemble.
+Evaluating the curvature along $V$ gives the deterministic
+inequality $\lambda_{\max}(G_{\phip\phip}) \geq
+\lambda_{\max}(S_h^{p})$, and the head hypothesis supplies
+$\lambda_{\max}(S_h^{p}) = \Omega(M)$. The
 width-linear law agrees with the mean-field analysis of Karakida et
 al.~\cite{karakida2019universal}: their Theorem~4 gives
 $\lambda_{\max} = \Theta(M)$ with sharp constant for

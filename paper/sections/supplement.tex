@@ -40,9 +40,9 @@ We show $\lambda_{\max}(J_\phip^\top J_\phip) = \Omega(M)$ in
 expectation over random Kaiming (variance-scaled Gaussian)
 initialization, under the head hypothesis of
 Lemma~\ref{lem:phi_scaling}: the classifier head of $g_\phip$ is a
-dense layer over a penultimate feature vector
-$h \in \mathbb{R}^{M_h}$ with $M_h = \Theta(M)$ and $\Theta(1)$
-per-entry second moment at initialization. The proof has three
+dense layer over penultimate features $h_n \in \mathbb{R}^{M_h}$
+with $M_h = \Theta(M)$ whose softmax-weighted mean Gram has top
+eigenvalue $\Omega(M_h)$ at initialization. The proof has three
 steps: (1) context---Karakida et al.'s exact width-linear law for
 the top Fisher eigenvalue in their model class, which we use as the
 asymptotic benchmark but do \emph{not} invoke directly; (2) an exact
@@ -113,76 +113,84 @@ $\mathbf{1}^\perp$. Hence
 \[
     H_\tau \;\succeq\; p_{\min} \, P_\perp .
 \]
-At Kaiming initialization the logits are $\Theta(1)$ (each
-pre-activation has $\mathcal{O}(1)$ variance uniformly in $M$), so
-$p_{\min} \geq c_p > 0$ with high probability over initialization and
-data, for a constant $c_p$ of order $1/N_{cls}$ independent of $M$
-and $\Cg$.
+The bound is used per pixel in Step~3; we do not take a minimum over
+pixels, so no uniform-over-pixels lower bound on $p_{\min}$ is
+needed anywhere in the proof. (For orientation: at Kaiming
+initialization the logits are $\mathcal{O}(1)$ uniformly in $M$, so
+$p^{(n)}_{\min}$ is of order $1/N_{cls}$ for typical $n$.)
 
 \paragraph{Step 3: An explicit witness direction.}
 Write the classifier head of $g_\phip$ as $\hat{y}_n = W h_n + b$
 with penultimate features $h_n = h(x_n) \in \mathbb{R}^{M_h}$,
-$M_h = \Theta(M)$, and let
+$M_h = \Theta(M)$. A perturbation of the head weights is a matrix
+$V \in \mathbb{R}^{N_{cls} \times M_h}$; it is a unit vector in
+parameter space precisely when $\norm{V}_F = 1$, under any
+vectorization convention, and the logit perturbation it induces at
+pixel $n$ is $V h_n$. Define the \emph{softmax-weighted feature
+Gram}
 \begin{equation}
 \label{eq:feature_gram}
-    S_h \;:=\; \frac{1}{N} \sum_{n=1}^{N} h_n h_n^\top
+    S_h^{p} \;:=\; \frac{1}{N} \sum_{n=1}^{N}
+        p^{(n)}_{\min}\, h_n h_n^\top,
+    \qquad
+    p^{(n)}_{\min} := \min_i p^{(n)}_i ,
 \end{equation}
-denote the mean feature Gram. Fix a unit contrast
-$c \in \mathbb{R}^{N_{cls}}$ with $c \perp \mathbf{1}$
-(possible since $N_{cls} \geq 2$); Cauchy--Schwarz gives
-$P_\perp \succeq c c^\top$ (for any $u$,
-$(c^\top u)^2 = (c^\top P_\perp u)^2 \leq \norm{P_\perp u}^2$).
-Let $u$ be a top unit eigenvector of $S_h$ and take the unit
-parameter direction supported on the head weights,
+and let $u$ be a top unit eigenvector of $S_h^{p}$. Fix a unit
+contrast $c \in \mathbb{R}^{N_{cls}}$ with $c \perp \mathbf{1}$
+(possible since $N_{cls} \geq 2$); by Step~2, at every pixel
 \[
-    v \;=\; c \otimes u
-    \;\in\; \mathbb{R}^{N_{cls} M_h},
-    \qquad \norm{v} = 1 .
+    c^\top H_\tau^{(n)} c
+    \;=\; \mathrm{Var}_{i \sim p^{(n)}}(c_i)
+    \;\geq\; p^{(n)}_{\min} \norm{P_\perp c}^2
+    \;=\; p^{(n)}_{\min}.
 \]
-Since $\partial \hat{y}_k / \partial W_{k'j} = \delta_{kk'} h_{n,j}$,
-we have $c^\top J^{(n)} v = \norm{c}^2 (h_n^\top u) = h_n^\top u$ for
-every pixel $n$. Using $H_\tau^{(n)} \succeq p^{(n)}_{\min} P_\perp
-\succeq p^{(n)}_{\min} c c^\top$ from Step~2 at every pixel, and
-writing $c_p := \min_n p^{(n)}_{\min}$,
+Take the rank-one witness $V := c\, u^\top$, for which
+$\norm{V}_F = \norm{c}\norm{u} = 1$ and $V h_n = (h_n^\top u)\, c$.
+Then
 \begin{equation}
 \label{eq:witness_bound}
     \lambda_{\max}(G_{\phip\phip})
-    \;\geq\; v^\top G_{\phip\phip} v
-    \;\geq\; c_p \cdot \frac{1}{N} \sum_{n=1}^{N}
-        \left( h_n^\top u \right)^2
-    \;=\; c_p \cdot u^\top S_h u
-    \;=\; c_p \cdot \lambda_{\max}(S_h).
+    \;\geq\; \frac{1}{N} \sum_{n=1}^{N}
+        (V h_n)^\top H_\tau^{(n)} (V h_n)
+    \;=\; \frac{1}{N} \sum_{n=1}^{N}
+        (h_n^\top u)^2\, c^\top H_\tau^{(n)} c
+    \;\geq\; u^\top S_h^{p} u
+    \;=\; \lambda_{\max}(S_h^{p}).
 \end{equation}
-Two initialization facts finish the proof.
-(i)~By the head hypothesis of Lemma~\ref{lem:phi_scaling},
-$\lambda_{\max}(S_h) \geq q_h M_h$ with probability at least
-$1 - \delta_h$, $\delta_h < 1/4$, over initialization.
-(ii)~At initialization the logits are $\mathcal{O}(1)$ uniformly in
-$M$ (the head weights have variance $\Theta(1/M_h)$ against
-$\norm{h_n}^2 = \mathcal{O}(M_h)$), so $c_p > 0$ may be chosen
-independent of $M$ and $\Cg$, with probability at least
-$1 - \delta_p$, $\delta_p \leq 1/4$. On the intersection of the two
-events---which has probability at least $1/2$---
+Note what~\eqref{eq:witness_bound} is: a deterministic,
+hypothesis-free inequality---one identity and one application of
+Step~2---valid at every parameter value. All $N$ pixels contribute,
+and no minimum over pixels is taken, so no union bound and no factor
+of $N$ enters.
+
+The head hypothesis of Lemma~\ref{lem:phi_scaling} is exactly
+$\lambda_{\max}(S_h^{p}) \geq q_h M_h$ with probability at least
+$1 - \delta_h$ over initialization, for $q_h > 0$ and
+$\delta_h < 1$ independent of $M$. On that event
+$\lambda_{\max}(G_{\phip\phip}) \geq q_h M_h = \Omega(M)$; since
+$\lambda_{\max} \geq 0$ always,
 \[
-    \lambda_{\max}(G_{\phip\phip})
-    \;\geq\; c_p\, q_h \, M_h
+    \E\!\left[\lambda_{\max}(G_{\phip\phip})\right]
+    \;\geq\; (1 - \delta_h)\, q_h M_h
     \;=\; \Omega(M),
 \]
-and since $\lambda_{\max} \geq 0$ always, taking expectations gives
-$\E[\lambda_{\max}(G_{\phip\phip})] \geq
-(1 - \delta_h - \delta_p)\, c_p q_h M_h \geq
-\tfrac{1}{2} c_p q_h M_h = \Omega(M)$. No factor of $N$ appears:
-the witness is aligned with the dominant direction of the feature
-ensemble rather than with a single pixel, so all $N$ terms
-contribute.
+which is the claim.
 
-\paragraph{On the head hypothesis, and its exact counterpart in
+\paragraph{On the head hypothesis, and its counterpart in
 Karakida et al.}
-The hypothesis $\lambda_{\max}(S_h) = \Omega(M_h)$ asks that the
-penultimate features carry a common direction of $\Theta(M_h)$
-energy across inputs. It is implied by the simpler condition
-$\norm{\bar{h}}^2 \geq q_h M_h$ on the \emph{mean} feature vector
-$\bar{h} := N^{-1}\sum_n h_n$, since for $\bar{u} =
+The hypothesis $\lambda_{\max}(S_h^{p}) = \Omega(M_h)$ asks two
+things at once: that the penultimate features carry a common
+direction of $\Theta(M_h)$ energy across inputs, and that the
+initial predictions are non-degenerate on the pixels supplying that
+energy. The second is mild at initialization---the logits are
+$\mathcal{O}(1)$ uniformly in $M$, since the head weights have
+variance $\Theta(1/M_h)$ against $\norm{h_n}^2 = \mathcal{O}(M_h)$,
+so $p^{(n)}_{\min}$ is bounded below by a constant of order
+$1/N_{cls}$ on all but a vanishing fraction of pixels, and
+$S_h^{p} \succeq c_p\, S_h^{A}$ for the Gram $S_h^{A}$ restricted to
+that majority set. The first is the substantive condition. It is
+implied by $\norm{\bar{h}}^2 \geq q M_h$ on the \emph{mean} feature
+vector $\bar{h} := N^{-1}\sum_n h_n$: for $\bar{u} =
 \bar{h}/\norm{\bar{h}}$, Jensen's inequality gives
 $\lambda_{\max}(S_h) \geq \bar{u}^\top S_h \bar{u} =
 N^{-1}\sum_n (h_n^\top \bar{h})^2/\norm{\bar{h}}^2 \geq
@@ -192,20 +200,29 @@ recursions of Karakida et al.~\cite{karakida2019universal}, Eq.~(9)),
 so the condition holds whenever the activations are correlated across
 inputs---in particular for any nonnegative or nonzero-mean
 activation (ReLU and its variants), and for odd activations whenever
-the bias variance $\sigma_b^2 > 0$.
+the bias variance $\sigma_b^2 > 0$ or the inputs are themselves
+correlated.
 
-This is not an incidental technicality: it is precisely the quantity
-$\kappa_2$ that carries the width-linear term in Karakida et al.'s
+Note that per-entry second moments alone are \emph{not} enough:
+$\norm{h_n}^2 = \Theta(M_h)$ for every $n$ gives only
+$\mathrm{tr}(S_h) = \Theta(M_h)$, hence
+$\lambda_{\max}(S_h) \geq \Theta(M_h)/\min(N, M_h)$, which is weaker
+by a factor of $N$. Cross-input correlation, not per-vector norm, is
+what makes the top eigenvalue grow.
+
+The same quantity carries the width-linear term in Karakida et al.'s
 Theorem~4, $\lambda_{\max} = \alpha(\tfrac{T-1}{T}\kappa_2 +
-\tfrac{1}{T}\kappa_1)M$, where $\kappa_2$ is built from the
-cross-input activation correlations $\hat{q}_{st}$. Their own
-footnote records the same exclusion we make here: for odd
-activations with $\sigma_b = 0$ one has $\hat{q}_{st} = 0$ and
-$\kappa_2 = 0$, and the width-linear law requires lower-order terms.
-Our hypothesis and their formula degenerate on exactly the same
-family, which is a useful consistency check on both. For CNN and ViT
-heads we state the hypothesis as an explicit assumption rather than
-a theorem, and check it empirically in
+\tfrac{1}{T}\kappa_1)M$: their $\kappa_2$ is built from the
+cross-input activation correlations $\hat{q}_{st}$, and their
+footnote notes that odd activations with $\sigma_b = 0$ give
+$\hat{q}_{st} = 0$, $\kappa_2 = 0$, leaving only the $\kappa_1/T$
+term. The parallel is close but not an identity: on such a family
+our hypothesis does not fail outright either, but survives only with
+$q_h = \Theta(1/N)$---mirroring their surviving $\alpha\kappa_1 M/T$
+term. What both lose in the degenerate case is the
+sample-size-independent leading constant, not the width scaling
+itself. For CNN and ViT heads we state the hypothesis as an explicit
+assumption rather than a theorem, and check it empirically in
 Section~\ref{sec:experiments}.
 
 \paragraph{The other two conventions.}
@@ -221,32 +238,36 @@ $\lambda_{\max}(J_\phip^\top J_\phip) \geq
 J_\phip^{\mathrm{res}} = J_\phip^\top H_\tau^2 J_\phip$, note that
 $H_\tau$ is symmetric with $H_\tau \mathbf{1} = 0$, so
 $\mathbf{1}^\perp$ is invariant and, by Step~2,
-$H_\tau \succeq p_{\min} I$ there; squaring the eigenvalues on that
-subspace gives $H_\tau^2 \succeq p_{\min}^2 P_\perp$, and the
-identical witness argument yields
+$H_\tau^{(n)} \succeq p^{(n)}_{\min} I$ there; squaring the
+eigenvalues on that subspace gives
+$(H_\tau^{(n)})^2 \succeq (p^{(n)}_{\min})^2 P_\perp$, so the
+identical witness argument runs with the weights
+$(p^{(n)}_{\min})^2$ in place of $p^{(n)}_{\min}$ and yields
 $\lambda_{\max}(J_\phip^{\mathrm{res}\top} J_\phip^{\mathrm{res}})
-\geq c_p^2\, \lambda_{\max}(S_h) = \Omega(M)$. All three conventions
-therefore satisfy Lemma~\ref{lem:phi_scaling}, differing only in
-whether the constant carries $c_p$, $c_p^2$, or neither. This
-completes the proof.
+\geq \lambda_{\max}(S_h^{p^2}) = \Omega(M)$ under the corresponding
+head hypothesis. All three conventions therefore satisfy
+Lemma~\ref{lem:phi_scaling}, differing only in the softmax weighting
+carried by the feature Gram. This completes the proof.
 \hfill$\square$
 
 \begin{remark}[Scope, and the role of the mean-field law]
 \label{rem:meanfield_scope}
-The witness argument uses only: (a)~a dense classifier head over a
-penultimate feature vector of dimension $\Theta(M)$;
-(b)~concentration of the feature squared norm at initialization
-($\norm{h}^2 \geq q_h M_h$ with probability $1 - \delta_h$)---which
-variance-scaled (Kaiming-type) schemes are designed to deliver, and
-which we prove nothing stronger than; and (c)~softmax cross-entropy
-with $N_{cls} \geq 2$. It applies to per-pixel dense heads on MLP,
-CNN (channel count $M$), and ViT (embedding dimension $M$) spatial
-modules \emph{whenever hypothesis (b) holds for them}: for fully
-connected modules (b) follows from standard signal propagation at
-Kaiming initialization, while for CNN and ViT heads we adopt (b) as
-an explicit assumption checked empirically. No i.i.d.\ Gaussian
-input assumption is required---only the stated norm condition on the
-features. Karakida et al.'s Theorem~4 plays the role of the
+The witness argument uses only: (a)~a dense classifier head over
+penultimate features of dimension $\Theta(M)$;
+(b)~the head hypothesis $\lambda_{\max}(S_h^{p}) \geq q_h M_h$ at
+initialization---a \emph{cross-input correlation} condition, which
+variance-scaled initialization does not by itself deliver (see the
+counterexample of per-vector norms above) but which holds for the
+standard activation choices discussed there; and (c)~softmax
+cross-entropy with $N_{cls} \geq 2$. Given (b), the inequality
+$\lambda_{\max}(G_{\phip\phip}) \geq \lambda_{\max}(S_h^{p})$ is
+deterministic and architecture-agnostic, so the argument applies to
+per-pixel dense heads on MLP, CNN (channel count $M$), and ViT
+(embedding dimension $M$) spatial modules alike. For fully connected
+modules (b) follows from standard signal propagation at Kaiming
+initialization; for CNN and ViT heads we adopt it as an explicit
+assumption checked empirically. No i.i.d.\ Gaussian input assumption
+is required. Karakida et al.'s Theorem~4 plays the role of the
 sharp asymptotic benchmark: within its model class (fully connected,
 all widths proportional to $M$, squared loss), it upgrades the
 witness lower bound to an exact width-linear law with explicit
@@ -426,7 +447,7 @@ Kaiming (variance-scaled Gaussian) initialization,
 \]
 for a constant $c_\phi > 0$ independent of $M$, given explicitly by
 the witness bound~\eqref{eq:witness_bound}
-($c_\phi = (1 - \delta_h - \delta_p)\, c_p q_h M_h / M$, and
+($c_\phi = (1 - \delta_h)\, q_h M_h / M$, with
 $M_h/M = \Theta(1)$ by hypothesis); within
 Karakida et al.'s~\cite{karakida2019universal} proportional-width
 model class, their Theorem~4 sharpens the width-linear rate to an
