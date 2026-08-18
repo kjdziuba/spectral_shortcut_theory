@@ -46,8 +46,38 @@ already done in T2), plus six opportunistic fixes:
   depends on cross-entropy: Thm 1 essentially loss-agnostic, Thm 2's
   polynomial envelope CE-on-separable-specific).
 
-Verification: wf_405ae374-c50 (2 adversarial agents on the exact
-identity, the end-to-end normalization, and cross-file consistency).
+**Verification round (wf_405ae374-c50) found 4 majors — all fixed in
+commit 452ad55, and one led to a strictly better proof:**
+
+1. **Numerator convention break.** lem:phi_scaling was stated for the
+   LOGIT Gram J^T J while D_curv is defined on the GGN block
+   G = J^T H_tau J. Since G <= J^T J, a lower bound on the logit Gram
+   does NOT lower-bound the numerator — the displayed "=" was false.
+   Lemma, Theorem 1 proof, and combine step now all use G_phiphi;
+   logit and residual Grams follow as corollaries.
+2. **The 1/N in the witness constant** contradicted the new
+   dataset-size-independence claim. FIXED BY A BETTER WITNESS: instead
+   of one pixel's feature vector, use u = top eigenvector of the mean
+   feature Gram S_h = (1/N) sum_n h_n h_n^T. Then
+   lambda_max(G_phiphi) >= c_p * lambda_max(S_h) with ALL N terms
+   contributing — no 1/N anywhere.
+   **The head hypothesis becomes lambda_max(S_h) >= q_h M_h, which is
+   EXACTLY Karakida et al.'s kappa_2 > 0 condition** (kappa_2 is built
+   from cross-input activation correlations q_st). Their footnote 1
+   excludes odd activations with sigma_b = 0, where q_st = 0 and
+   kappa_2 = 0 — our hypothesis degenerates on precisely the same
+   family. Independent consistency check on both.
+3. **Symbol collision**: supplement used J_phi for the residual
+   Jacobian against 03's naming. Rewritten as an explicit
+   three-convention corollary.
+4. **prop:egr_monotonic** dropped ass:subg + containment and claimed a
+   uniform-in-t bound that rem:containment explicitly warns against.
+   Restated for t <= T with B_T.
+Plus minors: N^{-1/2} bookkeeping for dZ/dtheta declared in 03 and used
+in supplement Step 1; eq:chain brace label corrected; J_Z
+block-diagonal-over-images step stated; B = sqrt(C_theta) in 06.
+
+Re-verification of the new mean-Gram witness: wf_81843e59-42d.
 Compiles clean; only fig:exp11_paired remains undefined (A10, Phase P5).
 
 **Next:** T4 ratio recount from the real BlockViT v2 checkpoint (A4/A5),
