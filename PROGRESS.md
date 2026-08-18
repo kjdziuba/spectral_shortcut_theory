@@ -4,6 +4,49 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-17/18 — Fixes 1-4C applied + full 14-agent audit
+
+**Fixes applied and pushed** (commits f0b81f9, 1ee6dff, cc455ee, 594a262):
+- Fix 1: Theorem 1 restated with width-linear / sqrt(C_g) scaling.
+- Fix 2: Lemma 4.3 generalized (later superseded).
+- Fix 3 (Option C per external reviewer): Theorem 1 reformulated as
+  module curvature disparity D_curv = lambda_max(G_pp)/lambda_max(G_tt)
+  >= c1*M; Lemma 4.3 shrunk to operator-norm cap; kappa retired.
+- Irrelevance-vs-starvation Remark added (honest hedging of Exp 1.3).
+- Fix 4C (per external reviewer, rejecting my flawed 4A): Theorem 2
+  fully rewritten as Finite-Time Spectral Starvation with polynomial
+  residual envelope (Soudry-compatible), COMPLETE main-text proof by
+  integration; classical-remedies subsection; Exp 1.3 honesty pass.
+
+**Full-paper audit** (wf_0d0edeef-185; 9 finders, dedupe, 3 adversarial
+verifiers, synthesis; ~1.7M subagent tokens across retries):
+- 64 deduplicated findings: 11 BLOCKER / 19 MAJOR / 23 MODERATE /
+  11 MINOR. Zero refuted under adversarial verification.
+- Full table + 14-step fix order: REMAINING_WORK.md (committed).
+- Most consequential: supplement Lemma 4.1 proof still derives the
+  retired Omega(C_g) with fabricated Karakida theorem numbers (A1/A2);
+  "Berkeley Manifold" still in bib (A3); C_g/C_f = 325 is wrong, real
+  ~108 and unreconciled with companion's 18.3M (A4); the sqrt-scaling
+  "agreement" story is WRONG for SpatialMLP whose C_g = Theta(D) —
+  measured 0.70 UNDERSHOOTS the correct slope-1.0 prediction there
+  (A6); Section 8 has 4 table rows with NO artifact backing, one
+  contradicting the companion paper (A7), and an ordering claim its
+  own table falsifies (A8); Exp 1.2 headline numbers irreproducible
+  from artifacts (A19); Fisher-z t=14.65 confirmed pseudo-replication
+  (A21); Exp 1.1 code measures full Hessian blocks, not GN blocks
+  (A24); paper ~3x over Nature MI format (A11) — venue decision
+  needed (auditor recommends ICLR 2027 as primary).
+
+**Decision pending (user)**: venue (Nat MI restructure vs ICLR 2027 vs
+Nature Communications) — gates the structural work; and A6 decision
+(rerun Exp 1.1 with a Theta(M^2) architecture vs honest reframe).
+
+**Next**: Step 2 integrity batch (bib author fix, Karakida proof
+rewrite, fabricated-attribution removal) — independent of all
+decisions and experiments.
+
+---
+
 ## 2026-08-13 — Three-LLM external review: strategic pivot
 
 **Done**:
