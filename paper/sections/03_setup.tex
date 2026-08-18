@@ -96,8 +96,12 @@ to \emph{input features} $Z$---a different object with a different
 constant. Parameter-side smoothness does not imply input-side
 Lipschitzness; we require both.
 
-At random Kaiming/Xavier initialization, Marchenko--Pastur
-theory~\cite{marchenko1967distribution} gives
+At random Kaiming/Xavier initialization, the operator norm of a
+variance-scaled random weight matrix is $\Theta(1)$ in width $M$ by
+the Bai--Yin law~\cite{bai1993limit} (see also
+Vershynin~\cite{vershynin2018high}, Thm.~4.4.5;
+Marchenko--Pastur~\cite{marchenko1967distribution} describes the
+corresponding bulk spectrum), giving
 $\|\partial g_\phip/\partial Z\|_{\mathrm{op}} = \Theta(1)$ in width
 $M$ for standard CNN and MLP blocks. Under the maximal-update
 parameterization ($\mu$P) of Yang and

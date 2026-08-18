@@ -40,6 +40,49 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
   actually contains (fixes A29); nothing claimed until numbers exist.
   A dedicated post-theory-freeze critique pass on Section 8 added (T-gate).
 
+## Author directives (2026-08-18, session 2)
+
+- **D1 — Intro rework (new task P0, before P1)**: (a) frame the problem as
+  the GENERAL case — compositional pipelines with capacity asymmetry
+  (spectral-spatial as the instance class: FTIR, QCL, hyperspectral remote
+  sensing; theory is domain-general, empirical hedging per A31); do not
+  read as an FTIR-only paper for an ML venue. (b) DEMOTE the frozen
+  paradox as the hook — frozen-beats-joint is untested on real data
+  (Exp 1.7/1.8 pending) and unpublished (companion in peer review). Anchor
+  the hook in published literature instead: O'Leary et al. 2026 (spatial
+  dominates) + Mosig group — Mueller et al., "Dimensionality reduction for
+  deep learning in infrared microscopy: a comparative computational
+  survey" (verify metadata in P4, add to bib). Frozen results become a
+  PREDICTION the paper tests, not the premise.
+- **D2 — Capacity-ratio reversal (extend E-scope)**: answer the reviewer
+  question "what if spectral is as big as spatial / spatial smaller?"
+  The supplement's Cg/Cf sweep stub is extended to cover ratio <= 1
+  (reversal + parity conditions). Theorem 1 predicts the pathology fades
+  as the ratio shrinks — this is a testable prediction, run it in E4.
+- **D3 — Prescription hedging + end-phase deep research (new task S0)**:
+  soften the absolute "the theory yields a direct prescription: freeze"
+  language (09, 01) — freezing is one validated-in-synthetic mitigation,
+  not the established solution; the fixed-residual-baseline variant is
+  untested (A25). Schedule a DEEP RESEARCH pass at end of Phase P on the
+  mitigation landscape (freezing vs per-module LR vs gradient
+  modulation vs residual baseline) before the final framing. Note: author
+  reports frozen-PCA currently troubling the story by beating frozen
+  learned variants in side experiments.
+- **D4 — Loss scope (fold into T3 + E4)**: pre-empt "why cross-entropy
+  only / what about MSE?" — one scope remark (Thm 2's 1/t envelope is
+  CE-on-separable-data-specific via Soudry; Thm 1's geometry is
+  loss-agnostic up to the inner-matrix constant), plus run-or-delete the
+  loss-variant supplement stub (A18/A9).
+- **D5 — EGR provenance (fold into P4)**: state explicitly that EGR is
+  this paper's named diagnostic; situate against existing gradient-ratio
+  quantities (Wang et al. 2020 OGR, GradNorm, Peng et al. modulation,
+  Pezeshki NTK alignment).
+- **D6 — Companion policy**: there is exactly ONE companion paper — the
+  submitted "What is a Spectral Token?" (Anal. Chem., under revision).
+  The dziuba2026spatial bib placeholder with an invented title is
+  replaced with the real one (done 2026-08-18). No second empirical
+  paper exists or is planned; Section 8 cites only the real companion.
+
 ## Venue acceptance estimates (conditioned on full fix list + Exp 1.7/1.8 supporting the story)
 
 | Venue | Estimate | Timing | Note |
@@ -54,13 +97,18 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 ## Theory-first execution plan (supersedes the auditor's 14-step order)
 
 **Phase T — freeze the theory (week 1)**
-- [ ] T1. Integrity batch: A3 (bib author, 10 min), A2 (real Karakida thm
-      numbers), A30 (delete fabricated Figures-2-3 attribution), A44 (bib
-      metadata), A56/A58 (loss-transfer flag, Bai-Yin cite). ~half day.
-- [ ] T2. Lemma 4.1 supplement proof rewritten width-native around real
-      Karakida Thms 1+4, fixing the reversed Step-3 inequality (A1) and
-      implementing the A6 width-native framing in 04/07/09/supplement
-      (one consistent story). ~1 day.
+- [x] T1. DONE 2026-08-18. Integrity batch: A3, A2, A30, A44 (unused-entry
+      pruning deferred to P4), A56, A58. Karakida facts verified against
+      the actual PMLR PDF before citing.
+- [x] T2. DONE 2026-08-18, adversarially verified (wf_4d095e3f-252 +
+      wf_9d7f7921-a7f). Proof rewritten as elementary WITNESS argument
+      (head direction c kron h/||h||, lambda_max >= p_min ||h||^2/N =
+      Omega(M)); Karakida Thms 1+4 context-only (Thm 4 inapplicable to
+      fixed-input heads — verifier catch). Lemma gains explicit head
+      hypothesis; A6 story unified in 04/07/09/supplement (slope 1.0
+      predicted, 0.70 sublinear undershoot reported honestly).
+      Bonus: A39, A63, A14-partial (02), A24-partial (07 relabel),
+      A53-partial fixed.
 - [ ] T3. Theory-hygiene: Sigma_X normalization convention fixed everywhere
       (A12); residual-vs-logit Jacobian unified (A13); finite-horizon B_T +
       trajectory containment for Thm 2 (A23); D_curv evaluation point (A35);
@@ -111,7 +159,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 ## Findings table
 
-### A1 [BLOCKER] — paper/sections/supplement.tex lines 32-117 (esp. 34, 69-91, 105-107)
+### A1 [BLOCKER — FIXED 2026-08-18 (witness-argument rewrite, verified)] — paper/sections/supplement.tex lines 32-117 (esp. 34, 69-91, 105-107)
 
 **Issue**: The supplement proof of Lemma phi_scaling is un-refactored: it opens and concludes with the retired Omega(C_g) claim, contradicting the lemma's stated Omega(M) (= Omega(sqrt(C_g))) and Karakida's actual Theta(M) result, and Step 3 derives a lower bound on tr(F) from an upper bound on the inner matrix (false, since diag(p)-pp^T annihilates the all-ones direction).
 
@@ -119,7 +167,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 4-6 hours
 
-### A2 [BLOCKER] — 04_theorem1_hessian.tex:151; supplement.tex:57, 101-104, 111, 252
+### A2 [BLOCKER — FIXED 2026-08-18] — 04_theorem1_hessian.tex:151; supplement.tex:57, 101-104, 111, 252
 
 **Issue**: Five citation sites (one in the main text) reference Karakida 'Theorems 3.1/4.2/5.1', none of which exist — the AISTATS 2019 paper has plain-numbered Theorems 1-7 with no participation-ratio or lambda_max-concentration theorem, and the project's own PROGRESS.md already admits this but the files remain unfixed.
 
@@ -127,7 +175,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 1-2 hours (largely subsumed by the A1 proof rewrite)
 
-### A3 [BLOCKER] — paper/references.bib line 66 (berisha2019deep)
+### A3 [BLOCKER — FIXED 2026-08-18 (commit 9587734)] — paper/references.bib line 66 (berisha2019deep)
 
 **Issue**: The hallucinated author 'Manifold, Berkeley' — the exact fabrication a reviewer already caught — is still in the bib entry; the verified real author list (Analyst 2019, DOI 10.1039/C8AN01495G) is Berisha, Lotfollahi, Jahanipour, Gurcan, Walsh, Bhargava, Nguyen, Mayerich.
 
@@ -151,7 +199,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 30 minutes (after A4)
 
-### A6 [BLOCKER — APPROACH DECIDED: width-native reframe + Theta(M^2) arch added, see Decisions] — 07_experiments.tex:53-60; 04_theorem1_hessian.tex:287-294; supplement.tex:119-132; 09_discussion.tex:60-67
+### A6 [BLOCKER — REFRAME DONE 2026-08-18 (04/07/09/supplement unified); Theta(M^2)-arch rerun pending in E1] — 07_experiments.tex:53-60; 04_theorem1_hessian.tex:287-294; supplement.tex:119-132; 09_discussion.tex:60-67
 
 **Issue**: The scaling-exponent story is false for every tested architecture — C_g = Theta(D) for the SpatialMLP (verified C_g/D = 19.06 constant from D=16 to 8192), so the width-linear prediction implies slope 1.0 vs C_g and the measured 0.702 +/- 0.007 UNDERSHOOTS it (the paper inverts the discrepancy to manufacture agreement with an 'asymptotic 0.5 plus upward correction' narrative), while Section 9 tells a third, contradictory story.
 
@@ -215,7 +263,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 1-2 hours
 
-### A14 [MAJOR] — 02_related_work.tex:51-57; 03_setup.tex:166-168; 07_experiments.tex:7
+### A14 [MAJOR — 02 SITE FIXED 2026-08-18; 03:166-168 and 07:7 remain (P3)] — 02_related_work.tex:51-57; 03_setup.tex:166-168; 07_experiments.tex:7
 
 **Issue**: Three prose sites still describe Theorem 1 with the retired Schur-complement/condition-number framing — including 03's 'bounds the condition number of H', which rem:disparity_vs_kappa ('kappa(G) is trivially infinite') directly contradicts 60 lines later.
 
@@ -295,7 +343,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 1-2 hours
 
-### A24 [MAJOR] — 07_experiments.tex:38-43 vs code/hessian/eigenvalues.py:73-105
+### A24 [MAJOR — RELABEL DONE 2026-08-18 (07 now says loss-Hessian blocks); GGN re-measurement pending in E1] — 07_experiments.tex:38-43 vs code/hessian/eigenvalues.py:73-105
 
 **Issue**: Exp 1.1 power-iterates full loss-Hessian blocks via double backprop, not the Gauss-Newton blocks the theorem and text claim — for the phi block the functional-Hessian term (fc1-fc2 cross second derivatives with O(1) residuals at init) is nonzero and uncontrolled, so the measured object differs from the claimed one.
 
@@ -343,7 +391,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 20 minutes
 
-### A30 [MAJOR] — supplement.tex:127 (also echoed at 04:289-294; 07:58-60)
+### A30 [MAJOR — FIXED 2026-08-18] — supplement.tex:127 (also echoed at 04:289-294; 07:58-60)
 
 **Issue**: The Karakida 'their Figures 2-3, exponent in [0.5, 0.8] across finite widths' attribution is now VERIFIED fabricated against the source — the paper has exactly two figures (lambda_max vs M agreeing with the linear law; a learning-rate color map), no Figure 3, and no fitted exponent anywhere — a checkable false figure citation in a manuscript with a fabrication-sensitive review history.
 
@@ -415,7 +463,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 30 minutes
 
-### A39 [MODERATE] — supplement.tex lines 232-239 (line 237)
+### A39 [MODERATE — FIXED 2026-08-18] — supplement.tex lines 232-239 (line 237)
 
 **Issue**: The remark lambda_max(diag(p)-pp^T) = max_i p_i(1-p_i) <= 1/4 is mathematically false (p = (1/2,1/2) gives lambda_max = 1/2), though non-load-bearing since the proof only uses <= 1, and 'softmax Hessian' should be 'softmax Jacobian'.
 
@@ -455,7 +503,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 30 minutes (soften) or folds into A19's rerun
 
-### A44 [MODERATE] — paper/references.bib (karakida2019universal, coil2025freezing, oleary2026spatial, huang2022modality, peng2022balanced, soudry2018implicit, bozzo2024multimodal + 5 unused entries)
+### A44 [MODERATE — FIXED 2026-08-18 except unused-entry pruning (P4)] — paper/references.bib (karakida2019universal, coil2025freezing, oleary2026spatial, huang2022modality, peng2022balanced, soudry2018implicit, bozzo2024multimodal + 5 unused entries)
 
 **Issue**: Seven bib entries have verified-wrong or incomplete metadata (Karakida cited as arXiv though published AISTATS PMLR 89:1032-1041; Coil author/title wrong and the 02 text overstates the paper; O'Leary missing pages/DOI; huang2022 has journal={ICML}; truncated author lists; Soudry missing volume/pages) and five entries are never cited.
 
@@ -527,7 +575,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 15 minutes
 
-### A53 [MODERATE] — 07_experiments.tex lines 33-37
+### A53 [MODERATE — PARTIALLY FIXED 2026-08-18 (SpatialMLP-only + range wording); CSV column claim check in E1] — 07_experiments.tex lines 33-37
 
 **Issue**: The Exp 1.1 setup implies multi-architecture coverage that doesn't exist (all 50 measurements are SpatialMLP; no architecture column in the CSVs) and undersells the sweep range ('two orders of magnitude' for 16-8192, which is ~2.7).
 
@@ -551,7 +599,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 30 minutes
 
-### A56 [MINOR] — 04:85-88 vs supplement.tex Steps 2-3
+### A56 [MINOR — FIXED 2026-08-18] — 04:85-88 vs supplement.tex Steps 2-3
 
 **Issue**: The supplement applies Karakida's squared-loss trace machinery to the softmax-CE FIM without flagging the loss transfer, and the theorem says 'Gaussian initialization' while the proof says 'Kaiming'.
 
@@ -567,7 +615,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 20 minutes
 
-### A58 [MINOR] — 03_setup.tex lines 99-101
+### A58 [MINOR — FIXED 2026-08-18] — 03_setup.tex lines 99-101
 
 **Issue**: Marchenko-Pastur is cited for a Theta(1) operator-norm (edge) claim that belongs to Bai-Yin/Geman (or Vershynin HDP Thm 4.4.5).
 
@@ -607,7 +655,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 20 minutes
 
-### A63 [MINOR] — 04_theorem1_hessian.tex:136-138; supplement.tex:216-230
+### A63 [MINOR — FIXED 2026-08-18] — 04_theorem1_hessian.tex:136-138; supplement.tex:216-230
 
 **Issue**: Draft-history meta-commentary ('earlier drafts of this proof attempted...') is inappropriate for a submission, though the retirement content itself is correct and worth keeping.
 

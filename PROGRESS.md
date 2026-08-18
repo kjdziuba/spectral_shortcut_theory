@@ -4,6 +4,63 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-18 — Phase T1+T2 complete: integrity batch + width-native Lemma 4.1 proof
+
+**T1 integrity batch (A2, A3, A30, A44, A56, A58) — DONE:**
+- Verified the actual Karakida AISTATS 2019 paper (PMLR 89:1032-1041)
+  page-by-page: theorems are plain-numbered 1-7; Thm 1 = mean
+  eigenvalue O(1/M), Thm 4 = lambda_max = alpha((T-1)/T k2 + k1/T) M
+  = Theta(M); exactly 2 figures; squared loss, linear outputs,
+  variance-scaled Gaussian init. All five fabricated citation sites
+  (Thm 3.1/4.2/5.1) and the invented "Figures 2-3, exponent [0.5,0.8]"
+  attribution removed.
+- Bib metadata fixed: karakida (published AISTATS version), soudry
+  (JMLR 19(70):1-57), huang2022 (ICML/PMLR 162), peng2022 (full
+  authors), oleary (from companion bib: Anal. Chem. 98(4):2743-2755,
+  DOI 10.1021/acs.analchem.5c04765), coil2025 (verified: Collin Coil &
+  Nick Cheney, PMLR 293), bozzo (DOI). Added bai1993limit +
+  vershynin2018high; A58 Bai-Yin cite replaces Marchenko-Pastur for
+  the Theta(1) op-norm claim in 03. Unused-entry pruning deferred to P4.
+
+**T2 width-native proof rewrite (A1, A6) — DONE, adversarially verified:**
+- Supplement Lemma 4.1 proof fully rewritten. First version routed
+  through a "contrast network in Karakida's class" + Thm 4; a 3-agent
+  adversarial workflow (wf_4d095e3f-252) REFUTED that route: Thm 4
+  requires ALL layer widths proportional to M, and degenerates
+  (alpha -> 0) for fixed bottleneck input K + single output. Final
+  proof is a half-page ELEMENTARY WITNESS argument: head-weight
+  direction v = c kron h(x_1)/||h(x_1)|| (c a unit contrast perp 1)
+  gives lambda_max >= p_min ||h||^2 / N = Omega(M) since ||h||^2 =
+  Theta(M) at variance-scaled init. Softmax handled exactly via
+  H_tau >= p_min P_perp (variance identity). Karakida Thms 1+4 kept
+  as context/benchmark only, quoted within their real hypotheses.
+- Lemma statement now carries an explicit head hypothesis (dense head
+  over Theta(M) penultimate features with Theta(1) second moments) —
+  covers per-pixel dense heads on MLP/CNN/ViT; "fixed depth =>
+  Theta(M^2)" false implication corrected to a conditional; Kaiming
+  wording unified (A56); dependency lists synced across statement,
+  proof, restatement, combine step.
+- Scaling story unified across 04/07/09/supplement (A6): SpatialMLP
+  has C_g = Theta(M) so prediction is slope 1.0 vs C_g; measured
+  0.70 +/- 0.05 reported as sublinear UNDERSHOOT (open discrepancy),
+  sqrt(C_g)/slope-0.5 reserved for Theta(M^2) families. 07 relabeled
+  to loss-Hessian blocks (A24 partial), SpatialMLP-only + ~3 orders
+  of magnitude (A53 partial).
+- Opportunistic: A39 (false <=1/4 softmax bound corrected), A63
+  (draft-history meta-commentary made impersonal), A14 partial (02's
+  Schur/condition-number sentence -> D_curv framing), softmax
+  "Hessian" -> "Jacobian".
+- Verification: round 1 found 2 major (Thm 4 misapplication; scope
+  mismatch) + 5 minor; all fixed. Round 2 re-verification
+  (wf_9d7f7921-a7f) on the witness proof + cross-file consistency.
+- Paper compiles clean; only remaining warning is fig:exp11_paired
+  (A10, Phase P5).
+
+**Next:** T3 theory-hygiene batch (A12, A13, A23, A35, A36, A22, A61),
+then T4 ratio recount from BlockViT checkpoint, then T5 freeze gate.
+
+---
+
 ## 2026-08-17/18 — Fixes 1-4C applied + full 14-agent audit
 
 **Fixes applied and pushed** (commits f0b81f9, 1ee6dff, cc455ee, 594a262):

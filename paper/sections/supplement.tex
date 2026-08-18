@@ -11,124 +11,238 @@ text, and robustness checks.
 We restate Theorem~\ref{thm:hessian} for reference:
 
 \begin{quote}
-\emph{Under Assumptions \ref{ass:linear}--\ref{ass:inputlip}, the
-module curvature disparity satisfies
+\emph{Under Assumptions \ref{ass:linear}--\ref{ass:inputlip} and the
+head hypothesis of Lemma~\ref{lem:phi_scaling}, the module curvature
+disparity satisfies, in expectation over random Kaiming
+(variance-scaled Gaussian) initialization,
 $\mathcal{D}_{\mathrm{curv}}^{(M)} \geq c_1 \cdot M - c_2$, and for
-fixed-depth architectures with $\Cg = \Theta(M^2)$,
+architecture families with $\Cg = \Theta(M^2)$,
 $\mathcal{D}_{\mathrm{curv}} \geq c_1' \sqrt{\Cg/\Cf} - c_2$, for
-constants depending on the data covariance, the bottleneck dimension
-$K$, and the model class of $g_\phip$ but not on $M$ or $\Cg$.}
+constants depending on the data distribution, the initialization
+scheme, the bottleneck dimension $K$, the input spectral dimension
+$S$, and the architecture class of $g_\phip$---but not on $M$ or
+$\Cg$.}
 \end{quote}
 
 The proof rests on two lemmas: (i) the spatial block's top eigenvalue
-scales linearly with width $M$ (Lemma~\ref{lem:phi_scaling},
-Karakida-style mean-field FIM analysis); (ii) the spectral block's
-top eigenvalue is capped by a $\Cg$-independent operator-norm bound
-(Lemma~\ref{lem:schur}). Cauchy interlacing
+scales linearly with width $M$ (Lemma~\ref{lem:phi_scaling}, proved
+by an explicit witness direction in the head weights, with Karakida
+et al.'s mean-field law as the sharp asymptotic benchmark); (ii) the
+spectral block's top eigenvalue is capped by a $\Cg$-independent
+operator-norm bound (Lemma~\ref{lem:schur}). Cauchy interlacing
 (Lemma~\ref{lem:interlacing}) is retained as an auxiliary fact but is
 not load-bearing for the disparity bound. We prove each lemma in
 turn, then combine.
 
 \subsubsection{Proof of Lemma~\ref{lem:phi_scaling}}
 
-We show $\lambda_{\max}(J_\phip^\top J_\phip) = \Omega(\Cg)$ in
-expectation over random Gaussian initialization, under
-Assumptions~\ref{ass:reg} (twice-differentiable, $L$-Lipschitz
-gradients) and \ref{ass:subg} (sub-Gaussian inputs with bounded
-covariance condition number).
+We show $\lambda_{\max}(J_\phip^\top J_\phip) = \Omega(M)$ in
+expectation over random Kaiming (variance-scaled Gaussian)
+initialization, under the head hypothesis of
+Lemma~\ref{lem:phi_scaling}: the classifier head of $g_\phip$ is a
+dense layer over a penultimate feature vector
+$h \in \mathbb{R}^{M_h}$ with $M_h = \Theta(M)$ and $\Theta(1)$
+per-entry second moment at initialization. The proof has three
+steps: (1) context---Karakida et al.'s exact width-linear law for
+the top Fisher eigenvalue in their model class, which we use as the
+asymptotic benchmark but do \emph{not} invoke directly; (2) an exact
+spectral lower bound on the softmax inner matrix at initialization;
+(3) an elementary explicit witness direction in the head weights
+that yields $\Omega(M)$ self-containedly. Throughout, Grams are
+normalized as empirical means over the
+$N := N_{\mathrm{data}} HW$ pixel positions; the unnormalized
+(summed) Grams differ by the fixed factor $N$, which does not affect
+any statement in $M$.
 
-\paragraph{Step 1: Bounded per-pixel residual at initialization.}
-Under Kaiming initialization, each pre-activation in the spatial
-module $g_\phip$ has $\mathcal{O}(1)$ variance. The output logits
-$\hat{y} = g_\phip(f_\thetap(X))$ are therefore distributed as
-$\hat{y} \sim \mathcal{N}(0, \sigma_y^2 I_{N_{cls}})$ at initialization
-in the mean-field limit, with $\sigma_y^2 = \Theta(1)$ independent
-of $\Cg$. The softmax probabilities $p = \mathrm{softmax}(\hat{y})$
-are concentrated near uniform $1/N_{cls}$, and the per-pixel residual
-$r = p - y_{onehot}$ satisfies
+\paragraph{Step 1: The width-linear law of Karakida et al.\ (context).}
+Karakida, Akaho, and Amari~\cite{karakida2019universal} analyze fully
+connected networks of depth $L \geq 2$ with layer widths
+$M_\ell = \alpha_\ell M$, linear outputs, and variance-scaled Gaussian
+(Kaiming-type) initialization
+$W^\ell_{ij} \sim \mathcal{N}(0, \sigma_w^2 / M_{\ell-1})$,
+$b^\ell_i \sim \mathcal{N}(0, \sigma_b^2)$. For the empirical Fisher
+information of the squared-loss model,
+$F = \tfrac{1}{T} \sum_{t=1}^{T} \sum_{k} \nabla f_k(x_t) \nabla
+f_k(x_t)^\top$ (the empirical-mean Gram of the output Jacobian),
+their Theorem~4 gives, in the limit $M \gg 1$,
 \[
-    \E\!\left[ \norm{r}^2 \right]
-    \;=\; \frac{N_{cls}-1}{N_{cls}} \;+\; \mathcal{O}(\sigma_y^2)
-    \;=\; \Theta(1).
+    \lambda_{\max}(F)
+    \;=\; \alpha \left( \tfrac{T-1}{T}\,\kappa_2
+        + \tfrac{1}{T}\,\kappa_1 \right) M
+    \;=\; \Theta(M),
 \]
-This bound is independent of $\Cg$.
+where $\kappa_1, \kappa_2 = \Theta(1)$ are macroscopic constants
+computed from the layer-wise signal-propagation recursions and
+$\alpha = \sum_\ell \alpha_\ell \alpha_{\ell - 1}$. Their Theorem~1
+simultaneously shows the \emph{mean} eigenvalue is
+$m_\lambda = C \kappa_1 / M = \mathcal{O}(1/M)$: as the network
+widens, the FIM spectrum becomes extremely skewed---almost all
+directions flatten while the top eigenvalue grows linearly in width.
+We record two cautions. First, Theorem~4 assumes \emph{all} layer
+widths scale proportionally with $M$; it does not cover networks
+with width-independent input or output dimensions (such as a
+classifier reading a fixed bottleneck $K$, where its coefficient
+$\alpha$ degenerates), so it cannot be applied verbatim to our
+spatial modules. Second, both statements are asymptotic mean-field
+equalities with no finite-$M$ rate. Steps~2--3 therefore prove the
+$\Omega(M)$ bound self-containedly; Karakida's law serves as the
+sharp benchmark within its model class, validated numerically in
+their Figure~1.
 
-\paragraph{Step 2: Trace of the Fisher Information block.}
-Karakida et al.~\cite{karakida2019universal}, Theorem~3.1, give that
-for a deep network at random Kaiming initialization, the expected
-trace of the per-layer FIM block scales linearly with the layer's
-parameter count:
+\paragraph{Step 2: The softmax inner matrix at initialization.}
+Our loss is softmax cross-entropy, not squared loss, so the spatial
+Gauss--Newton block carries the softmax inner matrix
 \[
-    \E\!\left[ \mathrm{tr}(F_\phip) \right]
-    \;=\; \sum_{\ell=1}^{L} q_\ell \cdot \nu_\ell \cdot M_\ell,
+    G_{\phip\phip}
+    \;=\; \frac{1}{N} \sum_{n=1}^{N}
+        J^{(n)\top} H_\tau^{(n)} J^{(n)},
+    \qquad
+    H_\tau \;:=\; \mathrm{diag}(p) - p p^\top,
 \]
-where $M_\ell$ is the parameter count of layer $\ell$, $q_\ell$ is
-the squared activation magnitude at layer $\ell$, and $\nu_\ell$ is
-the squared backpropagated signal at layer $\ell$. Under Kaiming
-init, $q_\ell, \nu_\ell = \Theta(1)$ uniformly in $\ell$, so
+where $J^{(n)} := \partial \hat{y}^{(n)} / \partial \phip$ is the
+per-pixel logit Jacobian and $p = \mathrm{softmax}(\hat{y})$. For any
+$v \in \mathbb{R}^{N_{cls}}$, the quadratic form is a variance:
+$v^\top H_\tau v = \sum_i p_i v_i^2 - (\sum_i p_i v_i)^2 =
+\mathrm{Var}_{i \sim p}(v_i) \geq p_{\min} \sum_i (v_i - \bar{v}_p)^2
+\geq p_{\min} \norm{P_\perp v}^2$, where
+$p_{\min} := \min_i p_i$, $\bar{v}_p := \sum_i p_i v_i$, the last
+inequality uses that the unweighted mean minimizes the sum of squared
+deviations, and $P_\perp := I - \tfrac{1}{N_{cls}}
+\mathbf{1}\mathbf{1}^\top$ projects onto the mean-zero subspace
+$\mathbf{1}^\perp$. Hence
 \[
-    \E\!\left[ \mathrm{tr}(F_\phip) \right]
-    \;=\; \Theta\!\left( \sum_\ell M_\ell \right)
-    \;=\; \Theta(\Cg).
+    H_\tau \;\succeq\; p_{\min} \, P_\perp .
 \]
+At Kaiming initialization the logits are $\Theta(1)$ (each
+pre-activation has $\mathcal{O}(1)$ variance uniformly in $M$), so
+$p_{\min} \geq c_p > 0$ with high probability over initialization and
+data, for a constant $c_p$ of order $1/N_{cls}$ independent of $M$
+and $\Cg$.
 
-\paragraph{Step 3: From Fisher to Gauss-Newton.}
-For softmax cross-entropy, the FIM and Gauss-Newton matrix differ by
-a factor depending on the prediction distribution:
+\paragraph{Step 3: An explicit witness direction.}
+Write the classifier head of $g_\phip$ as $\hat{y} = W h + b$ with
+penultimate features $h = h(x) \in \mathbb{R}^{M_h}$,
+$M_h = \Theta(M)$ (for per-pixel classification, $h$ is the feature
+vector at the classified pixel). Fix a unit contrast
+$c \in \mathbb{R}^{N_{cls}}$ with $c \perp \mathbf{1}$;
+Cauchy--Schwarz gives $P_\perp \succeq c c^\top$ (for any $u$,
+$(c^\top u)^2 = (c^\top P_\perp u)^2 \leq \norm{P_\perp u}^2$).
+Select a single pixel $n = 1$ with features $h_1 := h(x_1)$ and take
+the unit parameter direction supported on the head weights,
 \[
-    F_\phip \;=\; \E_X\!\left[ J_\phip^\top \cdot \mathrm{diag}(p)(I - 1 p^\top) \cdot J_\phip \right].
+    v \;=\; c \otimes \frac{h_1}{\norm{h_1}}
+    \;\in\; \mathbb{R}^{N_{cls} M_h},
+    \qquad \norm{v} = 1 .
 \]
-At random initialization $p \to (1/N_{cls}) \mathbf{1}$, so the
-inner matrix has eigenvalues bounded by $1/N_{cls}$. Therefore
+Since $\partial \hat{y}_k / \partial W_{k'j} = \delta_{kk'} h_j$, we
+have $c^\top J^{(n)} v = \norm{c}^2 \, (h_n^\top h_1)/\norm{h_1} =
+(h_n^\top h_1)/\norm{h_1}$ for every pixel $n$. Every term of the
+sum defining $G_{\phip\phip}$ is nonnegative ($H_\tau$ is PSD), so
+dropping all but the $n=1$ term and applying Step~2 at pixel~1,
 \[
-    \mathrm{tr}(F_\phip)
-    \;\geq\; \frac{1}{N_{cls}^2} \cdot \mathrm{tr}(J_\phip^\top J_\phip)
+    \lambda_{\max}(G_{\phip\phip})
+    \;\geq\; v^\top G_{\phip\phip} v
+    \;\geq\; \frac{p^{(1)}_{\min}}{N}
+        \left( c^\top J^{(1)} v \right)^2
+    \;=\; \frac{p^{(1)}_{\min}}{N}\, \norm{h_1}^2 ,
 \]
-and combining with Step~2:
+where $p^{(1)}_{\min}$ is the smallest predicted probability at
+pixel~1. Two initialization facts finish the proof.
+(i)~By the head hypothesis of Lemma~\ref{lem:phi_scaling},
+$\norm{h_1}^2 \geq q_h M_h$ with probability at least
+$1 - \delta_h$, $\delta_h < 1/2$, over initialization.
+(ii)~The single pixel's logits are $\Theta(1)$ at initialization
+uniformly in $M$ (the head weights have variance $1/M_h$ against
+$\norm{h_1}^2 = \mathcal{O}(M_h)$), so choosing the constant
+$c_p > 0$ (of order $1/N_{cls}$) small enough,
+$p^{(1)}_{\min} \geq c_p$ with probability at least $1 - \delta_p$
+with $\delta_p \leq 1/4$. Since $\delta_h + \delta_p < 3/4$, the two
+events intersect with probability at least $1/4$, and on that
+intersection,
 \[
-    \E\!\left[ \mathrm{tr}(J_\phip^\top J_\phip) \right]
-    \;=\; \Omega(\Cg).
+    \lambda_{\max}(G_{\phip\phip})
+    \;\geq\; \frac{c_p\, q_h}{N} \, M_h
+    \;=\; \Omega(M).
 \]
+Since $\lambda_{\max} \geq 0$ always, taking expectations gives
+$\E[\lambda_{\max}(G_{\phip\phip})] \geq
+(1 - \delta_h - \delta_p)\,(c_p q_h / N)\, M_h \geq
+\tfrac{1}{4}(c_p q_h / N) M_h = \Omega(M)$. The
+$1/N$ factor is an artifact of the single-witness bound: the
+discarded terms are nonnegative, and for activations with nonzero
+mean at initialization (e.g.\ ReLU) the mean-feature witness
+$u = \bar{h}/\norm{\bar{h}}$ removes it. In any case $N$ is fixed as
+$M$ grows.
 
-\paragraph{Step 4: Top eigenvalue from trace via participation ratio.}
-The top eigenvalue is bounded from below by the trace divided by the
-effective rank:
-\[
-    \lambda_{\max}(J_\phip^\top J_\phip)
-    \;\geq\; \frac{\mathrm{tr}(J_\phip^\top J_\phip)}{\rho(J_\phip^\top J_\phip)},
-\]
-where $\rho$ is the participation ratio (effective rank under the
-$L^2$ measure). Karakida et al.~\cite{karakida2019universal},
-Theorem~4.2, show that under mean-field assumptions, the
-participation ratio of the FIM is $\Theta(1)$ uniformly in network
-width. Combining with Step~3:
-\[
-    \lambda_{\max}(J_\phip^\top J_\phip)
-    \;=\; \Omega(\Cg).
-\]
+On the head hypothesis itself: for fully connected modules at
+Kaiming Gaussian initialization it holds with any fixed
+$\delta_h$---per-entry second moments are $\Theta(1)$ (the
+signal-propagation recursions of Karakida et
+al.~\cite{karakida2019universal}, Eq.~(9)), and the squared norm, a
+sum of $M_h$ weakly dependent $\Theta(1)$ terms, concentrates around
+its mean. For CNN and ViT heads we state the hypothesis as an
+explicit assumption rather than a theorem, and check it empirically
+in Section~\ref{sec:experiments}.
 
-\paragraph{Step 5: Concentration in the wide-network limit.}
-Karakida et al.~\cite{karakida2019universal}, Theorem~5.1, establish
-that in the mean-field limit, the top eigenvalue of the FIM
-concentrates around its expectation with high probability. The
-deterministic bound therefore holds with probability $1 - o(1)$ as
-$\Cg \to \infty$.
+\paragraph{Residual-Jacobian form.}
+When the block is written with the residual Jacobian
+$J_{\phip} = H_\tau J^{(n)}$ (the convention of
+Section~\ref{sec:setup}), note that $H_\tau$ is symmetric with
+$H_\tau \mathbf{1} = 0$ and, by Step~2, $H_\tau \succeq p_{\min} I$
+on the invariant subspace $\mathbf{1}^\perp$; hence
+$H_\tau^2 \succeq p_{\min}^2 P_\perp$ and the identical witness
+argument yields
+$\lambda_{\max}(J_\phip^\top J_\phip) \geq
+(p^{(1)}_{\min})^2 \norm{h_1}^2 / N = \Omega(M)$, matching the
+statement of Lemma~\ref{lem:phi_scaling} verbatim. This completes
+the proof.
+\hfill$\square$
 
-This completes the proof of Lemma~\ref{lem:phi_scaling}. \hfill$\square$
+\begin{remark}[Scope, and the role of the mean-field law]
+\label{rem:meanfield_scope}
+The witness argument uses only: (a)~a dense classifier head over a
+penultimate feature vector of dimension $\Theta(M)$;
+(b)~concentration of the feature squared norm at initialization
+($\norm{h}^2 \geq q_h M_h$ with probability $1 - \delta_h$)---which
+variance-scaled (Kaiming-type) schemes are designed to deliver, and
+which we prove nothing stronger than; and (c)~softmax cross-entropy
+with $N_{cls} \geq 2$. It applies to per-pixel dense heads on MLP,
+CNN (channel count $M$), and ViT (embedding dimension $M$) spatial
+modules \emph{whenever hypothesis (b) holds for them}: for fully
+connected modules (b) follows from standard signal propagation at
+Kaiming initialization, while for CNN and ViT heads we adopt (b) as
+an explicit assumption checked empirically. No i.i.d.\ Gaussian
+input assumption is required---only the stated norm condition on the
+features. Karakida et al.'s Theorem~4 plays the role of the
+sharp asymptotic benchmark: within its model class (fully connected,
+all widths proportional to $M$, squared loss), it upgrades the
+witness lower bound to an exact width-linear law with explicit
+constant, and their Theorem~1 supplies the complementary fact that
+the \emph{mean} eigenvalue shrinks as $\mathcal{O}(1/M)$, so
+curvature concentrates in a vanishing fraction of directions as the
+module widens. The loss transfer from squared loss to cross-entropy
+is handled exactly at initialization by Step~2, at the cost of the
+constant $p_{\min}$.
+\end{remark}
 
-\begin{remark}[Empirical validation]
-Karakida's asymptotic law $\lambda_{\max} = \Theta(M)$ corresponds
-to a log-log scaling exponent of $0.5$ against $\Cg$ under
-$\Cg = \Theta(M^2)$. Experiment~1.1 measures an empirical exponent of
-$\approx 0.70$ over $\Cg$ spanning three decades
-($D \in \{16, \ldots, 8192\}$), consistent with the asymptotic
-$\sqrt{\Cg}$ prediction plus a mild finite-width upward correction
-of the same character observed in Karakida's own numerical validation
-(their Figures~2--3, exponent $\in [0.5, 0.8]$ across finite widths).
-The qualitative claim of Lemma~\ref{lem:phi_scaling}---$\lambda_\phi$
-grows without bound as the spatial module widens---is preserved at
-all widths we test, and the quantitative slope matches the corrected
-asymptotic prediction.
+\begin{remark}[Empirical status]
+\label{rem:phi_scaling_empirical}
+Karakida et al.'s own numerical validation (their Figure~1, right
+column) confirms $\lambda_{\max}$ growing linearly in $M$, matching
+the exact constant of their Theorem~4, for tanh, ReLU, and linear
+fully connected networks. Our Experiment~1.1 tests the law on the
+SpatialMLP family, whose parameter count is \emph{linear} in width
+($\Cg = \Theta(M)$, since input and output dimensions are fixed), so
+the width-linear law predicts a log--log slope of $1.0$ against
+$\Cg$ as well as against $M$. The measured slope is
+$0.70 \pm 0.05$: the qualitative claim of
+Lemma~\ref{lem:phi_scaling}---$\lambda_\phi$ grows without bound
+while $\lambda_\thetap$ stays capped---is confirmed unambiguously,
+but the measured exponent is sublinear, short of the width-linear
+asymptote. Candidate causes (finite width, the loss-Hessian versus
+Gauss--Newton measurement gap, correlated non-Gaussian features) are
+discussed in Section~\ref{sec:experiments}. We report the
+discrepancy rather than explain it away.
 \end{remark}
 
 \subsubsection{Proof of Lemma~\ref{lem:interlacing}}
@@ -163,7 +277,7 @@ rule gives
     \;=\; J_\tau \cdot J_Z \cdot \frac{\partial Z}{\partial \thetap},
 \]
 with $J_\tau := \partial \tau / \partial \hat{y} = \mathrm{diag}(p) -
-p p^\top$ (the softmax Hessian, which satisfies
+p p^\top$ (the softmax Jacobian, which satisfies
 $\|J_\tau\|_{\mathrm{op}} \leq 1$; see Botev, Ritter, and
 Barber~\cite{botev2017practical}) and $J_Z := \partial g_\phip / \partial Z$.
 
@@ -214,28 +328,28 @@ completes the proof.
 \hfill$\square$
 
 \begin{remark}[Why an operator-norm cap suffices]
-Earlier drafts of this proof attempted to bound the smallest positive
-eigenvalue $\lambda_{\min}^{+}(J_\thetap^\top J_\thetap)$, which
-required either an exact Kronecker factorisation (valid only for
-per-pixel classifiers) or a trace-over-rank argument via the softmax
-residual dimension. Both approaches survive only under additional
-structural assumptions on $g_\phip$. The operator-norm bound above
-is significantly simpler, applies to general nonlinear spatial
-classifiers (CNN, ViT), and is exactly what
-Theorem~\ref{thm:hessian} needs: a $\Cg$-independent cap on the
-spectral block's \emph{top} eigenvalue, so that
+An alternative route via the smallest positive eigenvalue
+$\lambda_{\min}^{+}(J_\thetap^\top J_\thetap)$ requires either an
+exact Kronecker factorisation (valid only for per-pixel classifiers)
+or a trace-over-rank argument via the softmax residual
+dimension---both of which need additional structural assumptions on
+$g_\phip$. The operator-norm bound above is significantly simpler,
+applies to general nonlinear spatial classifiers (CNN, ViT), and is
+exactly what Theorem~\ref{thm:hessian} needs: a $\Cg$-independent
+cap on the spectral block's \emph{top} eigenvalue, so that
 $\mathcal{D}_{\mathrm{curv}} = \lambda_{\max}(J_\phip^\top
 J_\phip)/\lambda_{\max}(J_\thetap^\top J_\thetap) \geq
 \Omega(M)/C_\thetap$.
 \end{remark}
 
-\begin{remark}[Softmax residual Hessian bound]
+\begin{remark}[Softmax Jacobian bound]
 The bound $\|\mathrm{diag}(p) - p p^\top\|_{\mathrm{op}} \leq 1$ is
-standard (Botev, Ritter, and Barber~\cite{botev2017practical}) and
-follows from the fact that $\mathrm{diag}(p) - p p^\top$ is the
-covariance of the categorical distribution, whose top eigenvalue is
-$\max_i p_i(1 - p_i) \leq 1/4$; the factor $1$ used here is a loose
-convenience.
+standard: $\mathrm{diag}(p) - p p^\top$ is the covariance matrix of
+the categorical distribution with parameter $p$ (equivalently, the
+Jacobian of the softmax map), hence positive semi-definite with
+$\lambda_{\max} \leq \max_i p_i \leq 1$. See Botev, Ritter, and
+Barber~\cite{botev2017practical} for its role in Gauss--Newton
+computations.
 \end{remark}
 
 \subsubsection{Combining the lemmas: full proof of Theorem~\ref{thm:hessian}}
@@ -243,15 +357,17 @@ convenience.
 
 Assemble Lemmas~\ref{lem:phi_scaling} and~\ref{lem:schur} to complete
 the proof. By Lemma~\ref{lem:phi_scaling}, in expectation over random
-initialization,
+Kaiming (variance-scaled Gaussian) initialization,
 \[
     \lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)})
     \;\geq\; c_\phi \cdot M
 \]
-for a constant $c_\phi > 0$ determined by
-Karakida et al.~\cite{karakida2019universal} (Theorem~5.1 for
-concentration in the wide-network limit), depending on the depth of
-$g_\phip$ and the data covariance but not on $M$. By
+for a constant $c_\phi > 0$ independent of $M$, given explicitly by
+the witness bound in the proof of Lemma~\ref{lem:phi_scaling}
+($c_\phi = (1 - \delta_h - \delta_p)\, c_p q_h M_h / (N M)$); within
+Karakida et al.'s~\cite{karakida2019universal} proportional-width
+model class, their Theorem~4 sharpens the width-linear rate to an
+exact law. By
 Lemma~\ref{lem:schur},
 \[
     \lambda_{\max}(J_\thetap^\top J_\thetap) \;\leq\; C_\thetap
@@ -265,12 +381,13 @@ with $C_\thetap$ independent of $M$ and $\Cg$. Dividing,
     \;=\; c_1 \cdot M,
     \label{eq:disparity_bound}
 \end{equation}
-where $c_1 := c_\phi / C_\thetap$ depends only on the classifier's
-depth, the classifier's input Lipschitz constant $\widetilde{L}$,
-the bottleneck dimension $K$, the input spectral dimension $S$, and
-the data-covariance eigenvalues---exactly the dependencies claimed in
-the theorem statement. A subtracted constant $c_2 \geq 0$ absorbs
-finite-$M$ corrections from the Karakida concentration bound. Under
+where $c_1 := c_\phi / C_\thetap$ depends only on the initialization
+scheme, the architecture class of $g_\phip$, the classifier's input
+Lipschitz constant $\widetilde{L}$, the bottleneck dimension $K$,
+the input spectral dimension $S$, and the data
+distribution---exactly the dependencies claimed in the theorem
+statement. A subtracted constant $c_2 \geq 0$ absorbs
+finite-width corrections to the mean-field limit. Under
 $\Cg = \Theta(M^2)$, $M = \Theta(\sqrt{\Cg})$ and the ratio form
 $\mathcal{D}_{\mathrm{curv}} \geq c_1' \sqrt{\Cg / \Cf} - c_2$
 follows on multiplying and dividing by $\sqrt{\Cf}$. This completes
@@ -286,23 +403,25 @@ $\lambda_{\max}/\lambda_{\min}$ sense (which is trivially infinite
 under rank-deficiency), nor that joint gradient descent produces
 disparate effective learning rates (which is the separate content of
 Theorem~\ref{thm:twoscale}, under its own hypotheses). The scaling
-$\mathcal{D}_{\mathrm{curv}} \geq \Omega(\sqrt{\Cg / \Cf})$ is a
+$\mathcal{D}_{\mathrm{curv}} = \Omega(M)$ (equivalently
+$\Omega(\sqrt{\Cg / \Cf})$ for $\Theta(M^2)$-parameter families) is a
 purely geometric statement about how curvature concentrates in the
 downstream module as the spatial network widens.
 \end{remark}
 
 \begin{remark}[Width scaling and the empirical exponent]
 The $\sqrt{\Cg}$ scaling reflects the fact that Karakida's
-underlying result~\cite{karakida2019universal} bounds
-$\lambda_{\max}(J_\phip^\top J_\phip)$ in terms of the network's
-characteristic \emph{width} $M$, not its total parameter count. For
-a fixed-depth architecture with $\Cg = \Theta(M^2)$, the equivalent
-scaling is $\lambda_{\max}(J_\phip^\top J_\phip) \sim \sqrt{\Cg}$.
-Experiment~1.1 sweeps width $D$ from $16$ to $8192$ at fixed depth
-and measures a log--log slope of $\approx 0.70$ against $\Cg$,
-consistent with the asymptotic $0.5$ prediction plus a mild
-finite-width upward correction of the same character reported in
-Karakida's own numerical validation.
+underlying result~\cite{karakida2019universal} (Theorem~4) gives
+$\lambda_{\max}$ in terms of the network's characteristic
+\emph{width} $M$, not its total parameter count. For a fixed-depth
+architecture with $\Cg = \Theta(M^2)$, the equivalent scaling is
+$\lambda_{\max}(J_\phip^\top J_\phip) \sim \sqrt{\Cg}$
+(log--log slope $0.5$ against $\Cg$). Experiment~1.1's SpatialMLP is
+\emph{not} in this class: its parameter count is linear in width
+($\Cg = \Theta(M)$), so the applicable prediction there is slope
+$1.0$ against $\Cg$, and the measured $0.70 \pm 0.05$ is sublinear
+(Remark~\ref{rem:phi_scaling_empirical}). The two parameter-count
+forms must not be conflated; the theorem's native variable is $M$.
 \end{remark}
 
 

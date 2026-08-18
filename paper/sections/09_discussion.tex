@@ -58,13 +58,19 @@ under nonlinear $f_\thetap$. A formal proof for nonlinear $f_\thetap$
 is left to future work.
 
 \paragraph{Finite-width scaling exponent.}
-The empirical scaling exponent of $\lambda_\phi$ vs.\ $\Cg$ is $\sim
-0.7$ at the widths we tested, while the asymptotic Karakida prediction
-is $1.0$. We expect the asymptote to be approached at larger widths.
-Two consequences for the paper: the Theorem~\ref{thm:hessian} bound
-should be read as a lower bound that may be loose at finite scale, and
-the empirical predictions should be interpreted as qualitative
-(monotonic growth) rather than tight (constant proportionality).
+The empirical scaling exponent of $\lambda_\phi$ vs.\ $\Cg$ is
+$0.70 \pm 0.05$ at the widths we tested, while the width-linear
+prediction of Lemma~\ref{lem:phi_scaling} for the tested
+architecture family is $1.0$ (the SpatialMLP has
+$\Cg = \Theta(M)$, so slope~$1.0$ applies against $\Cg$ as well as
+against $M$). The measurement is sublinear---it undershoots the
+asymptote. Whether the asymptote is approached at larger widths, or
+the deficit reflects the measurement and idealization gaps discussed
+in Section~\ref{sec:experiments}, is left open. Two consequences for
+the paper: the Theorem~\ref{thm:hessian} bound should be read as a
+lower bound that may be loose at finite scale, and the empirical
+predictions should be interpreted as qualitative (monotonic growth)
+rather than tight (constant proportionality).
 
 \paragraph{Memorization regime.}
 For sufficiently overparametrized spatial models (ViT in our

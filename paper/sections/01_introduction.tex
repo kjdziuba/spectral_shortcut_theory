@@ -49,13 +49,16 @@ theorems form our contribution.
           Curvature Disparity).} We prove that the ratio of the
           spatial to the spectral Gauss-Newton block's top eigenvalue
           grows linearly with the spatial module's width $M$
-          (equivalently, as $\sqrt{\Cg/\Cf}$ for fixed-depth
-          architectures): as the spatial module widens, curvature
-          concentrates in it while the spectral block's curvature
-          stays capped by a width-independent constant. The proof
-          combines the mean-field FIM scaling of Karakida et
-          al.~\cite{karakida2019universal} with an operator-norm
-          bound on the spectral block.
+          (equivalently, as $\sqrt{\Cg/\Cf}$ for architecture
+          families with $\Cg = \Theta(M^2)$): as the spatial module
+          widens, curvature concentrates in it while the spectral
+          block's curvature stays capped by a width-independent
+          constant. The proof is elementary: an explicit witness
+          direction in the classifier-head weights forces the
+          width-linear growth, and an operator-norm bound caps the
+          spectral block; the rate matches the mean-field law of
+          Karakida et al.~\cite{karakida2019universal} in the model
+          class where the latter applies.
     \item \textbf{Theorem~\ref{thm:twoscale} (Finite-Time Spectral
           Starvation).} Under an explicit shortcut-fitting hypothesis
           compatible with cross-entropy dynamics, the spectral

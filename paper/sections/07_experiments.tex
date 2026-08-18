@@ -31,14 +31,18 @@ construction.
 
 \subsection{Experiment 1.1: Hessian capacity ablation}
 
-We vary the spatial width $D$ across two orders of magnitude
-($D \in \{16, 32, 64, \ldots, 8192\}$ for SpatialMLP, equivalent
-parameter scales for other architectures) with $\Cf = 1024$ held
-fixed. For each $(D, \mathrm{seed})$ we compute the top eigenvalue of
-the spectral and spatial block Gauss-Newton matrices via power
-iteration (5 seeds per width). The predictions to be tested are
-$\lambda_{\max}(J_\phip^\top J_\phip) = \Omega(M) =
-\Omega(\sqrt{\Cg})$ (Lemma~\ref{lem:phi_scaling}) and
+We vary the spatial width $D$ of a SpatialMLP over nearly three
+orders of magnitude ($D \in \{16, 32, 64, \ldots, 8192\}$, a
+$512\times$ range) with $\Cf = 1024$ held fixed; all measurements in
+this experiment use the SpatialMLP family. For each
+$(D, \mathrm{seed})$ we compute the top eigenvalue of the spectral
+and spatial diagonal blocks of the loss Hessian via power iteration
+(5 seeds per width). Theorem~\ref{thm:hessian} is stated for the
+Gauss--Newton blocks; the full-Hessian blocks additionally contain a
+residual-weighted functional term, and we flag this measurement gap
+explicitly. The predictions to be tested are
+$\lambda_{\max}(J_\phip^\top J_\phip) = \Omega(M)$
+(Lemma~\ref{lem:phi_scaling}) and
 $\lambda_{\max}(J_\thetap^\top J_\thetap)$ approximately constant
 (Lemma~\ref{lem:schur}).
 
@@ -52,12 +56,18 @@ $\lambda_{\max}(J_\thetap^\top J_\thetap)$ approximately constant
           (from $0.62$ to $46$) as $\Cg$ grows by $510\times$.
     \item The empirical log-log slope of $\lambda_{\max}(J_\phip^\top
           J_\phip)$ vs.\ $\Cg$ is $0.70 \pm 0.05$ across the full
-          range. The width-linear prediction of
-          Lemma~\ref{lem:phi_scaling} corresponds to slope $0.5$
-          against $\Cg$ (since $\Cg = \Theta(M^2)$); the measured
-          $0.70$ is consistent with the asymptotic prediction plus a
-          finite-width upward correction of the character reported in
-          Karakida et al.'s own numerical validation.
+          range. For the SpatialMLP family $\Cg = \Theta(D)$ (input
+          and output dimensions are fixed), so the width-linear law
+          of Lemma~\ref{lem:phi_scaling} predicts slope $1.0$
+          against $\Cg$; the measured $0.70$ is sublinear, short of
+          the width-linear asymptote. Candidate causes are
+          finite-width corrections, the loss-Hessian versus
+          Gauss--Newton measurement gap flagged above, and the
+          correlated non-Gaussian features $Z$ relative to the
+          mean-field idealization. The $\sqrt{\Cg}$ (slope-$0.5$)
+          form of Theorem~\ref{thm:hessian} applies only to
+          fixed-depth $\Theta(M^2)$ families, which this sweep does
+          not include.
     \item The module curvature disparity
           $\mathcal{D}_{\mathrm{curv}} = \lambda_\phi / \lambda_\theta$
           grows from $40$ at $\Cg/\Cf = 0.3$ to $2{,}407$ at
@@ -69,7 +79,10 @@ $\lambda_{\max}(J_\thetap^\top J_\thetap)$ approximately constant
 The qualitative geometric prediction is verified: the spectral and
 spatial block eigenvalues diverge with capacity, producing a severe
 module curvature disparity. The measured scaling exponent is
-consistent with the corrected width-linear asymptote.
+sublinear relative to the width-linear asymptote; the qualitative
+divergence, not the exact exponent, is what
+Theorems~\ref{thm:hessian} and~\ref{thm:twoscale} require, and we
+report the quantitative deficit as an open discrepancy.
 
 \paragraph{Headline figure.}
 Figure~\ref{fig:exp11_paired} (paired view: $\lambda_\phi$ and

@@ -50,11 +50,13 @@ networks. Pennington and Bahri~\cite{pennington2017geometry} developed
 a random matrix theory analysis that predicts spectral densities under
 Gaussian assumptions. Karakida et al.~\cite{karakida2019universal}
 derived closed-form mean-field expressions for the leading eigenvalue
-of the Fisher Information Matrix, showing it scales with the layer
-width and parameter count. Theorem~\ref{thm:hessian} applies these
-results blockwise to the joint Hessian of a compositional model,
-combining them with Schur complement bounds to yield a capacity-ratio
-scaling for the joint condition number.
+of the Fisher Information Matrix, showing it scales linearly with the
+layer width. Theorem~\ref{thm:hessian} works blockwise on the joint
+Gauss--Newton matrix of a compositional model: a width-linear lower
+bound on the spatial block's top eigenvalue is combined with a
+width-independent operator-norm cap on the spectral block, yielding a
+width-scaling law for the module curvature disparity
+$\mathcal{D}_{\mathrm{curv}}$.
 
 \subsection{Multimodal gradient competition}
 

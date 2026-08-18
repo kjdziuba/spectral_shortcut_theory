@@ -20,18 +20,23 @@ f_\thetap$ with fixed-dimensional linear spectral module $f_\thetap$
 $g_\phip^{(M)}$ indexed by characteristic width $M$
 (channels for a CNN, embedding dimension for a ViT, hidden width for
 an MLP). Under
-Assumptions~\ref{ass:linear}--\ref{ass:inputlip}, there exist
-constants $c_1, c_2 > 0$ depending on the data covariance, the
-bottleneck dimension $K$, the input spectral dimension $S$, and the
-depth of $g_\phip$---but not on $M$ or on the spatial parameter count
-$\Cg$---such that
+Assumptions~\ref{ass:linear}--\ref{ass:inputlip} and the head
+hypothesis of Lemma~\ref{lem:phi_scaling} below (a dense classifier
+head over a penultimate feature vector of dimension $\Theta(M)$ with
+concentrated squared norm at initialization), there exist
+constants $c_1, c_2 > 0$ depending on the data distribution, the
+initialization scheme, the bottleneck dimension $K$, the input
+spectral dimension $S$, and the architecture class of $g_\phip$
+(depth, activation, head dimensions)---but not on $M$ or on the
+spatial parameter count $\Cg$---such that
 \[
     \mathcal{D}_{\mathrm{curv}}^{(M)}
     \;=\; \frac{\lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)})}
                 {\lambda_{\max}(J_\thetap^\top J_\thetap)}
     \;\geq\; c_1 \cdot M - c_2
 \]
-in expectation over random Gaussian initialization. Equivalently, for
+in expectation over random Kaiming (variance-scaled Gaussian)
+initialization. Equivalently, for
 fixed-depth architectures with $\Cg = \Theta(M^2)$,
 \[
     \mathcal{D}_{\mathrm{curv}}^{(M)}
@@ -58,16 +63,26 @@ lemmas before presenting the proof.
 
 \begin{lemma}[Spatial block scaling]
 \label{lem:phi_scaling}
-Under Assumptions~\ref{ass:reg}--\ref{ass:subg}, let $M$ denote the
-characteristic width of $g_\phip$ (channel count for a CNN,
-embedding dimension for a ViT, hidden layer width for an MLP). Then
-the largest eigenvalue of the spatial Gauss-Newton block satisfies
+Let $M$ denote the characteristic width of $g_\phip$ (channel count
+for a CNN, embedding dimension for a ViT, hidden layer width for an
+MLP), let $N_{cls} \geq 2$, and suppose the classifier head of
+$g_\phip$ is a dense layer applied to a penultimate feature vector
+$h \in \mathbb{R}^{M_h}$ with $M_h = \Theta(M)$ whose squared norm
+concentrates at initialization: $\norm{h}^2 \geq q_h M_h$ with
+probability at least $1 - \delta_h$ over the random initialization,
+for constants $q_h > 0$ and $\delta_h < 1/2$ independent of $M$
+(the \emph{head hypothesis}; satisfied by Kaiming Gaussian
+initialization---see the supplement). Then, under
+Assumptions~\ref{ass:reg}--\ref{ass:subg}, the largest eigenvalue of
+the spatial Gauss-Newton block satisfies
 \[
     \lambda_{\max}(J_\phip^\top J_\phip)
     \;=\; \Omega(M)
-    \qquad \text{in expectation over random initialization.}
+    \qquad \parbox{16em}{\centering in expectation over random Kaiming
+    (variance-scaled Gaussian) initialization.}
 \]
-For fixed-depth $g_\phip$, $\Cg = \Theta(M^2)$, so equivalently
+For architecture families with $\Cg = \Theta(M^2)$ (fixed depth with
+at least two consecutive width-proportional layers), equivalently
 \[
     \lambda_{\max}(J_\phip^\top J_\phip)
     \;=\; \Omega\!\left( \sqrt{\Cg} \right).
@@ -75,19 +90,25 @@ For fixed-depth $g_\phip$, $\Cg = \Theta(M^2)$, so equivalently
 \end{lemma}
 
 \begin{remark}
-Lemma~\ref{lem:phi_scaling} rests on the mean-field analysis of
-Karakida et al.~\cite{karakida2019universal}, who show that the
-leading eigenvalue of the Fisher Information Matrix of a
-fully connected network at random Gaussian initialization grows
-linearly in the network \emph{width}. The scaling variable is width,
-not parameter count: for fixed-depth architectures with
-$\Cg = \Theta(M^2)$, the equivalent parameter-count statement is
-$\lambda_{\max} = \Omega(\sqrt{\Cg})$. Karakida's derivation covers
-fully connected architectures under squared loss; we adopt the
-width-linear scaling as the asymptotic prediction for the CNN and ViT
-families as well, and verify empirically in
-Section~\ref{sec:experiments} that the measured scaling is consistent
-with it across all three architectures.
+Lemma~\ref{lem:phi_scaling} is proved in the supplement
+(Section~\ref{sec:proof_thm1}) by an explicit witness: a head-weight
+direction aligned with the penultimate feature vector $h(x)$ of a
+single classified pixel. At variance-scaled initialization
+$\norm{h}^2 = \Theta(M)$, and passing the softmax inner matrix costs
+only a constant, forcing $\lambda_{\max} = \Omega(M)$. The
+width-linear law agrees with the mean-field analysis of Karakida et
+al.~\cite{karakida2019universal}: their Theorem~4 gives
+$\lambda_{\max} = \Theta(M)$ with sharp constant for
+proportional-width fully connected networks under squared loss, and
+their Theorem~1 shows the mean eigenvalue simultaneously shrinks as
+$\mathcal{O}(1/M)$---curvature concentrates in a vanishing fraction
+of directions as networks widen. The scaling variable is width, not
+parameter count: for architecture families with $\Cg = \Theta(M^2)$,
+the equivalent parameter-count statement is
+$\lambda_{\max} = \Omega(\sqrt{\Cg})$. The head hypothesis covers
+per-pixel dense heads on CNN and ViT modules as well; the sharpness
+of the width-linear rate is tested empirically in
+Section~\ref{sec:experiments}.
 \end{remark}
 
 \begin{lemma}[Eigenvalue interlacing for block matrices]
@@ -141,14 +162,14 @@ earlier drafts. See Section~\ref{sec:proof_thm1} for details.
 \subsection{Proof of Theorem~\ref{thm:hessian}}
 
 \begin{proof}[Proof of Theorem~\ref{thm:hessian}]
-By Lemma~\ref{lem:phi_scaling}, in expectation over random Gaussian
-initialization,
+By Lemma~\ref{lem:phi_scaling}, in expectation over random Kaiming
+(variance-scaled Gaussian) initialization,
 \[
     \lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)}) \;\geq\; c_\phi \cdot M
 \]
-for a constant $c_\phi > 0$ depending only on the depth of $g_\phip$
-and the data covariance, with concentration in the wide-network limit
-(Karakida et al.~\cite{karakida2019universal}, Theorem~5.1). By
+for a constant $c_\phi > 0$ independent of $M$ (depending on the
+initialization scheme, the activation, the head dimensions, and the
+data distribution; supplement Section~\ref{sec:proof_thm1}). By
 Lemma~\ref{lem:schur},
 \[
     \lambda_{\max}(J_\thetap^\top J_\thetap) \;\leq\; C_\thetap
@@ -162,8 +183,9 @@ for a constant $C_\thetap > 0$ independent of $M$. Dividing,
     \;=\; c_1 \cdot M
 \]
 with $c_1 := c_\phi / C_\thetap$. A constant $c_2 \geq 0$ absorbs
-finite-$M$ corrections from Karakida's concentration bound. Under
-$\Cg = \Theta(M^2)$ (fixed-depth architectures), $M = \Theta(\sqrt{\Cg})$
+finite-width corrections. Under
+$\Cg = \Theta(M^2)$ (families with at least two consecutive
+width-proportional layers), $M = \Theta(\sqrt{\Cg})$
 and the ratio form $c_1' \cdot \sqrt{\Cg / \Cf}$ follows on multiplying
 and dividing by $\sqrt{\Cf}$. This completes the proof.
 \end{proof}
@@ -285,13 +307,17 @@ loss balancing, and related interventions are important future work.
 \subsection{Empirical support}
 
 Experiment~1.1 in Section~\ref{sec:experiments} measures
-$\mathcal{D}_{\mathrm{curv}}^{(M)}$ directly across a range of spatial
-widths and confirms monotonic growth with $M$. The observed
-log-log slope $\approx 0.70$ against $\Cg$ falls between the
-asymptotic prediction of Lemma~\ref{lem:phi_scaling} ($0.5$) and the
-naive linear-in-parameters prediction ($1.0$), consistent with a
-finite-width upward correction of the same character reported in
-Karakida's own numerical validation~\cite{karakida2019universal}.
+$\mathcal{D}_{\mathrm{curv}}^{(M)}$ directly across a range of
+spatial widths and confirms monotonic growth with $M$: the spatial
+top eigenvalue grows $74\times$ over the sweep while the spectral
+top eigenvalue stays flat, driving the disparity into the thousands.
+The measured log--log slope of $\lambda_\phi$ against $\Cg$ is
+$0.70 \pm 0.05$, below the slope-$1.0$ prediction that applies to
+the tested architecture family (whose $\Cg = \Theta(M)$); the
+deficit and its candidate causes are reported in
+Section~\ref{sec:experiments}. The qualitative
+prediction---unbounded spatial-block growth against a capped
+spectral block---is unambiguous in the data.
 
 \begin{remark}[Defense against linear triviality]
 \label{rem:not_pca}
