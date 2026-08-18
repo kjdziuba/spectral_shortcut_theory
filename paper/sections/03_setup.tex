@@ -172,9 +172,15 @@ H_\tau J_\bullet$, where
 $H_\tau := \mathrm{diag}(p) - p p^\top$ is the softmax Jacobian
 (blockwise over pixels). Since $0 \preceq H_\tau \preceq I$, any
 operator-norm bound on $J_\bullet$ applies a fortiori to
-$J_\bullet^{\mathrm{res}}$. All Gram matrices, and $\Sigma_X$
-in~\eqref{eq:sigma_x}, use this same $1/N$ normalization, so no
-constant in this paper depends on the dataset size.
+$J_\bullet^{\mathrm{res}}$. The intermediate factor
+$\partial Z/\partial \thetap$ carries the same $N^{-1/2}$ stacking,
+so that the chain rule composes as
+$J_\thetap = (\partial \hat{y}/\partial Z) \cdot
+(\partial Z/\partial \thetap)$ with the unnormalized middle factor
+--- which is the object Assumption~\ref{ass:inputlip} bounds. All
+Gram matrices, and $\Sigma_X$ in~\eqref{eq:sigma_x}, use this same
+$1/N$ normalization, so no constant in this paper depends on the
+dataset size.
 
 The gradient of $\loss$ with respect to the spatial parameters is
 computed by standard backpropagation. The gradient with respect to the
@@ -182,15 +188,18 @@ spectral parameters $\thetap$ admits the chain-rule decomposition
 \begin{equation}
 \label{eq:chain}
     \nabla_\thetap \loss
-    = \underbrace{\frac{\partial \loss}{\partial \hat{y}}}_{\text{residual } r}
+    = \underbrace{r}_{\text{residual}}
     \cdot \underbrace{\frac{\partial \hat{y}}{\partial Z}}_{\text{spatial Jacobian}}
-    \cdot \underbrace{\frac{\partial Z}{\partial \thetap}}_{\text{input}} ,
+    \cdot \underbrace{\frac{\partial Z}{\partial \thetap}}_{\text{input}}
+    \;=\; J_\thetap^\top r ,
 \end{equation}
-where the softmax enters through the first factor, $\partial \loss /
-\partial \hat{y} = r$ (the residual \emph{is} the softmax-weighted
-loss gradient; the factor $H_\tau$ appears explicitly only when
-differentiating $r$ itself, as in
-$J^{\mathrm{res}}$ above and in the Gauss-Newton blocks below).
+with all three factors in the normalization fixed above (the
+per-pixel loss gradients $\partial \loss / \partial \hat{y}_n =
+r_n / N$ are absorbed into the $N^{-1/2}$-scaled $r$ and
+$\partial Z / \partial \thetap$). The softmax enters through the
+residual itself; the matrix $H_\tau$ appears explicitly only when
+differentiating $r$, as in $J^{\mathrm{res}}$ above and in the
+Gauss-Newton blocks below.
 The three factors play distinct roles in our analysis. The residual is
 small when predictions are confident. The spatial Jacobian depends on
 the current state of $\phip$ and thus changes throughout training. The

@@ -59,23 +59,40 @@ from the capacity ratio reported in Section~\ref{sec:real}.
 
 \begin{proposition}[Spectral gradient decay]
 \label{prop:egr_monotonic}
-Under the hypotheses of Theorem~\ref{thm:twoscale}
-(Assumptions~\ref{ass:linear}, \ref{ass:inputlip},
-and~\ref{ass:residual}),
+Under the hypotheses of Theorem~\ref{thm:twoscale}---%
+Assumptions~\ref{ass:linear}, \ref{ass:subg}, \ref{ass:inputlip},
+and~\ref{ass:residual}, with the trajectory contained in
+$\Phi_{\mathrm{reg}} \times \mathcal{Z}_{\mathrm{reg}}$ up to a
+horizon $T$---we have, for every $t \leq T$,
 \[
     \norm{\nabla_\thetap \loss(t)}
-    \;\leq\; \frac{B\,C}{1 + \mu t},
+    \;\leq\; \frac{B_T\,C}{1 + \mu t},
+    \qquad
+    B_T \;\leq\; \sqrt{C_\thetap}
+    \;=\; \widetilde{L}\sqrt{\lambda_{\max}(\Sigma_X)},
 \]
-where $B$ is the operator-norm cap of Lemma~\ref{lem:opcap} and
-$C, \mu$ are the constants of Assumption~\ref{ass:residual}.
+with $B_T$ as in~\eqref{eq:bt}, $C_\thetap$ the cap of
+Lemma~\ref{lem:opcap}, and $C, \mu$ the constants of
+Assumption~\ref{ass:residual}.
 \end{proposition}
 
 \begin{proof}
-By the chain rule~\eqref{eq:chain},
-$\norm{\nabla_\thetap \loss} \leq \norm{J_\thetap}_{\mathrm{op}}
-\norm{r} \leq B \norm{r}$, and Assumption~\ref{ass:residual} bounds
+Identical to~\eqref{eq:theta_grad_bound}:
+$\norm{\nabla_\thetap \loss} = \norm{J_\thetap^\top r} \leq
+\norm{J_\thetap}_{\mathrm{op}} \norm{r} \leq B_T \norm{r}$ for
+$t \leq T$, and Assumption~\ref{ass:residual} bounds
 $\norm{r(t)}$.
 \end{proof}
+
+\begin{remark}
+The horizon restriction is not a technicality inherited for
+tidiness: Remark~\ref{rem:containment} notes that in the
+unregularized separable regime---the regime
+Assumption~\ref{ass:residual} models---a cap uniform over all
+$t \in [0, \infty)$ cannot be assumed. In practice $T$ is the
+training run's length, which is exactly the horizon the diagnostic
+operates over.
+\end{remark}
 
 \begin{remark}[From gradient decay to the EGR ratio]
 \label{rem:egr_ratio_caveat}

@@ -120,82 +120,115 @@ data, for a constant $c_p$ of order $1/N_{cls}$ independent of $M$
 and $\Cg$.
 
 \paragraph{Step 3: An explicit witness direction.}
-Write the classifier head of $g_\phip$ as $\hat{y} = W h + b$ with
-penultimate features $h = h(x) \in \mathbb{R}^{M_h}$,
-$M_h = \Theta(M)$ (for per-pixel classification, $h$ is the feature
-vector at the classified pixel). Fix a unit contrast
-$c \in \mathbb{R}^{N_{cls}}$ with $c \perp \mathbf{1}$;
-Cauchy--Schwarz gives $P_\perp \succeq c c^\top$ (for any $u$,
+Write the classifier head of $g_\phip$ as $\hat{y}_n = W h_n + b$
+with penultimate features $h_n = h(x_n) \in \mathbb{R}^{M_h}$,
+$M_h = \Theta(M)$, and let
+\begin{equation}
+\label{eq:feature_gram}
+    S_h \;:=\; \frac{1}{N} \sum_{n=1}^{N} h_n h_n^\top
+\end{equation}
+denote the mean feature Gram. Fix a unit contrast
+$c \in \mathbb{R}^{N_{cls}}$ with $c \perp \mathbf{1}$
+(possible since $N_{cls} \geq 2$); Cauchy--Schwarz gives
+$P_\perp \succeq c c^\top$ (for any $u$,
 $(c^\top u)^2 = (c^\top P_\perp u)^2 \leq \norm{P_\perp u}^2$).
-Select a single pixel $n = 1$ with features $h_1 := h(x_1)$ and take
-the unit parameter direction supported on the head weights,
+Let $u$ be a top unit eigenvector of $S_h$ and take the unit
+parameter direction supported on the head weights,
 \[
-    v \;=\; c \otimes \frac{h_1}{\norm{h_1}}
+    v \;=\; c \otimes u
     \;\in\; \mathbb{R}^{N_{cls} M_h},
     \qquad \norm{v} = 1 .
 \]
-Since $\partial \hat{y}_k / \partial W_{k'j} = \delta_{kk'} h_j$, we
-have $c^\top J^{(n)} v = \norm{c}^2 \, (h_n^\top h_1)/\norm{h_1} =
-(h_n^\top h_1)/\norm{h_1}$ for every pixel $n$. Every term of the
-sum defining $G_{\phip\phip}$ is nonnegative ($H_\tau$ is PSD), so
-dropping all but the $n=1$ term and applying Step~2 at pixel~1,
-\[
+Since $\partial \hat{y}_k / \partial W_{k'j} = \delta_{kk'} h_{n,j}$,
+we have $c^\top J^{(n)} v = \norm{c}^2 (h_n^\top u) = h_n^\top u$ for
+every pixel $n$. Using $H_\tau^{(n)} \succeq p^{(n)}_{\min} P_\perp
+\succeq p^{(n)}_{\min} c c^\top$ from Step~2 at every pixel, and
+writing $c_p := \min_n p^{(n)}_{\min}$,
+\begin{equation}
+\label{eq:witness_bound}
     \lambda_{\max}(G_{\phip\phip})
     \;\geq\; v^\top G_{\phip\phip} v
-    \;\geq\; \frac{p^{(1)}_{\min}}{N}
-        \left( c^\top J^{(1)} v \right)^2
-    \;=\; \frac{p^{(1)}_{\min}}{N}\, \norm{h_1}^2 ,
-\]
-where $p^{(1)}_{\min}$ is the smallest predicted probability at
-pixel~1. Two initialization facts finish the proof.
+    \;\geq\; c_p \cdot \frac{1}{N} \sum_{n=1}^{N}
+        \left( h_n^\top u \right)^2
+    \;=\; c_p \cdot u^\top S_h u
+    \;=\; c_p \cdot \lambda_{\max}(S_h).
+\end{equation}
+Two initialization facts finish the proof.
 (i)~By the head hypothesis of Lemma~\ref{lem:phi_scaling},
-$\norm{h_1}^2 \geq q_h M_h$ with probability at least
-$1 - \delta_h$, $\delta_h < 1/2$, over initialization.
-(ii)~The single pixel's logits are $\Theta(1)$ at initialization
-uniformly in $M$ (the head weights have variance $1/M_h$ against
-$\norm{h_1}^2 = \mathcal{O}(M_h)$), so choosing the constant
-$c_p > 0$ (of order $1/N_{cls}$) small enough,
-$p^{(1)}_{\min} \geq c_p$ with probability at least $1 - \delta_p$
-with $\delta_p \leq 1/4$. Since $\delta_h + \delta_p < 3/4$, the two
-events intersect with probability at least $1/4$, and on that
-intersection,
+$\lambda_{\max}(S_h) \geq q_h M_h$ with probability at least
+$1 - \delta_h$, $\delta_h < 1/4$, over initialization.
+(ii)~At initialization the logits are $\mathcal{O}(1)$ uniformly in
+$M$ (the head weights have variance $\Theta(1/M_h)$ against
+$\norm{h_n}^2 = \mathcal{O}(M_h)$), so $c_p > 0$ may be chosen
+independent of $M$ and $\Cg$, with probability at least
+$1 - \delta_p$, $\delta_p \leq 1/4$. On the intersection of the two
+events---which has probability at least $1/2$---
 \[
     \lambda_{\max}(G_{\phip\phip})
-    \;\geq\; \frac{c_p\, q_h}{N} \, M_h
-    \;=\; \Omega(M).
+    \;\geq\; c_p\, q_h \, M_h
+    \;=\; \Omega(M),
 \]
-Since $\lambda_{\max} \geq 0$ always, taking expectations gives
+and since $\lambda_{\max} \geq 0$ always, taking expectations gives
 $\E[\lambda_{\max}(G_{\phip\phip})] \geq
-(1 - \delta_h - \delta_p)\,(c_p q_h / N)\, M_h \geq
-\tfrac{1}{4}(c_p q_h / N) M_h = \Omega(M)$. The
-$1/N$ factor is an artifact of the single-witness bound: the
-discarded terms are nonnegative, and for activations with nonzero
-mean at initialization (e.g.\ ReLU) the mean-feature witness
-$u = \bar{h}/\norm{\bar{h}}$ removes it. In any case $N$ is fixed as
-$M$ grows.
+(1 - \delta_h - \delta_p)\, c_p q_h M_h \geq
+\tfrac{1}{2} c_p q_h M_h = \Omega(M)$. No factor of $N$ appears:
+the witness is aligned with the dominant direction of the feature
+ensemble rather than with a single pixel, so all $N$ terms
+contribute.
 
-On the head hypothesis itself: for fully connected modules at
-Kaiming Gaussian initialization it holds with any fixed
-$\delta_h$---per-entry second moments are $\Theta(1)$ (the
-signal-propagation recursions of Karakida et
-al.~\cite{karakida2019universal}, Eq.~(9)), and the squared norm, a
-sum of $M_h$ weakly dependent $\Theta(1)$ terms, concentrates around
-its mean. For CNN and ViT heads we state the hypothesis as an
-explicit assumption rather than a theorem, and check it empirically
-in Section~\ref{sec:experiments}.
+\paragraph{On the head hypothesis, and its exact counterpart in
+Karakida et al.}
+The hypothesis $\lambda_{\max}(S_h) = \Omega(M_h)$ asks that the
+penultimate features carry a common direction of $\Theta(M_h)$
+energy across inputs. It is implied by the simpler condition
+$\norm{\bar{h}}^2 \geq q_h M_h$ on the \emph{mean} feature vector
+$\bar{h} := N^{-1}\sum_n h_n$, since for $\bar{u} =
+\bar{h}/\norm{\bar{h}}$, Jensen's inequality gives
+$\lambda_{\max}(S_h) \geq \bar{u}^\top S_h \bar{u} =
+N^{-1}\sum_n (h_n^\top \bar{h})^2/\norm{\bar{h}}^2 \geq
+\norm{\bar{h}}^2$. At variance-scaled initialization each entry of
+$h_n$ has $\Theta(1)$ second moment (the signal-propagation
+recursions of Karakida et al.~\cite{karakida2019universal}, Eq.~(9)),
+so the condition holds whenever the activations are correlated across
+inputs---in particular for any nonnegative or nonzero-mean
+activation (ReLU and its variants), and for odd activations whenever
+the bias variance $\sigma_b^2 > 0$.
 
-\paragraph{Residual-Jacobian form.}
-When the block is written with the residual Jacobian
-$J_{\phip} = H_\tau J^{(n)}$ (the convention of
-Section~\ref{sec:setup}), note that $H_\tau$ is symmetric with
-$H_\tau \mathbf{1} = 0$ and, by Step~2, $H_\tau \succeq p_{\min} I$
-on the invariant subspace $\mathbf{1}^\perp$; hence
-$H_\tau^2 \succeq p_{\min}^2 P_\perp$ and the identical witness
-argument yields
+This is not an incidental technicality: it is precisely the quantity
+$\kappa_2$ that carries the width-linear term in Karakida et al.'s
+Theorem~4, $\lambda_{\max} = \alpha(\tfrac{T-1}{T}\kappa_2 +
+\tfrac{1}{T}\kappa_1)M$, where $\kappa_2$ is built from the
+cross-input activation correlations $\hat{q}_{st}$. Their own
+footnote records the same exclusion we make here: for odd
+activations with $\sigma_b = 0$ one has $\hat{q}_{st} = 0$ and
+$\kappa_2 = 0$, and the width-linear law requires lower-order terms.
+Our hypothesis and their formula degenerate on exactly the same
+family, which is a useful consistency check on both. For CNN and ViT
+heads we state the hypothesis as an explicit assumption rather than
+a theorem, and check it empirically in
+Section~\ref{sec:experiments}.
+
+\paragraph{The other two conventions.}
+The bound just proved is for the Gauss-Newton block
+$G_{\phip\phip} = J_\phip^\top H_\tau J_\phip$
+of~\eqref{eq:ggn}, which is the object appearing in
+Definition~\ref{def:dcurv}. Two neighbouring matrices inherit it.
+For the \emph{logit} Gram, $H_\tau \preceq I$ gives
+$J_\phip^\top J_\phip \succeq G_{\phip\phip}$, so
 $\lambda_{\max}(J_\phip^\top J_\phip) \geq
-(p^{(1)}_{\min})^2 \norm{h_1}^2 / N = \Omega(M)$, matching the
-statement of Lemma~\ref{lem:phi_scaling} verbatim. This completes
-the proof.
+\lambda_{\max}(G_{\phip\phip}) = \Omega(M)$ immediately. For the
+\emph{residual} Gram $J_\phip^{\mathrm{res}\top}
+J_\phip^{\mathrm{res}} = J_\phip^\top H_\tau^2 J_\phip$, note that
+$H_\tau$ is symmetric with $H_\tau \mathbf{1} = 0$, so
+$\mathbf{1}^\perp$ is invariant and, by Step~2,
+$H_\tau \succeq p_{\min} I$ there; squaring the eigenvalues on that
+subspace gives $H_\tau^2 \succeq p_{\min}^2 P_\perp$, and the
+identical witness argument yields
+$\lambda_{\max}(J_\phip^{\mathrm{res}\top} J_\phip^{\mathrm{res}})
+\geq c_p^2\, \lambda_{\max}(S_h) = \Omega(M)$. All three conventions
+therefore satisfy Lemma~\ref{lem:phi_scaling}, differing only in
+whether the constant carries $c_p$, $c_p^2$, or neither. This
+completes the proof.
 \hfill$\square$
 
 \begin{remark}[Scope, and the role of the mean-field law]
@@ -273,13 +306,20 @@ factors of $H_\tau$ with $0 \preceq H_\tau \preceq I$
 
 \paragraph{Step 1: Chain-rule factorisation.}
 With $Z = f_\thetap(X)$ and $\hat{y} = g_\phip(Z)$, the chain rule
-gives
+gives, in the normalization of~\eqref{eq:jacobians} (the $N^{-1/2}$
+riding on the right-hand factor, as fixed in
+Section~\ref{sec:setup}),
 \[
     J_\thetap
-    \;=\; \frac{\partial \hat{y}}{\partial \thetap}
     \;=\; J_Z \cdot \frac{\partial Z}{\partial \thetap},
-    \qquad J_Z := \partial g_\phip / \partial Z .
+    \qquad J_Z := \partial g_\phip / \partial Z ,
 \]
+where $J_Z$ is unnormalized---the object
+Assumption~\ref{ass:inputlip} bounds. Since $g_\phip$ acts on one
+image at a time, the dataset-stacked $J_Z$ is block diagonal across
+images, so its operator norm is the maximum over per-image blocks
+and Assumption~\ref{ass:inputlip} applies to the stack with the same
+constant $\widetilde{L}$.
 (For the residual map $r(\thetap,\phip) = \tau(g_\phip(Z))$ with
 $\tau(\hat{y}) = \mathrm{softmax}(\hat{y}) - y_{\mathrm{onehot}}$,
 the same computation carries the extra left factor
@@ -359,8 +399,8 @@ $g_\phip$. The operator-norm bound above is significantly simpler,
 applies to general nonlinear spatial classifiers (CNN, ViT), and is
 exactly what Theorem~\ref{thm:hessian} needs: a $\Cg$-independent
 cap on the spectral block's \emph{top} eigenvalue, so that
-$\mathcal{D}_{\mathrm{curv}} = \lambda_{\max}(J_\phip^\top
-J_\phip)/\lambda_{\max}(J_\thetap^\top J_\thetap) \geq
+$\mathcal{D}_{\mathrm{curv}} = \lambda_{\max}(G_{\phip\phip})
+/\lambda_{\max}(G_{\thetap\thetap}) \geq
 \Omega(M)/C_\thetap$.
 \end{remark}
 
@@ -381,24 +421,26 @@ Assemble Lemmas~\ref{lem:phi_scaling} and~\ref{lem:opcap} to complete
 the proof. By Lemma~\ref{lem:phi_scaling}, in expectation over random
 Kaiming (variance-scaled Gaussian) initialization,
 \[
-    \lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)})
+    \lambda_{\max}(G^{(M)}_{\phip\phip})
     \;\geq\; c_\phi \cdot M
 \]
 for a constant $c_\phi > 0$ independent of $M$, given explicitly by
-the witness bound in the proof of Lemma~\ref{lem:phi_scaling}
-($c_\phi = (1 - \delta_h - \delta_p)\, c_p q_h M_h / (N M)$); within
+the witness bound~\eqref{eq:witness_bound}
+($c_\phi = (1 - \delta_h - \delta_p)\, c_p q_h M_h / M$, and
+$M_h/M = \Theta(1)$ by hypothesis); within
 Karakida et al.'s~\cite{karakida2019universal} proportional-width
 model class, their Theorem~4 sharpens the width-linear rate to an
 exact law. By
 Lemma~\ref{lem:opcap},
 \[
-    \lambda_{\max}(J_\thetap^\top J_\thetap) \;\leq\; C_\thetap
+    \lambda_{\max}(G_{\thetap\thetap})
+    \;\leq\; \|J_\thetap\|_{\mathrm{op}}^2 \;\leq\; C_\thetap
 \]
 with $C_\thetap$ independent of $M$ and $\Cg$. Dividing,
 \begin{equation}
     \mathcal{D}_{\mathrm{curv}}^{(M)}
-    \;=\; \frac{\lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)})}
-                {\lambda_{\max}(J_\thetap^\top J_\thetap)}
+    \;=\; \frac{\lambda_{\max}(G^{(M)}_{\phip\phip})}
+                {\lambda_{\max}(G_{\thetap\thetap})}
     \;\geq\; \frac{c_\phi \cdot M}{C_\thetap}
     \;=\; c_1 \cdot M,
     \label{eq:disparity_bound}

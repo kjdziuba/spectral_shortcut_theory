@@ -66,28 +66,34 @@ lemmas before presenting the proof.
 \label{lem:phi_scaling}
 Let $M$ denote the characteristic width of $g_\phip$ (channel count
 for a CNN, embedding dimension for a ViT, hidden layer width for an
-MLP), let $N_{cls} \geq 2$, and suppose the classifier head of
-$g_\phip$ is a dense layer applied to a penultimate feature vector
-$h \in \mathbb{R}^{M_h}$ with $M_h = \Theta(M)$ whose squared norm
-concentrates at initialization: $\norm{h}^2 \geq q_h M_h$ with
-probability at least $1 - \delta_h$ over the random initialization,
-for constants $q_h > 0$ and $\delta_h < 1/2$ independent of $M$
-(the \emph{head hypothesis}; satisfied by Kaiming Gaussian
-initialization---see the supplement). Then, under
-Assumptions~\ref{ass:reg}--\ref{ass:subg}, the largest eigenvalue of
-the spatial Gauss-Newton block satisfies
+MLP), let $N_{cls} \geq 2$, and suppose $g_\phip$ ends in a dense
+classifier head over penultimate features
+$h_n \in \mathbb{R}^{M_h}$ with $M_h = \Theta(M)$ whose mean Gram
+$S_h := N^{-1}\sum_n h_n h_n^\top$ satisfies
 \[
-    \lambda_{\max}(J_\phip^\top J_\phip)
-    \;=\; \Omega(M)
-    \qquad \parbox{16em}{\centering in expectation over random Kaiming
-    (variance-scaled Gaussian) initialization.}
+    \lambda_{\max}(S_h) \;\geq\; q_h M_h
+    \quad\text{with probability } \geq 1 - \delta_h
 \]
+over the random initialization, for constants $q_h > 0$ and
+$\delta_h < 1/4$ independent of $M$ (the \emph{head hypothesis}:
+the features carry a common direction of $\Theta(M)$ energy across
+inputs; it holds at Kaiming initialization for any nonnegative or
+nonzero-mean activation, and coincides with the condition
+$\kappa_2 > 0$ under which Karakida et al.'s width-linear law
+itself holds---see the supplement). Then, under
+Assumptions~\ref{ass:reg}--\ref{ass:subg}, the spatial Gauss-Newton
+block of~\eqref{eq:ggn} satisfies
+\[
+    \lambda_{\max}(G_{\phip\phip})
+    \;=\; \Omega(M)
+    \qquad \parbox{15em}{\centering in expectation over random Kaiming
+    (variance-scaled Gaussian) initialization,}
+\]
+and the same holds for the logit Gram $J_\phip^\top J_\phip$ and the
+residual Gram $J_\phip^{\mathrm{res}\top} J_\phip^{\mathrm{res}}$.
 For architecture families with $\Cg = \Theta(M^2)$ (fixed depth with
 at least two consecutive width-proportional layers), equivalently
-\[
-    \lambda_{\max}(J_\phip^\top J_\phip)
-    \;=\; \Omega\!\left( \sqrt{\Cg} \right).
-\]
+$\lambda_{\max}(G_{\phip\phip}) = \Omega(\sqrt{\Cg})$.
 \end{lemma}
 
 \begin{remark}
@@ -174,20 +180,21 @@ in Section~\ref{sec:proof_thm1}.
 By Lemma~\ref{lem:phi_scaling}, in expectation over random Kaiming
 (variance-scaled Gaussian) initialization,
 \[
-    \lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)}) \;\geq\; c_\phi \cdot M
+    \lambda_{\max}(G^{(M)}_{\phip\phip}) \;\geq\; c_\phi \cdot M
 \]
 for a constant $c_\phi > 0$ independent of $M$ (depending on the
 initialization scheme, the activation, the head dimensions, and the
 data distribution; supplement Section~\ref{sec:proof_thm1}). By
 Lemma~\ref{lem:opcap},
 \[
-    \lambda_{\max}(J_\thetap^\top J_\thetap) \;\leq\; C_\thetap
+    \lambda_{\max}(G_{\thetap\thetap})
+    \;\leq\; \|J_\thetap\|^2_{\mathrm{op}} \;\leq\; C_\thetap
 \]
 for a constant $C_\thetap > 0$ independent of $M$. Dividing,
 \[
     \mathcal{D}_{\mathrm{curv}}^{(M)}
-    \;=\; \frac{\lambda_{\max}(J_\phip^{(M)\top} J_\phip^{(M)})}
-                {\lambda_{\max}(J_\thetap^\top J_\thetap)}
+    \;=\; \frac{\lambda_{\max}(G^{(M)}_{\phip\phip})}
+                {\lambda_{\max}(G_{\thetap\thetap})}
     \;\geq\; \frac{c_\phi \cdot M}{C_\thetap}
     \;=\; c_1 \cdot M
 \]
