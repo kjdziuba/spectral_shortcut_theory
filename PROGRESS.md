@@ -77,7 +77,34 @@ Plus minors: N^{-1/2} bookkeeping for dZ/dtheta declared in 03 and used
 in supplement Step 1; eq:chain brace label corrected; J_Z
 block-diagonal-over-images step stated; B = sqrt(C_theta) in 06.
 
-Re-verification of the new mean-Gram witness: wf_81843e59-42d.
+**Re-verification (wf_81843e59-42d) found 4 more majors — fixed in
+commit 1d62431 by restructuring, giving the FINAL form of the proof:**
+
+- The mean-Gram witness took `c_p := min_n p_min^(n)`, which RELOCATED
+  the N-dependence into the constant instead of removing it (a union
+  bound over N pixels forces c_p ~ exp(-C sqrt(log N))) — while the
+  text claimed "no factor of N appears". Also c_p was overloaded with
+  three incompatible meanings and the expectation step swapped them.
+- **FIX — weight, don't minimize.** Define the SOFTMAX-WEIGHTED
+  feature Gram S_h^p := (1/N) sum_n p_min^(n) h_n h_n^T. Then
+  **lambda_max(G_phiphi) >= lambda_max(S_h^p) is DETERMINISTIC and
+  hypothesis-free** — one identity plus one application of Step 2,
+  valid at every parameter value. No minimum, no union bound, no N.
+  All probabilistic content now sits in ONE clearly stated hypothesis:
+  lambda_max(S_h^p) >= q_h M_h whp at init.
+- The head hypothesis had been advertised in three places as a
+  per-vector NORM condition (||h||^2 >= q_h M_h), which is strictly
+  WEAKER than the lambda_max condition consumed — weaker by a factor
+  of N, since per-vector norms bound only tr(S_h). Cross-input
+  CORRELATION, not per-vector norm, is what makes the top eigenvalue
+  grow; the supplement now says so explicitly.
+- Main-text remark still described the retired single-pixel witness.
+- Karakida correspondence softened: on the degenerate family both
+  bounds lose their sample-size-independent leading constant rather
+  than vanishing ("exactly the same family" was overstated).
+- Kronecker ordering ambiguity removed by writing the witness as the
+  rank-one MATRIX V = c u^T with ||V||_F = 1 (convention-free).
+
 Compiles clean; only fig:exp11_paired remains undefined (A10, Phase P5).
 
 **Next:** T4 ratio recount from the real BlockViT v2 checkpoint (A4/A5),
