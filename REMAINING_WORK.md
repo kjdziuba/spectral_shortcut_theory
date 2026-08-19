@@ -144,9 +144,18 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       -> margin/time), A14 third site (03 condition-number sentence),
       A16 (slow-fast manifold scrubbed from 03 and 07), A37-partial
       (Section 4 retitled), plus D4 (loss-scope remark rem:loss_scope).
-- [ ] T4. Ratio recount from the real BlockViT v2 checkpoint, reconcile 13M
-      vs companion's 18.3M, propagate corrected ~108 (or actual) to 03/06/08
-      + EGR(0) prediction (A4, A5). ~half day.
+- [x] T4. DONE 2026-08-19. Counted from the INSTANTIATED model
+      (code/count_blockvit_params.py), not inherited. Real numbers:
+      K=64 baseline C_f=61,108 C_g=18,271,540 ratio 299; K=128 variant
+      C_f=121,588 C_g=21,472,564 ratio 177; TOTAL(K=64)=18,332,648 =
+      the companion's 18.3M, which resolves the 13M-vs-18.3M conflict
+      (18.3M is the TOTAL, our 13M was an undercount). Retired 325 was
+      a fossil: single-channel 314x128=40,192 against the undercounted
+      C_g. New Table tab:capacity in Section 8; 03 and the inventory
+      updated; "several orders of magnitude" -> "roughly two". Also
+      confirmed BlockViT is a Theta(M^2) family (transformer 5.34M +
+      ConvTranspose 9.44M, M=hidden_dim=192), so the sqrt corollary
+      legitimately applies here: D_curv >= c1' sqrt(ratio) ~ 13-17 c1'.
 - [ ] T5. THEORY FREEZE GATE: external-reviewer pass on Sections 3-6 +
       supplement only. Fix what it finds. Then the theory is frozen.
 
@@ -212,7 +221,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 10 minutes
 
-### A4 [BLOCKER] — 03_setup.tex:68-71; 06_egr.tex:45-46; 08_real_data.tex:20-23; EXPERIMENT_INVENTORY.md Exp 1.8
+### A4 [BLOCKER — FIXED 2026-08-19 (T4, counted from the model)] — 03_setup.tex:68-71; 06_egr.tex:45-46; 08_real_data.tex:20-23; EXPERIMENT_INVENTORY.md Exp 1.8
 
 **Issue**: C_g/C_f ~ 325 is arithmetically false from the paper's own numbers (13e6/120,576 = 107.8) — 325 is a fossil from single-channel S=314 — and C_g = 13M itself conflicts with the companion paper's stated 18.3M BlockViT v2 parameter count, corrupting the EGR(0) prediction and the 'several orders of magnitude' claim downstream.
 
@@ -220,7 +229,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 2-3 hours
 
-### A5 [BLOCKER] — 08_real_data.tex lines 23-25
+### A5 [BLOCKER — FIXED 2026-08-19 (T4: kappa deleted from Section 8, D_curv + real ratio)] — 08_real_data.tex lines 23-25
 
 **Issue**: 'Predicts kappa of order 325*c_1' uses the retired kappa symbol (which rem:disparity_vs_kappa proves is trivially infinite), the retired linear-in-ratio scaling (the refactored theorem gives D_curv >= c_1'*sqrt(C_g/C_f) - c_2, ~18x smaller), the wrong constant symbol, and the wrong ratio.
 

@@ -12,17 +12,51 @@ dataset and on a parallel prostate cancer dataset.
 
 \subsection{Setup}
 
-The data are $336 \times 336$ pixel cores collected by FTIR/QCL
+The data are $336 \times 336$ pixel cores collected by QCL
 spectroscopy over the $1000$--$1800$~cm$^{-1}$ fingerprint region.
 Each pixel carries an $S = 942$ dimensional spectrum (after stacking
 raw absorbance and its first two derivatives). The classification
-target is per-pixel tissue type. The compositional model uses a linear
-$f_\thetap: \R^{942} \to \R^{128}$ followed by a 12-layer Vision
-Transformer plus ConvTranspose decoder. Parameter counts:
-$\Cf = 120{,}576$, $\Cg \approx 13 \times 10^6$; capacity ratio
-$\Cg/\Cf \approx 325$. Per Theorem~\ref{thm:hessian}, this predicts
-$\kappa$ of order $325 \cdot c_1$ where $c_1$ is bounded below by the
-constants of Lemmas~\ref{lem:phi_scaling}--\ref{lem:opcap}.
+target is per-pixel tissue type. The compositional model is the Block
+Vision Transformer of O'Leary et al.~\cite{oleary2026spatial}: a
+linear per-pixel $f_\thetap: \R^{942} \to \R^{K}$, then $16 \times 16$
+patch tokenization, a 12-layer / 12-head Vision Transformer of
+embedding width $M = 192$, a transposed-convolution decoder, and a
+convolutional segmentation head. Parameter counts obtained directly
+from the instantiated model are given in Table~\ref{tab:capacity}.
+
+\begin{table}[h]
+\centering
+\caption{Module capacities of the BlockViT-v2 pipeline, counted from
+the instantiated model. $K$ is the spectral bottleneck width; the two
+rows are the two configurations used in Section~\ref{sec:real}.}
+\label{tab:capacity}
+\begin{tabular}{lrrr}
+\toprule
+Configuration & $\Cf$ & $\Cg$ & $\Cg/\Cf$ \\
+\midrule
+$K = 64$ (end-to-end baseline) & $61{,}108$ & $18{,}271{,}540$ & $299$ \\
+$K = 128$ (matched to frozen variants) & $121{,}588$ & $21{,}472{,}564$ & $177$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The capacity ratio is thus roughly two orders of magnitude
+($\Cg/\Cf$ between $177$ and $299$ depending on bottleneck width),
+and the total parameter count of the $K=64$ configuration,
+$18.3 \times 10^6$, matches the figure reported for this
+architecture in the companion work. The spatial module's dominant
+blocks---the transformer ($5.34 \times 10^6$) and the transposed
+convolution ($9.44 \times 10^6$)---are both $\Theta(M^2)$ in the
+embedding width, so this architecture falls in the class for which
+Theorem~\ref{thm:hessian} takes its parameter-count form: it
+predicts a module curvature disparity
+$\mathcal{D}_{\mathrm{curv}} \gtrsim c_1' \sqrt{\Cg/\Cf}$, i.e.\ of
+order $13$--$17$ times the constant $c_1'$ of
+Lemmas~\ref{lem:phi_scaling}--\ref{lem:opcap}; equivalently, in the
+theorem's native width variable, $\mathcal{D}_{\mathrm{curv}}
+\gtrsim c_1 M$ with $M = 192$. Experiment~1.8
+(Section~\ref{sec:experiments}) measures $\mathcal{D}_{\mathrm{curv}}$
+on this pipeline directly.
 
 We evaluate five model variants under identical 5-fold cross-validation
 splits: end-to-end learned linear (joint), frozen random spectral,

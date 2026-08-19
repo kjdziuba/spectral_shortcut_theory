@@ -97,9 +97,21 @@ forward+backward to log gradient norms.
 - estimated wall time: ~3 hours (real data, full pipeline)
 - priority: high (this is Section 8's empirical link)
 
-### Exp 1.8 — Hessian eigenvalues on real data
-**Power iteration on the actual FTIR/QCL spectroscopy ViT.** Validate
-that κ in the wild matches our synthetic prediction at C_g/C_f ≈ 325.
+### Exp 1.8 — Gauss-Newton block eigenvalues on real data
+**Power iteration on the GN blocks of the actual QCL BlockViT-v2.**
+Measure D_curv = λ_max(G_φφ)/λ_max(G_θθ) in the wild and compare
+against Theorem 1. Capacity counts VERIFIED 2026-08-19 by
+instantiating the model (`side_project/models/blockvit_v2.py`), not
+inherited from earlier drafts:
+- K=64 (end-to-end baseline): C_f = 61,108, C_g = 18,271,540 → 299
+- K=128 (matched to frozen variants): C_f = 121,588, C_g = 21,472,564 → 177
+- total (K=64) = 18,332,648 ≈ 18.3M — matches the companion paper's
+  figure, which is the TOTAL count, resolving the 13M vs 18.3M conflict
+- spatial side is Θ(M²) in M = hidden_dim = 192 (transformer 5.34M,
+  ConvTranspose 9.44M), so the √(C_g/C_f) corollary applies:
+  predicted D_curv ≳ c₁'·√ratio ≈ 13–17 c₁', or c₁·192 in width form
+- RETIRED: "C_g/C_f ≈ 325" was a fossil — single-channel S=314 spectral
+  count (314×128 = 40,192) against an undercounted C_g ≈ 13M
 - estimated runs: 2 variants (learned-linear, frozen-pretrained), 3 checkpoints each = 6
 - estimated wall time: ~30 min once we have the env set up
 - priority: medium (nice-to-have empirical anchor)
