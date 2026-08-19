@@ -100,6 +100,17 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
   The dziuba2026spatial bib placeholder with an invented title is
   replaced with the real one (done 2026-08-18). No second empirical
   paper exists or is planned; Section 8 cites only the real companion.
+- **D7 — Channel convention (2026-08-19)**: author flagged that the
+  field standard is SINGLE-channel d2 (O'Leary uses d2 alone), not our
+  3-channel raw+d1+d2 stack. Resolution: Section 8 keeps describing the
+  experiment AS RUN (3-channel — the checkpoints and the companion are
+  3-channel; artifact-backed reporting per the A7 decision) and now
+  carries an explicit channel-convention paragraph noting that under
+  the field-standard single-channel input the ratio GROWS to 874
+  (C_f = 20,916, verified by instantiation) — i.e., 3-channel is the
+  CONSERVATIVE choice and the pathology regime is not an artifact of
+  it. No d2-only rerun needed for the theory paper; if Exp 1.7/1.8
+  capacity permits, a d2-only arm is a cheap optional robustness point.
 
 ## Venue acceptance estimates (conditioned on full fix list + Exp 1.7/1.8 supporting the story)
 

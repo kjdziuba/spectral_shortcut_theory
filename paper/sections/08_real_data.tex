@@ -40,6 +40,19 @@ $K = 128$ (matched to frozen variants) & $121{,}588$ & $21{,}472{,}564$ & $177$ 
 \end{tabular}
 \end{table}
 
+\paragraph{Channel convention.}
+O'Leary et al.'s original BlockViT operates on the second-derivative
+spectrum alone (a single channel, $S = 965$ for their prostate FTIR
+data)---the field-standard preprocessing in infrared histopathology.
+The companion benchmark, and hence the checkpoints analyzed here,
+instead stacks raw absorbance with its first two derivatives (three
+channels, $S = 942$). The choice affects only $\Cf$: instantiating
+the same model on the single-channel field-standard input gives
+$\Cf = 20{,}916$ and $\Cg/\Cf \approx 874$. The three-channel
+convention is therefore the \emph{conservative} choice for this
+paper's purposes---under the field standard, the capacity asymmetry
+we analyze is roughly three times larger.
+
 The capacity ratio is thus roughly two orders of magnitude
 ($\Cg/\Cf$ between $177$ and $299$ depending on bottleneck width),
 and the total parameter count of the $K=64$ configuration,
