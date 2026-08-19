@@ -78,16 +78,20 @@ concerns the second factor.
 \label{rem:containment}
 Trajectory containment is a genuine restriction. In the
 unregularized separable regime that motivates the polynomial
-envelope below, $\norm{\phip(t)} \to \infty$ logarithmically
-(Soudry et al.~\cite{soudry2018implicit}), so a bound on
+envelope below, parameter norms diverge---logarithmically for
+linear predictors (Soudry et al.~\cite{soudry2018implicit}), and
+for homogeneous deep networks by the margin-maximization dynamics
+of Lyu and Li~\cite{lyu2020gradient}---so a bound on
 $\|\partial g_\phip/\partial Z\|_{\mathrm{op}}$ that is uniform over
 \emph{all} $t$ cannot be assumed. Two standard settings restore it:
 weight decay or norm constraints (bounded iterates; strictly, these
 modify the flow~\eqref{eq:gf}, and the theorem then applies to the
 modified flow, whose residual envelope may differ), and the
 maximal-update parameterization~\cite{yang2021tensor}, which leaves
-the flow unchanged (bound uniform
-in width). In the pure max-margin limit, $\widetilde{L}$ grows at
+the flow unchanged (activation-level width-uniform stability is
+established there; the operator-norm form we need is a motivated
+assumption, per the discussion after
+Assumption~\ref{ass:inputlip}). In the pure max-margin limit, $\widetilde{L}$ grows at
 most logarithmically in $T$, which turns the displacement bound of
 Theorem~\ref{thm:twoscale} into
 $\mathcal{O}(\varepsilon \log^2(1/\delta))$---the same conclusion up
@@ -289,11 +293,14 @@ spatial module: if a trajectory fits the residual at rate $\mu$
 partly through spectral learning, the bound still applies and shows
 the total spectral displacement incurred in doing so is at most
 $(B_T C/\mu)\log(C/\delta)$. Read contrapositively, this is the
-sharpest form of the claim: \emph{substantial spectral learning
-requires slow fitting}. A trajectory on which $\thetap$ moves far
+sharpest form of the claim: \emph{substantial spectral learning by
+the fitting time requires slow fitting}. A trajectory on which
+$\thetap$ moves far by $T_\delta$
 must have small $\mu$---the loss must stay unfit for a long
 time---which is precisely what freezing-based pipelines engineer and
-what fast-fitting joint training precludes. The hypothesis is also
+what fast-fitting joint training precludes. (Over horizons far
+beyond the fitting time the logarithm can grow without bound; see
+``What we do not claim'' below.) The hypothesis is also
 independently checkable: the envelope is a measurable property of a
 training run, verified or refuted by the run's own residual curve,
 with no reference to $\thetap$.

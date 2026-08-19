@@ -109,7 +109,10 @@ $L$-smoothness condition of the optimization literature).
 Assumption~\ref{ass:inputlip} bounds the first derivative with respect
 to \emph{input features} $Z$---a different object with a different
 constant. Parameter-side smoothness does not imply input-side
-Lipschitzness; we require both.
+Lipschitzness. Assumption~\ref{ass:reg}'s role is to keep the
+gradient flow~\eqref{eq:gf} well posed; the quantitative bounds of
+Theorems~\ref{thm:hessian} and~\ref{thm:twoscale} use only
+Assumption~\ref{ass:inputlip}.
 
 At random Kaiming/Xavier initialization, the operator norm of a
 variance-scaled random weight matrix is $\Theta(1)$ in width $M$ by
@@ -119,9 +122,12 @@ Marchenko--Pastur~\cite{marchenko1967distribution} describes the
 corresponding bulk spectrum), giving
 $\|\partial g_\phip/\partial Z\|_{\mathrm{op}} = \Theta(1)$ in width
 $M$ for standard CNN and MLP blocks. Under the maximal-update
-parameterization ($\mu$P) of Yang and
-Hu~\cite{yang2021tensor}, the bound persists throughout training as
-$M \to \infty$. Under standard-parameterization training with weight
+parameterization ($\mu$P), Yang and
+Hu~\cite{yang2021tensor} establish coordinate-wise $\Theta(1)$
+stability of activations throughout training in the infinite-width
+limit; we take the corresponding operator-norm stability as a
+modeling assumption motivated by that result, not as a consequence
+of it. Under standard-parameterization training with weight
 decay $\lambda > 0$ and bounded-norm iterates,
 Assumption~\ref{ass:inputlip} follows from the boundedness of
 $\|\phip\|$ combined with the per-layer product-of-operator-norms

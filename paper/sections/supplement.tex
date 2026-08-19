@@ -37,7 +37,7 @@ turn, then combine.
 
 \subsubsection{Proof of Lemma~\ref{lem:phi_scaling}}
 
-We show $\lambda_{\max}(J_\phip^\top J_\phip) = \Omega(M)$ in
+We show $\lambda_{\max}(G_{\phip\phip}) = \Omega(M)$ in
 expectation over random Kaiming (variance-scaled Gaussian)
 initialization, under the head hypothesis of
 Lemma~\ref{lem:phi_scaling}: the classifier head of $g_\phip$ is a
@@ -79,11 +79,12 @@ simultaneously shows the \emph{mean} eigenvalue is
 $m_\lambda = C \kappa_1 / M = \mathcal{O}(1/M)$: as the network
 widens, the FIM spectrum becomes extremely skewed---almost all
 directions flatten while the top eigenvalue grows linearly in width.
-We record two cautions. First, Theorem~4 assumes \emph{all} layer
-widths scale proportionally with $M$; it does not cover networks
-with width-independent input or output dimensions (such as a
-classifier reading a fixed bottleneck $K$, where its coefficient
-$\alpha$ degenerates), so it cannot be applied verbatim to our
+We record two cautions. First, Theorem~4 fixes the \emph{output}
+layer at $C = \mathcal{O}(1)$ but requires the input and hidden
+widths to scale proportionally with $M$; a classifier reading a
+fixed bottleneck $K$ violates the input-side requirement (its
+coefficient $\alpha$ degenerates there), so the theorem cannot be
+applied verbatim to our
 spatial modules. Second, both statements are asymptotic mean-field
 equalities with no finite-$M$ rate. Steps~2--3 therefore prove the
 $\Omega(M)$ bound self-containedly; Karakida's law serves as the
@@ -256,21 +257,40 @@ $\mathcal{N}(0, \sigma_w^2/K)$, entries of
 $W_2 \in \mathbb{R}^{N_{\mathrm{cls}} \times M_h}$ i.i.d.\
 $\mathcal{N}(0, \sigma_w^2/M_h)$, biases i.i.d.\
 $\mathcal{N}(0, \sigma_b^2)$ with $\sigma_b > 0$, and
-$N_{\mathrm{cls}} \geq 2$. Then there exist constants $q_h > 0$,
-$M_0 < \infty$, and $C_J < \infty$, depending only on
-$\sigma_w, \sigma_b, R, K, N_{\mathrm{cls}}$---not on $M_h$ or $N$---such
-that for all $M_h \geq M_0$:
+$N_{\mathrm{cls}} \geq 2$. Let the spectral module be the linear
+per-pixel $f_\thetap$ of Assumption~\ref{ass:linear} with inputs
+satisfying Assumption~\ref{ass:subg}. Then there exist constants
+$q_h > 0$, $M_0 < \infty$, and $C_G < \infty$, depending only on
+$\sigma_w, \sigma_b, R, K, N_{\mathrm{cls}}$, and
+$\mathrm{tr}(\Sigma_X)$---not on $M_h$ or $N$---such
+that for all $M_h \geq M_0$, at initialization:
 \begin{enumerate}
     \item[(i)] (head hypothesis)
     $\lambda_{\max}(S_h^{p}) \geq q_h M_h$ with probability at least
-    $1/2$ over the initialization; consequently
+    $1/2$; consequently
     $\E[\lambda_{\max}(G_{\phip\phip})] \geq \tfrac{1}{2} q_h M_h$;
-    \item[(ii)] (input-Jacobian cap at initialization)
-    $\|\partial \hat{y} / \partial z\|_{\mathrm{op}} \leq C_J$ with
-    probability at least $3/4$, uniformly in $M_h$.
+    \item[(ii)] (spectral-block cap, trace form)
+    $\E[\lambda_{\max}(G_{\thetap\thetap})]
+    \leq \E[\mathrm{tr}(G_{\thetap\thetap})] \leq C_G :=
+    N_{\mathrm{cls}}\, \sigma_w^4\, \mathrm{tr}(\Sigma_X)$,
+    uniformly in $M_h$ and $N$;
+    \item[(iii)] (instance-level disparity law) with probability at
+    least $3/8$,
+    $\mathcal{D}_{\mathrm{curv}} \geq \left( q_h / (8 C_G) \right)
+    M_h$; consequently
+    $\E[\mathcal{D}_{\mathrm{curv}}] \geq
+    \tfrac{3}{64} (q_h / C_G)\, M_h = \Omega(M)$.
 \end{enumerate}
-Both hypotheses of Theorem~\ref{thm:hessian} therefore hold, at
-initialization, for this architecture with no unproved assumptions.
+For this architecture, the disparity law of
+Theorem~\ref{thm:hessian}---not merely its hypotheses---is proved
+outright at initialization. (What remains assumption-level in
+general is the uniform-over-inputs, during-training form of
+Assumption~\ref{ass:inputlip}: a per-input Jacobian cap at
+initialization follows from the computation in Step~D below, but a
+supremum over all inputs by the natural union route would cost a
+$\sqrt{\log N}$ factor, and training-time persistence is exactly
+what Assumption~\ref{ass:inputlip} postulates. The trace-form cap
+(ii) bypasses both issues for the instance.)
 \end{proposition}
 
 \begin{proof}
@@ -287,23 +307,27 @@ $\bar{h} = N^{-1} \sum_n h_n$ has expectation
     \;=\; \frac{1}{N} \sum_n \frac{s_n}{\sqrt{2\pi}}
     \;\geq\; \frac{\sigma_b}{\sqrt{2\pi}} \;>\; 0 .
 \]
-The rows $(w_i, b_{1,i})$ are i.i.d.\ across $i$, so the
+To obtain constants free of the data and of $N$, we use throughout
+only the uniform floor $m \geq m_0 := \sigma_b/\sqrt{2\pi}$. The
+rows $(w_i, b_{1,i})$ are i.i.d.\ across $i$, so the
 coordinates $\bar{h}_i$ are i.i.d.\ with
 $\E[\bar{h}_i^2] \leq N^{-1}\sum_n \E[\mathrm{ReLU}(g_{n,i})^2]
 \leq s_{\max}^2$ and (being averages of sub-Gaussian variables)
 finite fourth moment bounded by a constant $C_4(s_{\max})$. By
 Chebyshev's inequality applied to the i.i.d.\ sum
-$\norm{\bar{h}}^2 = \sum_i \bar{h}_i^2$,
+$\norm{\bar{h}}^2 = \sum_i \bar{h}_i^2$, whose mean is at least
+$m^2 M_h \geq m_0^2 M_h$,
 \[
-    \Pr\!\left[ \norm{\bar{h}}^2 < \tfrac{1}{2} m^2 M_h \right]
-    \;\leq\; \frac{4\, C_4(s_{\max})}{m^4\, M_h}
+    \Pr\!\left[ \norm{\bar{h}}^2 < \tfrac{1}{2} m_0^2 M_h \right]
+    \;\leq\; \frac{4\, C_4(s_{\max})}{m_0^4\, M_h}
     \;\xrightarrow[M_h \to \infty]{}\; 0 .
 \]
-On the complementary event, the Jensen step above gives
-$\lambda_{\max}(S_h) \geq \norm{\bar{h}}^2 \geq \tfrac{1}{2} m^2
+On the complementary event $E_A$, the Jensen step above gives
+$\lambda_{\max}(S_h) \geq \norm{\bar{h}}^2 \geq \tfrac{1}{2} m_0^2
 M_h$, and moreover the witness direction
 $\bar{u} = \bar{h}/\norm{\bar{h}}$ certifies
-$A := N^{-1} \sum_n (h_n^\top \bar{u})^2 \geq \tfrac{1}{2} m^2 M_h$.
+$A := N^{-1} \sum_n (h_n^\top \bar{u})^2 \geq \tfrac{1}{2} m_0^2
+M_h$.
 
 \emph{Step B (softmax weights).} Condition on
 $\mathcal{F}_1 = \sigma(W_1, b_1)$, which fixes the features $h_n$,
@@ -317,44 +341,60 @@ variance $\sigma_w^2 \norm{h_n}^2/M_h + \sigma_b^2 \leq
 tail bound on the logit range, there are constants
 $c_p(s_*, N_{\mathrm{cls}}) > 0$ and $\delta_0 \leq 1/16$ with
 $\Pr[\, p^{(n)}_{\min} < c_p \mid \mathcal{F}_1 \,] \leq \delta_0$
-for every tame pixel. Untamed pixels are exponentially rare:
+for every tame pixel. Untame pixels are exponentially rare:
 $\norm{h_n}^2/M_h$ is an average of $M_h$ i.i.d.\ sub-exponential
-variables with mean $\leq s_{\max}^2/2$
+variables with mean $\leq s_{\max}^2/2$, so
+$\Pr[\text{$n$ untame}] \leq e^{-c M_h}$
 (Bernstein's inequality; Vershynin~\cite{vershynin2018high},
-Thm.~2.8.1), so
-$\E\!\left[ N^{-1} \textstyle\sum_n a_n
-\mathbf{1}[\text{$n$ untame}] \right] \leq
-\E\!\left[ N^{-1} \sum_n \norm{h_n}^2
-\mathbf{1}[\norm{h_n}^2 > 2 s_{\max}^2 M_h] \right] \leq
-\varepsilon(M_h) M_h$ with $\varepsilon(M_h) \to 0$ exponentially.
+Thm.~2.8.1), and by Cauchy--Schwarz with
+$\E\norm{h_n}^4 \leq 3 s_{\max}^4 M_h^2$ (i.i.d.\ coordinates), the
+$\mathcal{F}_1$-measurable untame energy
+$U := N^{-1} \sum_n a_n \mathbf{1}[\text{$n$ untame}]$ satisfies
+\[
+    \E[U]
+    \;\leq\; \max_n \sqrt{\E\norm{h_n}^4}
+        \sqrt{\Pr[\text{$n$ untame}]}
+    \;\leq\; \sqrt{3}\, s_{\max}^2 M_h\, e^{-c M_h / 2}
+    \;=:\; \varepsilon(M_h)\, M_h ,
+\]
+with $\varepsilon(M_h) \to 0$ exponentially (we used
+$a_n \leq \norm{h_n}^2$, valid since $\bar{u}$ is a unit vector).
 
-\emph{Step C (assembly).} Let $B \subseteq \{1, \dots, N\}$ be the
-pixels with $p^{(n)}_{\min} < c_p$ or untame geometry. Combining
-Step~B,
-$\E[\, N^{-1} \sum_{n \in B} a_n \mid \mathcal{F}_1 \,] \leq
-\delta_0 A + \varepsilon(M_h) M_h$, and for $M_h$ large enough that
-$\varepsilon(M_h) \leq m^2 \delta_0$, this is at most
-$3\delta_0 A \leq \tfrac{3}{16} A$. By Markov's inequality,
-$\Pr[\, N^{-1}\sum_{n \in B} a_n > \tfrac{1}{2} A \mid
-\mathcal{F}_1 \,] \leq 3/8$. On the complementary event,
+\emph{Step C (assembly).} We control the two bad masses by separate
+arguments, respecting which randomness each depends on. The untame
+energy $U$ is $\mathcal{F}_1$-measurable; by (unconditional) Markov,
+the event $E_U := \{ U \leq 16\, \varepsilon(M_h) M_h \}$ has
+$\Pr[E_U] \geq 15/16$, and for $M_h \geq M_0$ large enough that
+$16\, \varepsilon(M_h) \leq m_0^2/8$, on $E_A \cap E_U$ we have
+$U \leq \tfrac{1}{8} m_0^2 M_h \leq \tfrac{1}{4} A$. The
+$p$-degenerate mass over \emph{tame} pixels,
+$P := N^{-1} \sum_{n\ \mathrm{tame}}
+a_n \mathbf{1}[p^{(n)}_{\min} < c_p]$, is
+$(W_2, b_2)$-random given $\mathcal{F}_1$, with
+$\E[P \mid \mathcal{F}_1] \leq \delta_0 A$ by Step~B; conditional
+Markov with $\delta_0 \leq 1/16$ gives
+$\Pr[\, P > \tfrac{1}{4} A \mid \mathcal{F}_1 \,] \leq 4\delta_0
+\leq 1/4$. On the intersection of the three events---probability at
+least $1 - 4 C_4/(m_0^4 M_h) - 1/16 - 1/4 > 1/2$ for
+$M_h \geq M_0$---the total bad mass is $P + U \leq \tfrac{1}{2} A$,
+and
 \[
     \lambda_{\max}(S_h^{p})
     \;\geq\; \bar{u}^\top S_h^{p} \bar{u}
-    \;\geq\; c_p \cdot \frac{1}{N} \sum_{n \notin B} a_n
+    \;\geq\; c_p \left( A - P - U \right)
     \;\geq\; \frac{c_p}{2}\, A
-    \;\geq\; \frac{c_p m^2}{4}\, M_h .
+    \;\geq\; \frac{c_p m_0^2}{4}\, M_h .
 \]
-Adding the failure probabilities (Step~A's $O(1/M_h)$ plus $3/8$)
-keeps the total below $1/2$ for $M_h \geq M_0$; take
-$q_h := c_p m^2 / 4$. The in-expectation clause follows from
+Take $q_h := c_p m_0^2 / 4 = c_p \sigma_b^2 / (8\pi)$, manifestly
+free of the data and of $N$. The in-expectation clause follows from
 $\lambda_{\max} \geq 0$ and~\eqref{eq:witness_bound}. This proves
 (i).
 
-\emph{Step D (input-Jacobian cap).} At any input $z$, the Jacobian
-is $\partial \hat{y}/\partial z = W_2 D_z W_1$ with
-$D_z = \mathrm{diag}(\mathbf{1}[W_1 z + b_1 > 0])$. Conditioning on
-$(W_1, b_1)$ and using that the rows of $W_2$ are i.i.d.\
-$\mathcal{N}(0, (\sigma_w^2/M_h) I)$,
+\emph{Step D (spectral-block cap, trace form).} At any input $z$,
+the head's input Jacobian is $\partial \hat{y}/\partial z = W_2 D_z
+W_1$ with $D_z = \mathrm{diag}(\mathbf{1}[W_1 z + b_1 > 0])$.
+Conditioning on $(W_1, b_1)$ (which fixes $D_z$) and using that the
+rows of $W_2$ are i.i.d.\ $\mathcal{N}(0, (\sigma_w^2/M_h) I)$,
 \[
     \E \norm{W_2 D_z W_1}_F^2
     \;=\; N_{\mathrm{cls}} \cdot \frac{\sigma_w^2}{M_h}
@@ -364,15 +404,46 @@ $\mathcal{N}(0, (\sigma_w^2/M_h) I)$,
     \;=\; N_{\mathrm{cls}}\, \sigma_w^4 ,
 \]
 using $\E\norm{W_1}_F^2 = M_h K \cdot \sigma_w^2/K = M_h
-\sigma_w^2$. Markov's inequality gives
-$\|\partial \hat{y}/\partial z\|_{\mathrm{op}} \leq
-\norm{\cdot}_F \leq 2\sigma_w^2 \sqrt{N_{\mathrm{cls}}} =: C_J$ with
-probability at least $3/4$, uniformly in $M_h$. (Note the naive
-product bound $\norm{W_2}_{\mathrm{op}} \norm{W_1}_{\mathrm{op}}$
+\sigma_w^2$---uniformly over inputs $z$. (The naive product bound
+$\norm{W_2}_{\mathrm{op}} \norm{W_1}_{\mathrm{op}}$
 would grow like $\sqrt{M_h/K}$; the composition is $O(1)$ because
 the top directions of the two random factors are generically
 misaligned---which the Frobenius computation captures without any
-alignment analysis.) This proves (ii).
+alignment analysis.) Now bound the spectral block. With
+$J_\thetap^{(n)} = (W_2 D_{z_n} W_1)(I_K \otimes x_n^\top)$ the
+per-pixel spectral logit Jacobian
+(Lemma~\ref{lem:opcap}, Step~3) and $H_\tau \preceq I$,
+\[
+    \E\,\mathrm{tr}(G_{\thetap\thetap})
+    \;\leq\; \frac{1}{N} \sum_{n=1}^{N}
+        \E \norm{J_\thetap^{(n)}}_F^2
+    \;\leq\; \frac{1}{N} \sum_{n=1}^{N}
+        \E \norm{W_2 D_{z_n} W_1}_F^2 \cdot \norm{x_n}^2
+    \;\leq\; N_{\mathrm{cls}}\, \sigma_w^4 \cdot
+        \frac{1}{N} \sum_n \norm{x_n}^2
+    \;=\; N_{\mathrm{cls}}\, \sigma_w^4\, \mathrm{tr}(\Sigma_X),
+\]
+using $\norm{AB}_F \leq \norm{A}_F \norm{B}_{\mathrm{op}}$ and
+$\norm{I_K \otimes x_n^\top}_{\mathrm{op}} = \norm{x_n}$. Since
+$\lambda_{\max} \leq \mathrm{tr}$ for positive semidefinite
+matrices, (ii) follows with $C_G = N_{\mathrm{cls}} \sigma_w^4
+\mathrm{tr}(\Sigma_X)$, free of $M_h$ and $N$.
+
+\emph{Step E (combining).} Let $E_1$ be the event of (i)
+($\Pr \geq 1/2$) and $E_2 := \{ \lambda_{\max}(G_{\thetap\thetap})
+\leq 8 C_G \}$, which by (ii) and Markov has $\Pr[E_2] \geq 7/8$. On
+$E_1 \cap E_2$ (probability at least $1 - 1/2 - 1/8 = 3/8$), the
+witness bound~\eqref{eq:witness_bound} gives
+\[
+    \mathcal{D}_{\mathrm{curv}}
+    \;=\; \frac{\lambda_{\max}(G_{\phip\phip})}
+               {\lambda_{\max}(G_{\thetap\thetap})}
+    \;\geq\; \frac{q_h M_h}{8 C_G},
+\]
+and since $\mathcal{D}_{\mathrm{curv}} \geq 0$,
+$\E[\mathcal{D}_{\mathrm{curv}}] \geq \tfrac{3}{8} \cdot
+q_h M_h / (8 C_G) = \tfrac{3}{64} (q_h/C_G) M_h$. This proves
+(iii).
 \end{proof}
 
 \begin{remark}
@@ -433,7 +504,8 @@ initialization; for CNN and ViT heads we adopt it as an explicit
 assumption checked empirically. No i.i.d.\ Gaussian input assumption
 is required. Karakida et al.'s Theorem~4 plays the role of the
 sharp asymptotic benchmark: within its model class (fully connected,
-all widths proportional to $M$, squared loss), it upgrades the
+input and hidden widths proportional to $M$, output fixed at
+$C = \mathcal{O}(1)$, squared loss), it upgrades the
 witness lower bound to an exact width-linear law with explicit
 constant, and their Theorem~1 supplies the complementary fact that
 the \emph{mean} eigenvalue shrinks as $\mathcal{O}(1/M)$, so

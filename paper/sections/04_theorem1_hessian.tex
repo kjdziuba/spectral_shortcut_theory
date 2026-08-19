@@ -207,8 +207,10 @@ for a constant $C_\thetap > 0$ independent of $M$. Dividing,
     \;\geq\; \frac{c_\phi \cdot M}{C_\thetap}
     \;=\; c_1 \cdot M
 \]
-with $c_1 := c_\phi / C_\thetap$. A constant $c_2 \geq 0$ absorbs
-finite-width corrections. Under
+with $c_1 := c_\phi / C_\thetap$. The witness route delivers the
+bound with $c_2 = 0$; the subtracted constant is retained in the
+statement so that sharper asymptotic constants, valid only for
+large $M$, may be substituted. Under
 $\Cg = \Theta(M^2)$ (families with at least two consecutive
 width-proportional layers), $M = \Theta(\sqrt{\Cg})$
 and the ratio form $c_1' \cdot \sqrt{\Cg / \Cf}$ follows on multiplying
@@ -278,10 +280,10 @@ Adding $\alpha \norm{w}^2$ to the loss shifts the Hessian by
 $2\alpha I$, lifting every eigenvalue by $2\alpha$ and famously
 repairing classical condition numbers. But the shift acts on
 \emph{both} blocks equally: the disparity becomes
-$(\lambda_{\max}(G_{\phip\phip}) + \alpha) /
-(\lambda_{\max}(G_{\thetap\thetap}) + \alpha)$, which remains
+$(\lambda_{\max}(G_{\phip\phip}) + 2\alpha) /
+(\lambda_{\max}(G_{\thetap\thetap}) + 2\alpha)$, which remains
 $\Theta(M)$ for any fixed $\alpha$ as $M$ grows. Repairing the
-disparity would require $\alpha \sim \lambda_{\max}(G_{\phip\phip})$,
+disparity would require $2\alpha \sim \lambda_{\max}(G_{\phip\phip})$,
 a regularization strength that would dominate the data term and
 prevent fitting. Consistent with this, Experiment~1.6 finds that
 Pezeshki's Spectral Decoupling---an $L_2$ penalty on logits designed
