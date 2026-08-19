@@ -167,8 +167,24 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       confirmed BlockViT is a Theta(M^2) family (transformer 5.34M +
       ConvTranspose 9.44M, M=hidden_dim=192), so the sqrt corollary
       legitimately applies here: D_curv >= c1' sqrt(ratio) ~ 13-17 c1'.
-- [ ] T5. THEORY FREEZE GATE: external-reviewer pass on Sections 3-6 +
-      supplement only. Fix what it finds. Then the theory is frozen.
+- [x] T5 (in-house half) DONE 2026-08-19. Round 1 (wf_406b7519-2b2,
+      4/5 lenses; citations lens + all workflow verifiers died on session
+      limit — findings verified manually on Fable): 2 substantive
+      blockers answered with NEW theory (prop:verified_instance; 
+      rem:not_circular), C-uniformity condition added to the capacity
+      asymptotics, lazy-training positioning (chizat2019lazy),
+      06 opening rewritten counterfactually (A41), top-vs-rest spectrum
+      + parameterization-scope remarks, ~20 smaller repairs.
+      Round 2 (wf_38ae8bc0-c40, incl. make-up citations lens): the
+      proposition's 2 probability-bookkeeping majors repaired; part (ii)
+      upgraded to a trace-level cap and NEW part (iii) proves the
+      INSTANCE-LEVEL DISPARITY LAW outright (E[D_curv] = Omega(M) for
+      the 2-layer ReLU head + linear bottleneck at Kaiming init);
+      Karakida Thm-4 scope, Yang-Hu, Soudry/Lyu-Li attributions fixed.
+      Commits 50f26cb + c09676d.
+      REMAINING FOR FULL FREEZE: author's external-LLM review ritual on
+      Sections 3-6 + supplement (esp. the new proposition), then fix
+      round + stamp FROZEN.
 
 **Phase E — experiments to test the frozen theory (weeks 2-3)**
 - [ ] E1. Exp 1.1 v3: measure GN blocks (not full Hessian — A24), plot vs M,
