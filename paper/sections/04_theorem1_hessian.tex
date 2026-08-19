@@ -20,7 +20,7 @@ f_\thetap$ with fixed-dimensional linear spectral module $f_\thetap$
 $g_\phip^{(M)}$ indexed by characteristic width $M$
 (channels for a CNN, embedding dimension for a ViT, hidden width for
 an MLP). Under
-Assumptions~\ref{ass:linear}, \ref{ass:reg}, \ref{ass:subg},
+Assumptions~\ref{ass:linear}, \ref{ass:subg},
 and~\ref{ass:inputlip}, together with the head
 hypothesis of Lemma~\ref{lem:phi_scaling} below (a dense classifier
 head over penultimate features of dimension $\Theta(M)$ that are
@@ -66,7 +66,7 @@ lemmas before presenting the proof.
 \label{lem:phi_scaling}
 Let $M$ denote the characteristic width of $g_\phip$ (channel count
 for a CNN, embedding dimension for a ViT, hidden layer width for an
-MLP), let $N_{cls} \geq 2$, and suppose $g_\phip$ ends in a dense
+MLP), let $N_{\mathrm{cls}} \geq 2$, and suppose $g_\phip$ ends in a dense
 classifier head over penultimate features
 $h_n \in \mathbb{R}^{M_h}$ with $M_h = \Theta(M)$ whose
 softmax-weighted mean Gram
@@ -76,26 +76,30 @@ $S_h^{p} := N^{-1}\sum_n p^{(n)}_{\min} h_n h_n^\top$
     \lambda_{\max}(S_h^{p}) \;\geq\; q_h M_h
     \quad\text{with probability } \geq 1 - \delta_h
 \]
-over the random initialization, for constants $q_h > 0$ and
-$\delta_h < 1$ independent of $M$ (the \emph{head hypothesis}: the
-features carry a common direction of $\Theta(M)$ energy across
+over the random initialization---where $p^{(n)}_{\min}$ denotes the
+smallest softmax probability at pixel $n$---for constants $q_h > 0$
+and $\delta_h < 1$ independent of $M$ (the \emph{head hypothesis}:
+the features carry a common direction of $\Theta(M)$ energy across
 inputs, on pixels whose initial predictions are non-degenerate. It
 is a cross-input \emph{correlation} condition, not a per-vector norm
 condition, and is closely related to the quantity $\kappa_2$
 carrying the width-linear term in Karakida et al.'s
-law---see the supplement). Then, under
-Assumptions~\ref{ass:reg}--\ref{ass:subg}, the spatial Gauss-Newton
+law---see the supplement, where a fully proved instance is also
+given). Then the spatial Gauss-Newton
 block of~\eqref{eq:ggn} satisfies
 \[
     \lambda_{\max}(G_{\phip\phip})
     \;=\; \Omega(M)
     \qquad \parbox{15em}{\centering in expectation over random Kaiming
-    (variance-scaled Gaussian) initialization,}
+    (variance-scaled Gaussian) initialization.}
 \]
-and the same holds for the logit Gram $J_\phip^\top J_\phip$ and the
-residual Gram $J_\phip^{\mathrm{res}\top} J_\phip^{\mathrm{res}}$.
-For architecture families with $\Cg = \Theta(M^2)$ (fixed depth with
-at least two consecutive width-proportional layers), equivalently
+The logit Gram $J_\phip^\top J_\phip \succeq G_{\phip\phip}$
+inherits the bound unconditionally; the residual Gram
+$J_\phip^{\mathrm{res}\top} J_\phip^{\mathrm{res}}$ satisfies it
+under the analogous hypothesis on the $p^2$-weighted Gram
+$S_h^{p^2}$ (supplement). For architecture families with
+$\Cg = \Theta(M^2)$ (fixed depth with at least two consecutive
+width-proportional layers), equivalently
 $\lambda_{\max}(G_{\phip\phip}) = \Omega(\sqrt{\Cg})$.
 \end{lemma}
 
@@ -223,15 +227,26 @@ $\mathcal{D}_{\mathrm{curv}} \gg 1$ identifies a
 \emph{potential} for disparate module learning rates: the spatial
 Gauss-Newton block admits directions of arbitrarily large curvature
 while the spectral block does not. Whether joint gradient descent
-actually produces disparate effective learning rates depends on
-additional dynamical hypotheses (e.g., that the spatial module
-converges quickly on the fast manifold), which we introduce and
-verify in Section~\ref{sec:thm2}. Theorem~\ref{thm:hessian} does not,
+actually produces disparate effective learning rates depends on an
+additional dynamical hypothesis (that the shortcut pathway fits the
+residual at rate $\mu$; Assumption~\ref{ass:residual}), which
+Section~\ref{sec:thm2} introduces and Experiment~1.2 tests.
+Theorem~\ref{thm:hessian} does not,
 by itself, prove that $\thetap$ is pinned to initialization.
+In particular, $\mathcal{D}_{\mathrm{curv}}$ concerns the \emph{top}
+of the spatial block's spectrum, while the fitting rate $\mu$ of
+Section~\ref{sec:thm2} is governed by how fast the residual can be
+driven down---a property of other parts of the spatial spectrum. The
+two are linked only under spectral-shape assumptions we do not make;
+the theorems are deliberately independent, and
+Experiments~1.1--1.2 test them separately.
 
-\paragraph{No remedy from optimizer tuning of the shared learning rate.}
+\paragraph{The disparity is invariant to shared step-size tuning.}
 The disparity bound depends only on architectural parameters, not on
-the choice of optimizer or the shared step-size schedule. Adaptive
+the choice of optimizer or the shared step-size schedule---so no
+choice of shared learning rate changes the \emph{geometry}; whether
+any shared-step-size method escapes the \emph{dynamical} consequence
+is a separate question we treat as a conjecture below. Adaptive
 methods (Adam, RMSProp) rescale per-coordinate gradient magnitudes
 but do not alter the underlying eigenvalue disparity between the two
 blocks. Two-timescale optimizers with explicitly different learning
@@ -251,16 +266,16 @@ single block.
 \paragraph{Feature normalization.}
 Scale asymmetry or collinearity among input features degrades the
 conditioning of $\Sigma_X$ and is cured by standardizing inputs.
-Assumption~\ref{ass:subg} already grants this cure: we assume
-$\kappa(\Sigma_X)$ bounded, i.e.\ well-conditioned (e.g.\ normalized)
-inputs. The disparity persists regardless, because its growth is
+Assumption~\ref{ass:subg} already grants this cure: we assume the
+population second moment $\Sigma$ has bounded condition number,
+i.e.\ well-conditioned (e.g.\ normalized) inputs. The disparity persists regardless, because its growth is
 driven by the width-scaling of the spatial block
 (Lemma~\ref{lem:phi_scaling}), which is untouched by any
 transformation of the input features.
 
 \paragraph{Weight decay.}
 Adding $\alpha \norm{w}^2$ to the loss shifts the Hessian by
-$\alpha I$, lifting every eigenvalue by $\alpha$ and famously
+$2\alpha I$, lifting every eigenvalue by $2\alpha$ and famously
 repairing classical condition numbers. But the shift acts on
 \emph{both} blocks equally: the disparity becomes
 $(\lambda_{\max}(G_{\phip\phip}) + \alpha) /
@@ -287,6 +302,25 @@ explicitly different learning rates per module (two-timescale update
 rules; Heusel et al.~\cite{heusel2017gans}) are the natural remedy at
 the optimizer level and correspond, in the limit, to our freezing
 prescription.
+
+\begin{remark}[Parameterization scope]
+\label{rem:param_scope}
+$\mathcal{D}_{\mathrm{curv}}$ is not invariant to per-module
+reparameterization, and Theorem~\ref{thm:hessian} is a statement
+about the standard variance-scaled (Kaiming) parameterization---the
+one used in the pipelines we analyze and in all our experiments.
+Under alternative parameterizations that rescale layers with width,
+such as $\mu$P~\cite{yang2021tensor}, both the initialization
+magnitudes and the effective per-layer learning rates change, and
+the width scaling of the blocks would need to be re-derived; we do
+not claim the disparity law transfers. Our two uses of $\mu$P
+elsewhere are limited to a different role: as one route to keeping
+the input-Jacobian bound (Assumption~\ref{ass:inputlip}) uniform in
+width during training. Whether principled reparameterization can
+neutralize the disparity---rather than merely re-expressing it---is
+an open question adjacent to the per-module learning-rate remedies
+discussed in Section~\ref{sec:discussion}.
+\end{remark}
 
 \begin{remark}[Small eigenvalues: irrelevance vs.\ starvation]
 \label{rem:irrelevance_vs_starvation}

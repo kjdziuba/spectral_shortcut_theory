@@ -82,8 +82,11 @@ envelope below, $\norm{\phip(t)} \to \infty$ logarithmically
 (Soudry et al.~\cite{soudry2018implicit}), so a bound on
 $\|\partial g_\phip/\partial Z\|_{\mathrm{op}}$ that is uniform over
 \emph{all} $t$ cannot be assumed. Two standard settings restore it:
-weight decay or norm constraints (bounded iterates), and the
-maximal-update parameterization~\cite{yang2021tensor} (bound uniform
+weight decay or norm constraints (bounded iterates; strictly, these
+modify the flow~\eqref{eq:gf}, and the theorem then applies to the
+modified flow, whose residual envelope may differ), and the
+maximal-update parameterization~\cite{yang2021tensor}, which leaves
+the flow unchanged (bound uniform
 in width). In the pure max-margin limit, $\widetilde{L}$ grows at
 most logarithmically in $T$, which turns the displacement bound of
 Theorem~\ref{thm:twoscale} into
@@ -121,12 +124,14 @@ module exploiting whatever signal is present in the feature map $Z$
 (positional and contextual structure), without requiring $f_\thetap$
 to specialize---the spatial-signal sufficiency discussed in
 Section~\ref{sec:thm2_hypotheses}. The rate $\mu$ is expected to
-\emph{grow} with spatial capacity: wider networks fit faster (in the
-NTK regime, the fitting rate is governed by the spatial kernel's
-smallest relevant eigenvalue, which grows with width; see
-Pezeshki et al.~\cite{pezeshki2021gradient}). We verify this
-empirically in Experiment~1.2, where time-to-fit shrinks monotonically
-with $D$. A derivation of $\mu(\Cg)$ for the linearized fast subsystem
+\emph{grow} with spatial capacity---wider networks fit faster, the
+familiar regularity of over-parameterized training; kernel-regime
+analyses tie fitting rates to spectral properties of the model's
+kernel that improve with width (cf.\ the starvation analysis of
+Pezeshki et al.~\cite{pezeshki2021gradient}), though we use no such
+derivation here. We test the capacity dependence of the fitting
+speed empirically in Experiment~1.2. A derivation of $\mu(\Cg)$ for
+the linearized fast subsystem
 is given informal treatment in the supplement and is not needed for
 the theorem, which takes $\mu$ as given.
 \end{remark}
@@ -192,18 +197,26 @@ behavior, which is what practice cares about: training runs end when
 the loss is fit (or by early stopping), not at $t = \infty$.
 
 \paragraph{The starvation regime.}
-The displacement bound is the product of two factors with opposite
-capacity dependence. The numerator $B$ is capped independently of
-$\Cg$ (Lemma~\ref{lem:opcap}): no matter how large the spatial module,
-the spectral gradient cannot exceed $B \norm{r}$. The fitting rate
-$\mu$ grows with spatial capacity
-(Remark~\ref{rem:residual_motivation}): wider shortcut pathways
-drive the residual down faster. Hence $\varepsilon = B/\mu \to 0$ as
-capacity grows, and the spectral module is increasingly pinned to its
-initialization \emph{for the entire useful duration of training}. This
-is the capacity-worsens-starvation prediction verified in
-Experiment~1.2, where the joint-vs-frozen gap grows monotonically with
-$D$.
+The displacement bound is a product of factors with opposite
+capacity dependence. The factor $B_T$ is capped independently of
+$\Cg$ (Lemma~\ref{lem:opcap}): no matter how large the spatial
+module, the spectral gradient cannot exceed $B_T \norm{r}$. The
+fitting rate $\mu$ is \emph{expected} to grow with spatial capacity
+(Remark~\ref{rem:residual_motivation}; this is an empirical
+regularity we test, not a theorem): wider shortcut pathways drive
+the residual down faster. For families of architectures along which
+the envelope amplitude $C$ stays bounded---as it does empirically,
+since $\norm{r(0)}$ is $\Theta(1)$ at near-uniform initial
+predictions and the observed residuals decay from the start rather
+than plateauing---the displacement at the fitting time scales as
+$\varepsilon \log(1/\delta)$ with $\varepsilon = B_T/\mu \to 0$, and
+the spectral module is increasingly pinned to its initialization
+\emph{for the entire useful duration of training}. We state the
+boundedness of $C$ along the family as an explicit condition rather
+than a consequence: Assumption~\ref{ass:residual} deliberately does
+not make its constants uniform over architectures, so the
+capacity-asymptotic reading requires it. This is the
+capacity-worsens-starvation prediction tested in Experiment~1.2.
 
 \paragraph{What we do not claim.}
 We make no claim about the $t \to \infty$ limit. For unregularized
@@ -219,10 +232,27 @@ too late to shape which features the classifier uses.
 
 \paragraph{The logarithm is benign.}
 For any polynomial training horizon $T = \mathcal{O}(\varepsilon^{-q})$
-with fixed $q$, the displacement is
+with fixed $q$, and along families with bounded envelope amplitude
+$C$ as above, the displacement is
 $\mathcal{O}(\varepsilon \log(1/\varepsilon))$, which vanishes as
 $\varepsilon \to 0$. The bound is thus meaningful across every
 practically reachable horizon, not merely at a single stopping time.
+
+\paragraph{Relation to lazy training.}
+Structurally, Theorem~\ref{thm:twoscale} is a \emph{module-wise lazy
+training} bound: a bounded module Jacobian multiplied by an
+integrable residual envelope yields logarithmic parameter movement,
+in the spirit of Chizat, Oyallon, and
+Bach~\cite{chizat2019lazy}. The differences are the driver and the
+scope. In the lazy-training literature, small movement follows from
+a scaling of the \emph{model} (width or output scale) that makes the
+linearization accurate for \emph{all} parameters; here, movement is
+small for \emph{one module only}, it is driven by the interaction of
+two module-asymmetric quantities---the operator-norm cap of
+Lemma~\ref{lem:opcap} and the shortcut fitting rate---and the other
+module is entirely free to travel. The phenomenon is a
+\emph{selective} laziness induced by the compositional position of
+the spectral module, not a global linearization regime.
 
 \subsection{On the hypotheses}
 \label{sec:thm2_hypotheses}
@@ -234,16 +264,40 @@ where Theorem~\ref{thm:hessian}'s geometry genuinely enters the
 dynamics.
 
 \paragraph{Residual decay encodes the shortcut.}
-Assumption~\ref{ass:residual} requires the training residual to fall
-at rate $\mu$ \emph{without} the spectral module specializing. This is
-plausible exactly when the spatial model can interpolate the training
-labels from the structure already present in $Z$ (positional cues,
-contextual patterns)---the spatial-signal sufficiency condition. In
-practice it is satisfied whenever the spatial model can overfit the
-training set, which is the norm for modern over-parameterized CNNs and
-ViTs. We verify it empirically in Experiments~1.2 and~1.3: joint
-training reaches near-zero training loss while the spectral module
-remains close to initialization.
+Assumption~\ref{ass:residual} is a statement about the
+\emph{residual only}: the training loss gets fitted at rate $\mu$
+along the joint trajectory. It does not mention $\thetap$, and in
+particular it does not assume the spectral module stays put. The
+shortcut interpretation---that the fitting is done by the spatial
+module exploiting structure already present in $Z$ (positional cues,
+contextual patterns)---is the mechanism that makes the assumption
+plausible at high spatial capacity, and it is satisfied in practice
+whenever the spatial model can overfit the training set, the norm
+for modern over-parameterized CNNs and ViTs. We test the envelope
+itself empirically in Experiment~1.2.
+
+\begin{remark}[Is the hypothesis circular?]
+\label{rem:not_circular}
+A natural worry is that assuming fast residual decay comes close to
+assuming the conclusion. It does not, and the direction of the
+implication is the theorem's content. The assumption constrains what
+the \emph{loss} does; the theorem then caps how far $\thetap$ can
+have travelled \emph{on any trajectory consistent with that loss
+behavior}---including trajectories on which $\thetap$ itself does
+part of the fitting. Nothing in the hypothesis privileges the
+spatial module: if a trajectory fits the residual at rate $\mu$
+partly through spectral learning, the bound still applies and shows
+the total spectral displacement incurred in doing so is at most
+$(B_T C/\mu)\log(C/\delta)$. Read contrapositively, this is the
+sharpest form of the claim: \emph{substantial spectral learning
+requires slow fitting}. A trajectory on which $\thetap$ moves far
+must have small $\mu$---the loss must stay unfit for a long
+time---which is precisely what freezing-based pipelines engineer and
+what fast-fitting joint training precludes. The hypothesis is also
+independently checkable: the envelope is a measurable property of a
+training run, verified or refuted by the run's own residual curve,
+with no reference to $\thetap$.
+\end{remark}
 
 \paragraph{Rate separation is motivated, not derived.}
 Theorem~\ref{thm:hessian} shows curvature disparity grows with

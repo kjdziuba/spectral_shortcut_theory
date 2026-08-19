@@ -125,8 +125,9 @@ $M \to \infty$. Under standard-parameterization training with weight
 decay $\lambda > 0$ and bounded-norm iterates,
 Assumption~\ref{ass:inputlip} follows from the boundedness of
 $\|\phip\|$ combined with the per-layer product-of-operator-norms
-bound; the constant $\widetilde{L}$ depends multiplicatively on the
-depth $L$ but not on the width. Softmax self-attention is Lipschitz
+bound; the constant $\widetilde{L}$ then depends multiplicatively on
+the network depth (a symbol-free statement: one factor per layer)
+but not on the width. Softmax self-attention is Lipschitz
 only on bounded inputs~\cite{kim2021lipschitz}, so
 $\mathcal{Z}_{\mathrm{reg}}$ should be taken compact whenever
 $g_\phip$ uses attention---this is guaranteed by LayerNorm before
@@ -213,9 +214,10 @@ observation underlies Theorem~\ref{thm:twoscale}.
 \label{rem:loss_scope}
 The two theorems depend on the loss to different degrees.
 Theorem~\ref{thm:hessian} is essentially loss-agnostic: the softmax
-Jacobian $H_\tau$ enters its proof only through the two-sided bound
-$c_p P_\perp \preceq H_\tau \preceq I$, which contributes constants
-and no $M$-dependence. Under squared error the inner matrix is the
+Jacobian $H_\tau$ enters its proof only through the upper bound
+$H_\tau \preceq I$ and through the per-pixel weights
+$p^{(n)}_{\min}$ that the head hypothesis carries---both contribute
+constants and no $M$-dependence. Under squared error the inner matrix is the
 identity and the argument simplifies, giving the same width-linear
 disparity. Theorem~\ref{thm:twoscale} is more loss-specific: the
 polynomial residual envelope of Assumption~\ref{ass:residual} is the
@@ -266,10 +268,12 @@ Theorem~\ref{thm:hessian} is stated for the diagonal blocks
 $G_{\thetap\thetap} = J_\thetap^\top H_\tau J_\thetap$ and
 $G_{\phip\phip} = J_\phip^\top H_\tau J_\phip$. The
 residual-Gram variant $J^{\mathrm{res}\top} J^{\mathrm{res}} =
-J^\top H_\tau^2 J$ obeys the same bounds in both directions
-(upper: $H_\tau^2 \preceq I$; lower: supplement
-Section~\ref{sec:proof_thm1}), so the results are insensitive to
-which convention a reader prefers.
+J^\top H_\tau^2 J$ obeys the same upper bounds unconditionally
+($H_\tau^2 \preceq I$) and the same lower bound under a
+correspondingly weighted form of the head hypothesis (supplement
+Section~\ref{sec:proof_thm1}), so the results transfer across
+conventions with only the softmax weighting of the constants
+changing.
 
 \subsection{The Effective Gradient Ratio}
 
@@ -289,8 +293,9 @@ Effective Gradient Ratio is
 \begin{remark}
 EGR is a unitless quantity directly computable inside any training
 loop with negligible overhead. Section~\ref{sec:egr} bounds the decay
-of its numerator---the spectral gradient norm---by $C/(1 + \mu t)$
-as a consequence of Theorem~\ref{thm:twoscale}, characterizes the
+of its numerator---the spectral gradient norm---by
+$B_T C/(1 + \mu t)$ under the hypotheses of
+Theorem~\ref{thm:twoscale}, characterizes the
 ratio's trajectory empirically, and proposes a threshold criterion
 for detecting gradient starvation onset.
 \end{remark}

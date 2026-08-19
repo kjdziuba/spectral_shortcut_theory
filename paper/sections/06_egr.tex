@@ -2,14 +2,16 @@
 \label{sec:egr}
 
 Theorems~\ref{thm:hessian} and~\ref{thm:twoscale} together identify a
-training pathology that is invisible to standard loss curves: as
-cross-entropy decays toward zero on both training and validation
-sets, the spectral module is silently gradient-starved. A practitioner
-running joint training sees the loss go down and the validation
-accuracy go up, with no in-training signal that the spectral module
-has failed to specialize. The implication for held-out test
-performance is only revealed once test data is examined---often after
-many epochs of wasted compute, or after deployment.
+training pathology that is invisible to \emph{single-run} loss-curve
+monitoring. The failure is counterfactual: a jointly trained model
+converges to an apparently healthy solution---training loss down,
+validation metrics respectable, every curve shaped like a normal
+run---that is nonetheless worse than what the \emph{same
+architecture} achieves with its spectral module frozen. Nothing in
+the run's own curves flags this, because the deficit is visible only
+against a baseline the practitioner has not trained. One discovers
+it by training the frozen counterpart (twice the compute, and only
+if one thinks to try), or not at all.
 
 This section introduces the \emph{Effective Gradient Ratio} (EGR), a
 real-time diagnostic that detects gradient starvation as it occurs.
@@ -111,8 +113,14 @@ loss is being fitted.
 
 \subsection{Threshold criterion}
 
-Proposition~\ref{prop:egr_monotonic} suggests a practical criterion
-for detecting the onset of gradient starvation.
+The absolute decay of the spectral gradient
+(Proposition~\ref{prop:egr_monotonic}), combined with the empirical
+behavior of the ratio characterized in
+Section~\ref{sec:egr-empirical}, motivates a practical criterion for
+detecting the onset of gradient starvation. We emphasize its status:
+the threshold rule is an empirically calibrated heuristic that the
+theory motivates but does not derive
+(Remark~\ref{rem:egr_ratio_caveat}).
 
 \begin{definition}[Gradient starvation alert]
 \label{def:alert}
@@ -129,8 +137,7 @@ drop in EGR relative to initialization.
 \begin{remark}
 The threshold $\tau$ is the only hyperparameter of the diagnostic.
 The default $\tau = 0.1$ corresponds to a one-decade decay and is the
-value we use throughout Section~\ref{sec:experiments}. We provide a
-sensitivity analysis to $\tau$ in the supplement.
+value we use throughout Section~\ref{sec:experiments}.
 \end{remark}
 
 \paragraph{Practical use.}
