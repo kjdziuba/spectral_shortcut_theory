@@ -4,6 +4,46 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-19 — T4 capacity ratio recounted from the real model
+
+**Every number in the capacity claim was wrong; all three are now
+replaced by counts from the instantiated model** (script saved at
+`code/count_blockvit_params.py`, runs against
+`spectral_tokenization/side_project/models/blockvit_v2.py`):
+
+| config | C_f | C_g | ratio |
+|---|---|---|---|
+| K=64 (end-to-end baseline) | 61,108 | 18,271,540 | **299** |
+| K=128 (matched to frozen variants) | 121,588 | 21,472,564 | **177** |
+
+- **13M vs 18.3M RESOLVED**: total(K=64) = 18,332,648 = the companion's
+  18.3M. The companion quotes the TOTAL model size; our draft's "C_g =
+  13M" was simply an undercount. No contradiction between the papers.
+- **The 325 fossil identified exactly**: 314 x 128 = 40,192 (a
+  SINGLE-channel spectral count) divided into the undercounted 13M
+  gives 323 ~ 325. The real spectral module takes 3 channels
+  (3 x 314 = 942 inputs), so C_f is ~3x larger than the fossil assumed.
+  The audit's "108" was also wrong — it used the paper's own two wrong
+  numbers. Only 299 is computed from the model.
+- **Theta(M^2) confirmed for BlockViT**: transformer 5.34M +
+  ConvTranspose 9.44M, both quadratic in M = hidden_dim = 192
+  (patch_embed 3.15M is only linear in M and not dominant). So the
+  sqrt(C_g/C_f) corollary of Theorem 1 LEGITIMATELY applies here —
+  unlike Exp 1.1's SpatialMLP, where C_g = Theta(M) and slope 1.0
+  applies. The paper now has one architecture from each class, which
+  strengthens the A6 story rather than complicating it.
+- Prediction for Exp 1.8: D_curv >= c1' sqrt(ratio) ~ 13-17 c1',
+  equivalently c1 * 192 in the theorem's native width variable.
+- New Table tab:capacity in Section 8 with the full block breakdown;
+  kappa deleted from Section 8 (A5); 03 updated to ~300 and "roughly
+  two orders of magnitude"; Exp 1.8 restated in the inventory around
+  D_curv; Section 8 provenance corrected to QCL (A52) and the
+  architecture attributed to O'Leary et al.
+
+**Next:** T5 THEORY FREEZE GATE — **switch back to Fable first.**
+
+---
+
 ## 2026-08-18 (later) — T3 theory-hygiene batch
 
 **All eight T3 items done** (A12, A13, A23, A35, A36, A22, A61; A39 was
