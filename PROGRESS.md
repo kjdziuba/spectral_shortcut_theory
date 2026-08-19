@@ -4,6 +4,61 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-19 (later) — T5 freeze gate: in-house half complete
+
+**Round 1** (wf_406b7519-2b2; 5 hostile lenses, citations lens + all 9
+workflow verifiers died on the session limit — every finding manually
+verified on Fable instead; an index-shift bug also mislabeled lenses in
+the output, corrected during triage):
+
+The two substantive blockers, both answered with NEW theory per the
+author's adjust-experiments-to-theory directive:
+1. "Theorem 1 is arithmetic on two assumptions — no proved instance."
+   -> NEW prop:verified_instance: two-layer ReLU head at Kaiming init,
+   sigma_b > 0. ReLU's positive mean (E ReLU(N(0,s^2)) = s/sqrt(2pi))
+   gives every feature vector a shared direction of Theta(M) energy —
+   the head hypothesis PROVED via mean-feature concentration.
+2. "ass:residual is circular." -> NEW rem:not_circular: the assumption
+   constrains the RESIDUAL, not theta; the bound caps theta's travel on
+   ANY trajectory consistent with the loss curve, including ones where
+   theta does part of the fitting. Contrapositive: substantial spectral
+   learning by the fitting time REQUIRES slow fitting. Independently
+   checkable from a run's own residual curve.
+Also: bounded-C-along-the-family condition added to the capacity
+asymptotics (ass:residual refuses uniformity, so the asymptotic reading
+cannot be free); "Relation to lazy training" + chizat2019lazy (selective
+module-wise laziness vs global linearization); 06 opening rewritten
+counterfactually (A41 killed); D_curv top-vs-rest spectrum honesty;
+rem:param_scope (standard-parameterization statement, no muP transfer);
+tau-sensitivity dangling promise deleted; ~20 smaller repairs
+(2*alpha*I, kappa(Sigma), B_T forward-refs, N_cls typesetting, ...).
+
+**Round 2** (wf_38ae8bc0-c40): proposition verified — Steps A/B/D and
+the witness bound all CONFIRMED sound; 2 majors in MY probability
+bookkeeping caught and repaired:
+- Step C conditioned on F_1 while bounding an F_1-measurable quantity
+  by its unconditional mean — fixed with a separate Markov event.
+- Part (ii)'s per-input Jacobian cap cannot deliver ass:inputlip's sup
+  over inputs (sqrt(log N) by the union route). UPGRADED instead of
+  patched: trace-level cap E[lambda_max(G_tt)] <= N_cls sigma_w^4
+  tr(Sigma_X), free of M and N, plus NEW part (iii): the INSTANCE-LEVEL
+  DISPARITY LAW, E[D_curv] = Omega(M), proved outright — the
+  proposition now delivers the theorem itself for the instance, not
+  just its hypotheses.
+Citations make-up lens: Karakida Thm 4's output IS fixed C = O(1) (only
+the input side excludes our heads) — both cautions corrected; Yang-Hu
+softened to what Tensor Programs IV proves; Soudry attributed to linear
+predictors with Lyu-Li 2020 added for homogeneous nets.
+
+Commits: 50f26cb, c09676d, 41c74f8. Compiles clean.
+
+**T5 status: in-house gate CLOSED. Full freeze awaits the author's
+external-LLM review ritual on Sections 3-6 + supplement (especially
+prop:verified_instance — fresh probability written this session), then
+one fix round, then FROZEN and Phase E launches (Exp 1.7/1.8 first).**
+
+---
+
 ## 2026-08-19 — T4 capacity ratio recounted from the real model
 
 **Every number in the capacity claim was wrong; all three are now
