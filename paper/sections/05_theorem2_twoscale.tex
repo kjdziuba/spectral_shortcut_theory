@@ -38,10 +38,17 @@ by gradient flow
     \qquad
     \dot{\phip}(t) = -\nabla_\phip \loss(\thetap, \phip).
 \end{equation}
-The discrete-SGD extension (Robbins--Monro tracking with noise
-entering the constants) is standard
-(Borkar~\cite{borkar2008stochastic}, Ch.~2) and discussed in the
-supplement.
+All statements below hold for any absolutely continuous trajectory
+satisfying~\eqref{eq:gf} for almost every $t$: under the smoothness
+of Assumption~\ref{ass:reg} the flow is classically well posed, and
+the almost-everywhere formulation additionally covers
+piecewise-smooth models such as ReLU networks, for
+which~\eqref{eq:gf} is read as the corresponding subdifferential
+inclusion. A discrete-SGD extension (Robbins--Monro tracking, with
+gradient noise entering the constants) is a natural further step in
+the standard stochastic-approximation framework
+(Borkar~\cite{borkar2008stochastic}, Ch.~2); we do not develop it
+here (Remark~\ref{rem:thm2_open}, supplement).
 
 Recall from the chain rule~\eqref{eq:chain} that
 $\nabla_\thetap \loss = J_\thetap^\top r$ where $r$ is the softmax
@@ -134,10 +141,10 @@ analyses tie fitting rates to spectral properties of the model's
 kernel that improve with width (cf.\ the starvation analysis of
 Pezeshki et al.~\cite{pezeshki2021gradient}), though we use no such
 derivation here. We test the capacity dependence of the fitting
-speed empirically in Experiment~1.2. A derivation of $\mu(\Cg)$ for
-the linearized fast subsystem
-is given informal treatment in the supplement and is not needed for
-the theorem, which takes $\mu$ as given.
+speed empirically in Experiment~1.2. Deriving $\mu(\Cg)$ from the
+architecture is an open problem we state explicitly at the end of
+Section~\ref{sec:thm2_hypotheses}; the theorem takes $\mu$ as
+given.
 \end{remark}
 
 \begin{definition}[Fitting time]
@@ -153,12 +160,13 @@ Under Assumption~\ref{ass:residual}, $T_\delta \leq (C/\delta - 1)/\mu$.
 
 \begin{theorem}[Finite-Time Spectral Starvation]
 \label{thm:twoscale}
-Fix a horizon $T \geq 0$ and suppose the gradient flow~\eqref{eq:gf}
-is contained in $\Phi_{\mathrm{reg}} \times
+Fix a horizon $T \geq 0$ and let $(\thetap(t), \phip(t))$ be an
+absolutely continuous trajectory satisfying~\eqref{eq:gf} for almost
+every $t \leq T$, contained in $\Phi_{\mathrm{reg}} \times
 \mathcal{Z}_{\mathrm{reg}}$ up to time $T$. Under
 Assumptions~\ref{ass:linear}, \ref{ass:subg}, \ref{ass:inputlip},
-and~\ref{ass:residual}, with $B_T$ as in~\eqref{eq:bt}, the flow
-satisfies
+and~\ref{ass:residual}, with $B_T$ as in~\eqref{eq:bt}, the
+trajectory satisfies
 \[
     \norm{\thetap(T) - \thetap_0}
     \;\leq\; \frac{B_T\,C}{\mu} \, \log(1 + \mu T),
@@ -176,7 +184,7 @@ $\mathcal{O}\!\left(\varepsilon \log(1/\delta)\right)$.
 
 \begin{proof}
 By~\eqref{eq:theta_grad_bound}, the operator-norm cap~\eqref{eq:bt},
-and Assumption~\ref{ass:residual}, for every $t \leq T$,
+and Assumption~\ref{ass:residual}, for almost every $t \leq T$,
 \[
     \norm{\dot{\thetap}(t)}
     \;\leq\; B_T \cdot \norm{r(t)}
@@ -262,10 +270,16 @@ the spectral module, not a global linearization regime.
 \label{sec:thm2_hypotheses}
 
 \paragraph{The operator-norm cap is proven, not assumed.}
-The factor $B$ is supplied by Lemma~\ref{lem:opcap} under
-Assumptions~\ref{ass:linear} and~\ref{ass:inputlip}; it is the point
-where Theorem~\ref{thm:hessian}'s geometry genuinely enters the
-dynamics.
+The factor $B_T$ is supplied by Lemma~\ref{lem:opcap} under
+Assumptions~\ref{ass:linear} and~\ref{ass:inputlip}. We are precise
+about how much of Section~\ref{sec:thm1} enters this proof: only
+the cap---the same lemma that bounds
+$\mathcal{D}_{\mathrm{curv}}$'s denominator. The width-linear
+growth of the spatial block (Lemma~\ref{lem:phi_scaling}) appears
+nowhere in the derivation; its role is to motivate the capacity
+dependence of $\mu$, which remains a hypothesis.
+Theorem~\ref{thm:twoscale} is a consequence of the cap plus the
+envelope, not of the disparity.
 
 \paragraph{Residual decay encodes the shortcut.}
 Assumption~\ref{ass:residual} is a statement about the
@@ -315,14 +329,13 @@ capacity-dependent geometric mechanism \emph{capable} of generating
 disparate module learning rates; Theorem~\ref{thm:twoscale}
 characterizes the starvation dynamics \emph{when} such a separation is
 present. Experiments~1.1--1.3 test the mechanism and the dynamics
-separately. Deriving Assumption~\ref{ass:residual} from the
-architecture (e.g.\ via an NTK analysis of the fast subsystem at large
-width, adapting Pezeshki et al.~\cite{pezeshki2021gradient}) is a
-natural next step; a sketch is given in the supplement.
-
-\TODO{Supplement: (i) discrete-SGD extension of
-Theorem~\ref{thm:twoscale} via Robbins--Monro tracking
-(Borkar Ch.~2), noise entering the constants; (ii) informal NTK
-derivation of $\mu(\Cg)$ for the linearized fast subsystem;
-(iii) empirical verification that $\norm{r(t)}$ on our synthetic
-trajectories is enveloped by $C/(1+\mu t)$.}
+separately. Deriving Assumption~\ref{ass:residual}---and in
+particular the growth of $\mu$ with $\Cg$---from the architecture
+(e.g.\ via an NTK analysis of the spatial pathway at large width,
+adapting Pezeshki et al.~\cite{pezeshki2021gradient}) is, in our
+view, the most valuable missing theorem in this program: it would
+chain Theorems~\ref{thm:hessian} and~\ref{thm:twoscale} into a
+single causal statement. We state it as an open problem rather than
+sketch it (Remark~\ref{rem:thm2_open}, supplement), and we test its
+content empirically: Experiment~1.2 measures the fitting speed as a
+function of spatial capacity.

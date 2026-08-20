@@ -4,6 +4,85 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-20 — T5 external half: three-LLM review returned, fix round applied, THEORY FROZEN
+
+Three fresh-chat reviews (identical prompt + 25pp packet): ChatGPT deep
+research, Claude Fable, Gemini. Verdicts: 2x weak reject (+1 truncated,
+same tenor); self-estimated ICLR odds 22-35% on theory alone. The
+headline: NO reviewer found a mathematical error in any displayed
+proof. All three independently re-verified Prop 35 Steps A-E, the
+witness bound, the Kronecker identity, and Thm 2's integral. The
+protocol also worked as designed: agreement was informative, and the
+round produced its customary confident misreading (Claude — which
+admitted it could not open the PDF — invented a "hidden M_0 width
+threshold" that is literally in the proposition statement, and
+misattributed "modality laziness" to Wang 2020; workflow-verified: Du
+et al. ICML 2023 coined it).
+
+**Unanimous finding (all 3): no proved geometry->dynamics bridge; Thm 2
+integrates an assumed envelope; mu(Cg) growth is hypothesized.** This
+is the paper's own stated position (05 says so in four places), so it
+consumed no fix — it is a POSITIONING problem: the contribution must be
+sold as (cap + envelope + verified instance + open bridge), with the
+bridge as explicit open problem and the E-phase mu-vs-capacity
+measurement (D2/E4) as its empirical test. Sharpened 05's "genuinely
+enters the dynamics" to the precise cap-only statement.
+
+**Confirmed real defects, all fixed (commit this session):**
+1. ass:subg claimed lambda_max(Sigma_X) -> lambda_max(Sigma) with no
+   independence across pixels (ChatGPT's duplicated-pixel
+   counterexample is valid). Restated as the empirical bound actually
+   consumed (lambda_max(Sigma_X) <= Lambda_X); population story moved
+   to rem:subg_population, marked not-used-in-proofs.
+2. Bai-Yin misuse (ChatGPT + Gemini, same counterexample): a fixed-K
+   expansion matrix has op norm Theta(sqrt(M/K)), NOT Theta(1). Remark
+   rewritten: proportional-dimension edge (YBK 1988 + Bai-Yin 1993,
+   both now cited correctly) vs composition-cancellation (proved in
+   expectation in Prop 35 Step D); ass:inputlip imposed, not derived.
+3. Karakida odd-activation footnote (ChatGPT): verified verbatim
+   against PMLR PDF — they explicitly scope OUT the kappa_2=0 case
+   ("outside the scope of this study"). Our "mirroring their surviving
+   kappa_1/T term" attribution deleted; footnote now quoted verbatim,
+   our Theta(1/N) degenerate behavior derived independently.
+4. Gemini's "blocker" (ReLU vs C2 ass:reg): hypothesis-hygiene, not a
+   proof error — GGN needs only first-order Jacobians (a.s. defined at
+   Gaussian init). Thm 2 restated for absolutely continuous
+   trajectories satisfying the flow a.e. (also fixes ChatGPT's
+   missing-regularity-hypothesis minor); new rem:relu_scope.
+5. Expectation placement in Thm 1 proof made explicit (E[ratio] >=
+   E[numerator]/deterministic cap) in 04 + supplement combine.
+6. D_curv := +infty convention when the spectral block vanishes.
+7. lem:interlacing deleted (orphan; flagged by 2/3 reviewers + tracked
+   A38). 8. 05/supplement TODO promises ("discussed in the
+   supplement") replaced by honest rem:thm2_open. 9. LayerNorm
+   compactness claim softened to within-Phi_reg boundedness.
+
+**Best substantive point (ChatGPT), turned into theory-strengthening
+honesty:** Prop 35's spike comes from the bias-induced mean feature
+direction — set all z_n = 0 and the width-linear curvature persists
+with zero-information features. So D_curv measures READINESS TO MOVE,
+not usefulness. NEW rem:instance_interpretation states this candidly
+and flips it: the capacity advantage predates the data — that is
+exactly why it is a shortcut hazard. One-sentence echo in 04's
+interpretation remark.
+
+**Verification workflow** (wf_07653a70-85f, 7 agents, all confirmed
+against primary sources): Karakida footnote verbatim; Lim/Kim/Moon
+NeurIPS 2025 Spotlight is REAL (must-cite, added to P4 with delta);
+Zhang/Bengio/Singer JMLR 2022 real ("robust"/"critical"); laziness =
+Du et al. ICML 2023; Coil & Cheney = AutoML 2025 PMLR 293,
+hypothesize-not-show; Pezeshki Thm 2 characterization accurate
+(NTK-linearized + coupling + s1^2>s2^2); largest-eigenvalue edge =
+YBK 1988 (bai1993limit is the smallest-eigenvalue paper) — bib fixed,
+yin1988largest added.
+
+Compile clean (39pp; only known fig:exp11_paired undefined — P5).
+**THEORY STAMPED FROZEN.** Next: Phase E (launch Exp 1.7/1.8 first),
+with remaining reviewer points (novelty delta, related work) scoped to
+Phase P.
+
+---
+
 ## 2026-08-19 (later) — T5 freeze gate: in-house half complete
 
 **Round 1** (wf_406b7519-2b2; 5 hostile lenses, citations lens + all 9

@@ -54,23 +54,41 @@ $g_\phip$ is twice continuously differentiable in $\phip$ with
 $L$-Lipschitz gradients.
 \end{assumption}
 
-\begin{assumption}[Sub-Gaussian inputs]
+\begin{assumption}[Bounded input second moment]
 \label{ass:subg}
-Per-pixel inputs $\{x_{h,w}\}$ are sub-Gaussian with population second
-moment $\Sigma = \E[x_{h,w} x_{h,w}^\top]$ of bounded condition
-number. We write
+Define the \emph{mean empirical input Gram}
 \begin{equation}
 \label{eq:sigma_x}
     \Sigma_X \;:=\; \frac{1}{N} \sum_{n=1}^{N} x_n x_n^\top,
     \qquad N \;:=\; N_{\mathrm{data}} H W,
 \end{equation}
-for the corresponding \emph{mean} empirical Gram over all pixels of
-all images ($x_n$ enumerating the pixel spectra), so that
-$\lambda_{\max}(\Sigma_X) \to \lambda_{\max}(\Sigma) < \infty$ as
-$N \to \infty$. Every constant below is stated in terms of
-$\lambda_{\max}(\Sigma_X)$ and is therefore independent of the
-dataset size.
+with $x_n$ enumerating the per-pixel spectra of all images. We
+assume $\lambda_{\max}(\Sigma_X) \leq \Lambda_X < \infty$, with
+$\Lambda_X$ uniform over the datasets under consideration. Every
+constant below is stated in terms of $\lambda_{\max}(\Sigma_X)$ and
+is therefore independent of the dataset size.
 \end{assumption}
+
+\begin{remark}[Population motivation---not used in proofs]
+\label{rem:subg_population}
+For a fixed finite dataset, $\lambda_{\max}(\Sigma_X)$ is finite
+automatically, and this empirical quantity is all the proofs
+consume; the assumption has content only along sequences of growing
+datasets. If the pixel spectra are modelled as sub-Gaussian draws
+from a population with second moment $\Sigma = \E[x x^\top]$ that
+are independent (or sufficiently weakly dependent) \emph{across
+pixels}, then $\lambda_{\max}(\Sigma_X) \to \lambda_{\max}(\Sigma)$
+and the uniform bound holds with $\Lambda_X$ near
+$\lambda_{\max}(\Sigma)$. Marginal sub-Gaussianity alone does
+\emph{not} suffice: neighbouring pixels of a tissue image are
+strongly correlated, and in the extreme case of perfectly
+duplicated pixels $\Sigma_X$ stays bounded but never concentrates
+around $\Sigma$. This is why we assume the empirical bound
+directly rather than derive it from population conditions.
+Well-conditionedness of $\Sigma$ (normalized inputs) is likewise
+invoked only in the discussion of classical remedies
+(Section~\ref{sec:classical_conditioning}), never in a proof.
+\end{remark}
 
 \begin{assumption}[Capacity gap]
 \label{ass:gap}
@@ -114,14 +132,32 @@ gradient flow~\eqref{eq:gf} well posed; the quantitative bounds of
 Theorems~\ref{thm:hessian} and~\ref{thm:twoscale} use only
 Assumption~\ref{ass:inputlip}.
 
-At random Kaiming/Xavier initialization, the operator norm of a
-variance-scaled random weight matrix is $\Theta(1)$ in width $M$ by
-the Bai--Yin law~\cite{bai1993limit} (see also
-Vershynin~\cite{vershynin2018high}, Thm.~4.4.5;
-Marchenko--Pastur~\cite{marchenko1967distribution} describes the
-corresponding bulk spectrum), giving
-$\|\partial g_\phip/\partial Z\|_{\mathrm{op}} = \Theta(1)$ in width
-$M$ for standard CNN and MLP blocks. Under the maximal-update
+What random-matrix theory does and does not supply here deserves
+care. For a random weight matrix whose \emph{two dimensions grow
+proportionally}, variance-scaled initialization gives an operator
+norm that is $\Theta(1)$ in width: this is the classical
+largest-singular-value edge (Yin, Bai, and
+Krishnaiah~\cite{yin1988largest}; Bai and Yin~\cite{bai1993limit};
+non-asymptotically, Vershynin~\cite{vershynin2018high},
+Thm.~4.4.5; Marchenko--Pastur~\cite{marchenko1967distribution}
+describes the corresponding bulk spectrum). It does \emph{not}
+apply to the layer reading the bottleneck: a Kaiming-initialized
+expansion matrix $W_1 \in \R^{M \times K}$ with fixed $K$ and entry
+variance $\sigma_w^2/K$ has $\|W_1\|_{\mathrm{op}} =
+\Theta(\sqrt{M/K})$, which \emph{diverges} with width, so a
+per-layer product-of-operator-norms argument inherits this factor.
+The boundedness of the composed Jacobian
+$\partial g_\phip/\partial Z$ is instead a cancellation effect
+across consecutive variance-scaled layers: the $1/\sqrt{M}$ entry
+scaling of the \emph{next} layer offsets the $\sqrt{M}$ growth,
+because the top directions of independent random factors are
+generically misaligned. We do not prove this in general---uniform
+boundedness is exactly what Assumption~\ref{ass:inputlip}
+postulates---but we prove it for a concrete two-layer ReLU head in
+Proposition~\ref{prop:verified_instance} (supplement), where
+$\E\,\|\partial \hat{y}/\partial z\|_F^2 = \mathcal{O}(1)$
+uniformly in width while the naive operator-norm product would give
+$\Theta(M/K)$. Under the maximal-update
 parameterization ($\mu$P), Yang and
 Hu~\cite{yang2021tensor} establish coordinate-wise $\Theta(1)$
 stability of activations throughout training in the infinite-width
@@ -136,8 +172,12 @@ the network depth (a symbol-free statement: one factor per layer)
 but not on the width. Softmax self-attention is Lipschitz
 only on bounded inputs~\cite{kim2021lipschitz}, so
 $\mathcal{Z}_{\mathrm{reg}}$ should be taken compact whenever
-$g_\phip$ uses attention---this is guaranteed by LayerNorm before
-attention, which is standard practice.
+$g_\phip$ uses attention. Pre-attention LayerNorm (standard
+practice) supports this: it places each token on a sphere whose
+radius is set by the learned affine gains, so attention inputs stay
+bounded as long as those gains do, i.e.\ within the bounded
+parameter regime $\Phi_{\mathrm{reg}}$. We impose the compactness
+as part of the assumption rather than derive it.
 \end{remark}
 
 \subsection{Loss and gradients}
@@ -327,7 +367,13 @@ in~\eqref{eq:block_hessian}, the \emph{module curvature disparity} is
                 {\lambda_{\max}(G_{\thetap\thetap})},
 \]
 the ratio of the spatial block's top eigenvalue to the spectral
-block's. Unless stated otherwise, $\mathcal{D}_{\mathrm{curv}}$ is
+block's, with the convention $\mathcal{D}_{\mathrm{curv}} :=
++\infty$ when the spectral block vanishes
+($\lambda_{\max}(G_{\thetap\thetap}) = 0$, a maximal disparity;
+Assumption~\ref{ass:inputlip} caps the spectral block from above
+only, so the degenerate case is not excluded, and lower bounds on
+$\mathcal{D}_{\mathrm{curv}}$ are unaffected by it). Unless stated
+otherwise, $\mathcal{D}_{\mathrm{curv}}$ is
 evaluated at random initialization $(\thetap_0, \phip_0)$, which is
 where Theorem~\ref{thm:hessian} bounds it and where
 Experiment~1.1 measures it.

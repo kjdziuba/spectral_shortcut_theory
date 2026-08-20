@@ -53,7 +53,15 @@ $\Cg$-independent constant. Curvature increasingly concentrates in
 the downstream module. This is a purely geometric fact about the
 Hessian; the dynamical consequence---that joint training pins
 $\thetap$ near its initialization---is stated separately in
-Theorem~\ref{thm:twoscale}, under its own hypotheses.
+Theorem~\ref{thm:twoscale}, under its own hypotheses. The disparity
+measures the downstream module's \emph{readiness to move}---the
+loss curvature its parameters command at initialization---not the
+usefulness of its features: it is present before any feature has
+been learned, and the width-linear spike can be exhibited even for
+inputs carrying no information
+(Remark~\ref{rem:instance_interpretation}, supplement). That the
+geometry favours the spatial module \emph{independently} of feature
+quality is precisely what makes it a shortcut hazard.
 \end{remark}
 
 The proof decomposes the disparity bound into separate bounds on the
@@ -127,21 +135,6 @@ of the width-linear rate is tested empirically in
 Section~\ref{sec:experiments}.
 \end{remark}
 
-\begin{lemma}[Eigenvalue interlacing for block matrices]
-\label{lem:interlacing}
-For any symmetric block matrix $M = \begin{pmatrix} A & B \\ B^\top & D
-\end{pmatrix}$ with principal blocks $A$ and $D$,
-\[
-    \lambda_{\max}(M) \geq \max\{\lambda_{\max}(A), \lambda_{\max}(D)\}.
-\]
-\end{lemma}
-
-\begin{remark}
-Lemma~\ref{lem:interlacing} is a standard consequence of Cauchy's
-interlacing theorem applied to principal submatrices
-(see e.g.\ Bhatia~\cite{bhatia1997matrix}, Corollary III.1.5).
-\end{remark}
-
 \begin{lemma}[Spectral block operator-norm cap]
 \label{lem:opcap}
 Under Assumptions~\ref{ass:linear} (linear per-pixel $f_\thetap$),
@@ -199,11 +192,16 @@ Lemma~\ref{lem:opcap},
     \lambda_{\max}(G_{\thetap\thetap})
     \;\leq\; \|J_\thetap\|^2_{\mathrm{op}} \;\leq\; C_\thetap
 \]
-for a constant $C_\thetap > 0$ independent of $M$. Dividing,
+for a constant $C_\thetap > 0$ independent of $M$. The cap is
+deterministic---it holds for every realization of the
+initialization---so it may be divided through inside the
+expectation:
 \[
-    \mathcal{D}_{\mathrm{curv}}^{(M)}
-    \;=\; \frac{\lambda_{\max}(G^{(M)}_{\phip\phip})}
-                {\lambda_{\max}(G_{\thetap\thetap})}
+    \E\!\left[\mathcal{D}_{\mathrm{curv}}^{(M)}\right]
+    \;=\; \E\!\left[\frac{\lambda_{\max}(G^{(M)}_{\phip\phip})}
+                {\lambda_{\max}(G_{\thetap\thetap})}\right]
+    \;\geq\; \frac{\E\!\left[\lambda_{\max}(G^{(M)}_{\phip\phip})\right]}
+                  {C_\thetap}
     \;\geq\; \frac{c_\phi \cdot M}{C_\thetap}
     \;=\; c_1 \cdot M
 \]
@@ -268,9 +266,9 @@ single block.
 \paragraph{Feature normalization.}
 Scale asymmetry or collinearity among input features degrades the
 conditioning of $\Sigma_X$ and is cured by standardizing inputs.
-Assumption~\ref{ass:subg} already grants this cure: we assume the
-population second moment $\Sigma$ has bounded condition number,
-i.e.\ well-conditioned (e.g.\ normalized) inputs. The disparity persists regardless, because its growth is
+The population picture behind Assumption~\ref{ass:subg}
+(Remark~\ref{rem:subg_population}) already grants this cure:
+well-conditioned (e.g.\ normalized) inputs. The disparity persists regardless, because its growth is
 driven by the width-scaling of the spatial block
 (Lemma~\ref{lem:phi_scaling}), which is untouched by any
 transformation of the input features.

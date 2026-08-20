@@ -182,9 +182,39 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       the 2-layer ReLU head + linear bottleneck at Kaiming init);
       Karakida Thm-4 scope, Yang-Hu, Soudry/Lyu-Li attributions fixed.
       Commits 50f26cb + c09676d.
-      REMAINING FOR FULL FREEZE: author's external-LLM review ritual on
-      Sections 3-6 + supplement (esp. the new proposition), then fix
-      round + stamp FROZEN.
+- [x] T5 (external half) DONE 2026-08-20. Three independent external
+      reviews (ChatGPT deep research, Claude Fable, Gemini) on the
+      25pp theory packet, identical prompt, fresh chats. Verdicts:
+      2x weak reject + 1 (truncated, similar tenor); est. ICLR odds
+      22-35% on theory alone. NO mathematical error found in any
+      displayed proof by any reviewer -- all three independently
+      verified Prop 35 Steps A-E, the witness argument, Lemma opcap's
+      Kronecker identity, and Thm 2's integral. Unanimous finding:
+      no proved geometry->dynamics bridge (KNOWN + already stated in
+      paper; resolved by positioning + E-phase mu(Cg) test, per D2).
+      Fix round applied 2026-08-20 (see PROGRESS.md for the triage
+      table): ass:subg restated as the empirical bound actually
+      consumed (ChatGPT's dependent-pixels counterexample was real);
+      Bai-Yin Theta(1) motivating claim corrected (expansion matrix
+      is Theta(sqrt(M/K)); composition-cancellation story + YBK 1988
+      cite); Karakida odd-activation footnote requoted verbatim
+      (verified against PMLR PDF -- they explicitly scope OUT the
+      degenerate case); Thm 2 restated for a.e. trajectories
+      (resolves Gemini's ReLU-vs-C2 "blocker", which was
+      hypothesis-hygiene, not a proof error); expectation placement
+      made explicit in Thm 1 proof; D_curv +infty convention;
+      lem:interlacing deleted (A38 done); 05/supplement TODO promises
+      replaced with honest rem:thm2_open; "genuinely enters dynamics"
+      sharpened to cap-only; NEW rem:instance_interpretation
+      (readiness-vs-usefulness, the z_n=0 reading -- ChatGPT's best
+      substantive point, turned into an honest scoping remark);
+      rem:relu_scope. Misreadings dismissed after source check:
+      Claude's "hidden M0 threshold" (M0 is in the statement,
+      supplement Prop line 263) and Claude's "laziness = Wang 2020"
+      (verified: Du et al. ICML 2023 coined it; Peng says
+      "optimization imbalance" -- matches tracked A32).
+      **THEORY STAMPED FROZEN 2026-08-20.** Remaining reviewer points
+      are Phase-P positioning scope (novelty delta, related work).
 
 **Phase E — experiments to test the frozen theory (weeks 2-3)**
 - [ ] E1. Exp 1.1 v3: measure GN blocks (not full Hessian — A24), plot vs M,
@@ -209,6 +239,29 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 - [ ] P4. Related work: Huang 2022 into 2.4 (A27), four anchors (A28), 2024
       multimodal wave (A45), remote-sensing cites or soften (A50),
       layer-wise-Hessian adjacents (A33), quote fixes (A32).
+      NEW from external round (2026-08-20), all source-verified:
+      (a) Lim, Kim & Moon, "Shortcut Features as Top Eigenfunctions
+      of NTK: A Linear Neural Network Case and More", NeurIPS 2025
+      Spotlight (OpenReview TYroQXu6X0) -- closest recent
+      shortcut-spectrum antecedent, MUST cite with delta (they:
+      shortcut features = top NTK eigenfunctions, single model; we:
+      blockwise inter-MODULE GGN ratio + finite-time displacement);
+      (b) Zhang, Bengio & Singer, "Are All Layers Created Equal?",
+      JMLR 23(67), 2022 -- "robust" vs "critical" layers, empirical
+      antecedent for layers that barely move (their terms, not
+      "ambient"); (c) delta vs Pezeshki Thm 2 stated precisely:
+      they prove dz2*/ds1^2 < 0 under NTK-linearization + feature
+      coupling (Eq. 15) + s1^2 > s2^2, coupled FEATURE dynamics in
+      one model -- we bound MODULE displacement in a compositional
+      pipeline but assume the envelope; state both directions of
+      the non-subsumption; (d) Coil & Cheney metadata verified:
+      AutoML 2025, PMLR 293 -- they HYPOTHESIZE freezing ~
+      regularization after refuting Cover's-theorem story; keep 02
+      wording to "hypothesize" (A44 text fix confirmed needed);
+      (e) "modality laziness" coined in Du et al. ICML 2023 (PMLR
+      v202, "On Uni-Modal Feature Learning..."); Peng 2022 uses
+      "optimization imbalance"; Wang 2020 has zero hits (A32
+      refined).
 - [ ] P5. Figures: regenerate D_curv-branded exp1_1 + Exp 1.7 EGR figures,
       place all headline figures, kill Figure ?? (A10).
 - [ ] P6. Structure for ICLR: theorem numbering (A37), drop unused
