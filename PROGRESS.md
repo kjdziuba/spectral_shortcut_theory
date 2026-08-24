@@ -4,6 +4,56 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-24 (later) — E3b + E3d complete: the rank-1 diagnosis is CONFIRMED and quantified
+
+**E3d (prostate QCL, 48 rows, results/exp1_8_real_dcurv_prostate_qcl.csv):**
+full replication. Cap slope -0.012 (pred. 0.0); lam_phi slope 0.45;
+D_curv 0.44/0.52/0.69/1.09 at M=48/96/192/384 (parity ~M=384, earlier
+than breast's ~1300); Sigma_X eff rank 1.02/942 — rank-1 input is
+MODALITY-WIDE. Commit 5da0f3e.
+
+**E3b (breast, 3 seeds x 4 cores, M=192; results/exp1_8b_{spectra,
+summary}.csv; machinery code/hessian/lanczos.py validated 1e-16):**
+1. **Alignment 0.954 +/- 0.017**: the spectral block's top eigenvector
+   IS the mean-spectrum reader (its proj-weight component projects 95%
+   onto v_data, the top eigenvector of the post-BN input Gram).
+   Restricted-block check: lam over the {u (x) v_data} subspace
+   reproduces lam1 (e.g. 359 vs 386) — the top curvature lives there.
+2. **Spectrum shape**: lam_k/lam_1 = 1.00/0.54/0.43/0.26/0.07/0.03 at
+   k=1/2/3/5/20/40. Not a single spike, not a 64-flat shelf: a fast
+   decay. **Top-40 of 61,108 directions hold 83% +/- 11% of the whole
+   block's trace** (0.065% of the space holds ~5/6 of the curvature).
+3. **Crossover rank 2-5**: lam1(phi)=174 beats every spectral
+   eigenvalue from rank ~2-5 onward, in all 12 units. So the spatial
+   block dominates 99.99% of the spectral parameter space; D_curv's
+   inversion is caused entirely by theta's top ~3 mean-reader
+   directions.
+4. **Contrast starvation (THE number)**: max curvature along the
+   CancerEpi-vs-CAS class-contrast direction (orthogonalized to
+   v_data) = 28 +/- 9, i.e. **12-28x (mean ~19x) below the mean-reader
+   direction** and ~6x below the spatial block's top. Measured by exact
+   64x64 restricted GGN blocks (64 matvecs/direction). LIMITATION: only
+   the CancerEpi-CAS pair was measurable — the densest fold-0 train
+   cores contain no NormalStroma/NormalEpi pixels (class counts logged
+   per row); a follow-up with stroma-containing cores would add the
+   headline CancerEpi-NormalStroma pair.
+5. Seed effect: lam1_theta spans ~190-830 by seed (the random spatial
+   init's L~ moves the whole theta block, per Lemma opcap); alignment
+   and decay shape are seed-stable.
+
+**Refined Section 8 story (P2), one sentence:** the spectral module's
+apparent curvature wealth is an artifact of ~3 directions that read the
+non-discriminative mean spectrum; outside them the spatial block
+dominates everything, and the direction that actually separates cancer
+from CAS has ~19x less curvature than the mean-reader — direction-wise
+starvation, invisible to top-vs-top D_curv, measured directly.
+
+Theory remains FROZEN and consistent: cap confirmed twice more
+(slopes -0.002/-0.012), D_curv >= c1*M satisfied everywhere (c1 tiny
+via lam_max(Sigma_X), now understood mechanistically).
+
+---
+
 ## 2026-08-20/24 — Phase E opens: GGN instrument built, Exp 1.8 run on real data — INVERTED D_curv finding
 
 **Instrument (code/hessian/ggn.py, NEW).** True Gauss-Newton block

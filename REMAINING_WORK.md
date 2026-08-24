@@ -232,7 +232,9 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
             Theory not falsified; top-vs-top ratio uninformative on
             this data; direction-wise starvation is the real story.
             See PROGRESS.md 2026-08-20/24.
-      - [ ] E3b. Spectrum-shape follow-up: top-k eigenvalues of
+      - [x] E3b. DONE 2026-08-24 (results/exp1_8b_*.csv): alignment
+            0.954, top-40/61108 dims hold 83% of trace, contrast
+            direction 19x starved, crossover rank 2-5. Was: top-k of
             G_thetatheta by deflation + top-eigenvector alignment
             with mean-spectrum direction (~30 min). Turns the
             inverted ratio into the Section 8 figure.
@@ -240,7 +242,8 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
             ~10 GPU-days, does not fit). PILOT proposed: breast
             fold0, joint vs frozen, ~50 epochs, ~1 day — EGR collapse
             is early-training. AWAITING author go.
-      - [ ] E3d. Replicate Exp 1.8 on prostate QCL (same script,
+      - [x] E3d. DONE 2026-08-24: full replication, eff rank 1.02,
+            D_curv inverted at M=192, parity ~M=384. Was: replicate on
             --data_dir swap, ~40 min) — is rank-1 Sigma_X universal?
 - [ ] E4. Robustness: run the SGD/noise/S variations Section 7 claims, or
       delete the claims (A18). Fisher-z replaced with seed-clustered
