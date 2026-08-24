@@ -7,7 +7,7 @@ Call ``log_step`` AFTER ``loss.backward()`` and BEFORE ``optimizer.zero_grad()``
 Misordering silently yields zeros.
 """
 
-from typing import Dict, List
+from typing import Dict, Iterable, List
 
 import pandas as pd
 import torch
@@ -33,7 +33,9 @@ class EGRLogger:
         """
         if not hasattr(model, "spectral") or not hasattr(model, "spatial"):
             raise AttributeError(
-                "EGRLogger requires model.spectral and model.spatial submodules"
+                "EGRLogger requires model.spectral and model.spatial submodules; "
+                "for models that name them differently (e.g. BlockViTv2's "
+                "spectral_reduce), use EGRLogger.from_param_groups()"
             )
         self.model = model
         self.eps = eps
@@ -43,6 +45,45 @@ class EGRLogger:
         self._phi_params = [p for p in model.spatial.parameters() if p.requires_grad]
         self._records: List[Dict[str, float]] = []
         self._warned_all_zero = False
+
+    @classmethod
+    def from_param_groups(
+        cls,
+        theta_params: Iterable[nn.Parameter],
+        phi_params: Iterable[nn.Parameter],
+        eps: float = 1e-12,
+        require_grad_only: bool = True,
+    ) -> "EGRLogger":
+        """Build a logger from explicit parameter groups.
+
+        For architectures that do not expose ``.spectral``/``.spatial`` (real
+        pipelines rarely do). Note ``require_grad_only``: with a FROZEN
+        spectral module every theta param has ``requires_grad=False``, so the
+        default filter would leave the numerator empty and report EGR = 0
+        vacuously. Pass ``require_grad_only=False`` together with temporarily
+        re-enabled grads to measure the *counterfactual* signal a frozen
+        module would have received.
+        """
+        obj = cls.__new__(cls)
+        obj.model = None
+        obj.eps = eps
+        theta = list(theta_params)
+        phi = list(phi_params)
+        if require_grad_only:
+            theta = [p for p in theta if p.requires_grad]
+            phi = [p for p in phi if p.requires_grad]
+        if not theta:
+            raise ValueError(
+                "no spectral parameters to track (all frozen?); see "
+                "require_grad_only in the docstring"
+            )
+        if not phi:
+            raise ValueError("no spatial parameters to track")
+        obj._theta_params = theta
+        obj._phi_params = phi
+        obj._records = []
+        obj._warned_all_zero = False
+        return obj
 
     @torch.no_grad()
     def log_step(self, step: int) -> Dict[str, float]:

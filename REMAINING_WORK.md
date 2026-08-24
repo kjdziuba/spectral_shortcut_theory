@@ -221,9 +221,27 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       add fixed-depth MxM architecture; D_curv branding in code/CSVs (A64).
 - [ ] E2. Exp 1.2 rerun persisting per-run EGR CSVs so every quoted number
       is reproducible (A19); state metric for ViT claim (A60).
-- [ ] E3. Exp 1.7 real-data EGR + Exp 1.8 real-data D_curv on
-      spectral_tokenization checkpoints (launch EARLY - longest pole).
-      Produces every Section 8 row or the row dies (A7).
+- [~] E3. SPLIT 2026-08-24 after checkpoint audit (NO joint BlockViT
+      checkpoints exist locally — CSF3 runs never synced; only frozen
+      breast fold0 survives in deep_dream/results/train3d/):
+      - [x] E3a. Exp 1.8 at-init D_curv on real breast data: DONE
+            (results/exp1_8_real_dcurv.csv, 48 measurements).
+            FINDING: cap confirmed (lam_theta slope -0.002); lam_phi
+            sublinear (0.38); D_curv INVERTED (<1) at all buildable
+            widths — Sigma_X effectively rank-1 (eff. rank 1.07/942).
+            Theory not falsified; top-vs-top ratio uninformative on
+            this data; direction-wise starvation is the real story.
+            See PROGRESS.md 2026-08-20/24.
+      - [ ] E3b. Spectrum-shape follow-up: top-k eigenvalues of
+            G_thetatheta by deflation + top-eigenvector alignment
+            with mean-spectrum direction (~30 min). Turns the
+            inverted ratio into the Section 8 figure.
+      - [ ] E3c. Exp 1.7 EGR: requires RETRAINING (full 30-run matrix
+            ~10 GPU-days, does not fit). PILOT proposed: breast
+            fold0, joint vs frozen, ~50 epochs, ~1 day — EGR collapse
+            is early-training. AWAITING author go.
+      - [ ] E3d. Replicate Exp 1.8 on prostate QCL (same script,
+            --data_dir swap, ~40 min) — is rank-1 Sigma_X universal?
 - [ ] E4. Robustness: run the SGD/noise/S variations Section 7 claims, or
       delete the claims (A18). Fisher-z replaced with seed-clustered
       analysis (A21). Sync 6.5 stats to CSVs (A34).
@@ -234,6 +252,13 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       numbers from new artifacts; corrected SEs (A20); setup honesty (A53).
 - [ ] P2. Section 8 rebuild, artifacts only, companion cited correctly
       (A7, A8, A29, A51, A52) + separate critique pass per decision.
+      MUST absorb the E3a finding (2026-08-24): the old "theory
+      predicts large D_curv ~ c1'*sqrt(299)" framing is DEAD — the
+      measured at-init D_curv is 0.46 at production width. New story:
+      cap validated (slope -0.002), lam_phi sublinear, inverted
+      top-ratio explained by rank-1 Sigma_X (the data sets the cap
+      high), starvation is direction-wise (E3b figure), dynamical
+      evidence from EGR pilot (E3c).
 - [ ] P3. Remnant-prose sweep against frozen theorems (A14, A15, A16, A25,
       A41, A42, A43, A48, A49, A54, A55, A57, A62, A63).
 - [ ] P4. Related work: Huang 2022 into 2.4 (A27), four anchors (A28), 2024

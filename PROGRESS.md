@@ -4,6 +4,89 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-20/24 — Phase E opens: GGN instrument built, Exp 1.8 run on real data — INVERTED D_curv finding
+
+**Instrument (code/hessian/ggn.py, NEW).** True Gauss-Newton block
+power iteration: Gv = J^T[H_tau(Jv)]/N via JVP (double-backward trick)
++ closed-form softmax Jacobian + VJP. Validated to 1e-12 against a
+brute-force materialized J^T H_tau J on a toy model; PSD-checked;
+gradient identity grad L = J^T r matches autograd to 2e-17. Closes
+A24: code/hessian/eigenvalues.py measures LOSS-HESSIAN blocks, which
+differ from G by the uncontrolled functional-Hessian term — every
+prior eigenvalue number measured the wrong matrix. Gotcha: PyTorch's
+fused SDPA kernel has no second derivative
+(_scaled_dot_product_efficient_attention_backward) — GGN on any
+transformer requires forcing the math backend (math_attention() ctx).
+EGRLogger gained from_param_groups() (BlockViTv2 has no
+.spectral/.spatial) with a frozen-arm guard against vacuous EGR=0.
+
+**Checkpoint reality (Explore agent, verified).** NO jointly-trained
+BlockViT v2 checkpoint exists anywhere local — joint runs lived on
+CSF3, only stdout came back. Sole survivor: frozen breast fold0
+(K=128) in deep_dream/results/train3d/blockvit_v2_mlp_breast_fold0/
+(needs sibling spectral_reduce.pt + strict=False). experiments_final/
+v2.0/ is EMPTY (v1.0 holds the 1-D spectral models only). So Exp 1.7
+(EGR on trained variants) requires RETRAINING; full matrix = 30 runs
+~ 10 GPU-days = does not fit before Sep 18. PILOT proposed (breast
+fold0, joint vs frozen, ~50 epochs, ~1 day): EGR collapse is an
+early-training phenomenon, no need for convergence. AWAITING GO.
+
+**Exp 1.8 (code/experiments/exp1_8.py, NEW) — needs no checkpoints:**
+Theorem 1/def:dcurv are at-INIT statements. Production BlockViTv2 on
+real breast cores (fold0 train, 4 densest cores 9-26% labelled),
+width sweep M in {48,96,192,384} x 3 seeds x 4 cores = 48
+measurements, ~25 power iters each, <7 GB. CoreDataset eager-loads
+its whole split (~0.4 GB/core) — runner writes a trimmed split file
+(densest-core selection, core_oversample=6).
+
+**Results (results/exp1_8_real_dcurv.csv):**
+- lam_theta FLAT in width: log-log slope -0.002 (predicted 0.0).
+  Lemma opcap CONFIRMED on real data — the proved half validates.
+  Per-seed lam_theta in {~200, ~390, ~650} (seed-dependent L~ of the
+  random spatial net, exactly as the lemma's constant allows), flat
+  across M within every seed.
+- lam_phi grows sublinearly: slope +0.38 (predicted 1.0) — same
+  undershoot family as synthetic Exp 1.1 (0.70).
+- **D_curv < 1 at every buildable width**: 0.33/0.40/0.46/0.70 at
+  M=48/96/192/384. At production M=192: D_curv ~ 0.46 — the
+  spectral block has MORE top-curvature than the spatial block.
+  Extrapolated crossover D_curv=1 at M ~ 1,300 (~7x production).
+  Section 8's old "predicts large disparity" headline is DEAD.
+- Confounds ruled out: (a) BatchNorms inside spectral_reduce carry
+  lam ~ 0.16/0.02 vs the proj conv's ~400 — the big curvature IS the
+  theory's W^T x map; (b) padding/label-density: corr(valid_px,
+  D_curv) = +0.19/-0.02/+0.13/+0.28 by width — weak, inconsistent,
+  not the driver.
+
+**Diagnosis: Sigma_X is effectively RANK ONE.** On real tissue,
+lam_max(Sigma_X)/trace = 0.937, effective rank 1.07 of 942 dims
+(raw), 1.20 after wn_norm (lam_max ~ 1.28e3). Every tissue spectrum
+shares ~the same shape; discriminative chemistry is a tiny
+perturbation. Consequence inside the theory: the cap C_theta =
+L~^2 lam_max(Sigma_X) is HUGE, so c_1 = c_phi/C_theta is tiny and
+the (true) bound D_curv >= c_1 M is uninformative at buildable
+widths. Theorems NOT falsified — cap confirmed, lower bound
+satisfied — but the top-vs-top ratio cannot carry the real-data
+story: theta's top direction is the (non-discriminative) mean-
+spectrum reader; the ~941 chemistry directions are near-flat. The
+starvation is DIRECTION-WISE, invisible to D_curv by construction
+(cf. rem:irrelevance_vs_starvation — this is its concrete real-data
+instance). TO CONFIRM: measure G_thetatheta's top-k spectrum +
+alignment of its top eigenvector with the mean-spectrum direction
+(deflation power iteration; ~30 min — proposed next).
+
+**Paper impact (P2 scope, theory stays FROZEN):** Section 8 rebuild
+tells: (i) cap validated on real data (slope -0.002 — a genuine
+win for the proved half); (ii) lam_phi growth sublinear, reported
+honestly; (iii) inverted top-ratio + rank-1 Sigma_X as a FINDING
+about spectroscopy (one direction hogs the spectral module's
+curvature budget; the chemistry lives in the flat directions);
+(iv) real-data dynamical evidence shifts to EGR (Exp 1.7 pilot).
+Feeds D2's asymmetry story: "the cap is set by the data" is now
+concrete — the data sets it VERY high via its rank-1 structure.
+
+---
+
 ## 2026-08-20 — T5 external half: three-LLM review returned, fix round applied, THEORY FROZEN
 
 Three fresh-chat reviews (identical prompt + 25pp packet): ChatGPT deep
