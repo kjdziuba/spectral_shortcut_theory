@@ -78,6 +78,83 @@ def split_params(model: nn.Module):
     return theta, phi
 
 
+def load_real_batches(args):
+    """Load the densest real cores of a split as fixed measurement batches.
+
+    Returns ``(batches, sigma_stats)``: ``batches = [(X, Y, n_valid), ...]``
+    on ``args.device``; ``sigma_stats[i]`` holds the raw input-Gram
+    concentration of batch i over valid pixels (lam_max, trace, effective
+    rank = trace/lam_max) — the quantity that sets Lemma opcap's cap.
+    """
+    split_file = Path(args.data_dir) / f"splits_fold{args.fold}.json"
+    if not split_file.exists():
+        raise SystemExit(f"missing split file: {split_file}")
+
+    # CoreDataset eagerly preloads every core in the split (~0.4 GB each), so
+    # asking for the full train split to measure a few batches would cost
+    # ~50 GB of I/O. Hand it a trimmed split file instead: same class, same
+    # preprocessing, only the cores we might touch — then keep the densest.
+    n_cores_needed = args.n_batches * args.batch_size
+    full_split = json.loads(split_file.read_text())
+    core_names = full_split[args.split][: n_cores_needed * args.core_oversample]
+    trimmed = {k: (core_names if k == args.split else []) for k in full_split}
+    tmp_split = Path(args.tmp_dir) / f"_split_{args.dataset_name}_f{args.fold}_{args.split}.json"
+    tmp_split.parent.mkdir(parents=True, exist_ok=True)
+    tmp_split.write_text(json.dumps(trimmed))
+    print(f"[data] using {len(core_names)} of {len(full_split[args.split])} "
+          f"{args.split} cores: {core_names}", flush=True)
+
+    ds = CoreDataset(
+        data_dir=args.data_dir, split_file=str(tmp_split), split=args.split,
+        spatial_size=args.spatial_size, augment=False,
+    )
+    print(f"[data] {args.dataset_name} fold{args.fold} {args.split}: {len(ds)} cores "
+          f"@ {args.spatial_size}x{args.spatial_size}", flush=True)
+
+    # Rank the loaded cores by labelled-pixel count, keep the densest.
+    scored = []
+    for i in range(len(ds)):
+        _, y = ds[i]
+        scored.append((int((torch.as_tensor(y) != 255).sum().item()), i))
+    scored.sort(reverse=True)
+    chosen = [i for n, i in scored if n > 0][: args.n_batches * args.batch_size]
+    if not chosen:
+        raise SystemExit("no usable cores (all pixels ignored)")
+
+    batches = []
+    for b in range(0, len(chosen), args.batch_size):
+        idxs = chosen[b: b + args.batch_size]
+        xs, ys = zip(*(ds[i] for i in idxs))
+        X = torch.stack([torch.as_tensor(v) for v in xs]).float().to(args.device)
+        Y = torch.stack([torch.as_tensor(v) for v in ys]).long().to(args.device)
+        n_valid = int((Y != 255).sum().item())
+        if n_valid == 0:
+            continue
+        batches.append((X, Y, n_valid))
+    print(f"[data] {len(batches)} batches, valid px/batch: "
+          f"{[b[2] for b in batches]} "
+          f"(valid frac {[f'{b[2]/b[1][0].numel():.1%}' for b in batches]})",
+          flush=True)
+
+    # Raw input-Gram concentration on valid pixels: how much of the input's
+    # energy sits in its single top direction (breast: eff. rank ~1.07/942).
+    sigma_stats = []
+    for X, Y, n_valid in batches:
+        B, C, H, W, S = X.shape
+        keep = (Y != 255).reshape(-1)
+        with torch.no_grad():
+            xv = X.permute(0, 2, 3, 1, 4).reshape(B * H * W, C * S)[keep]
+            Sig = (xv.T @ xv) / xv.shape[0]
+            lam1 = float(torch.linalg.eigvalsh(Sig.double())[-1].item())
+            tr = float(Sig.diagonal().sum().item())
+        sigma_stats.append(dict(
+            lam_max_sigma=lam1, trace_sigma=tr, eff_rank_sigma=tr / lam1,
+        ))
+        print(f"[sigma] batch {len(sigma_stats)-1}: lam_max={lam1:.4e} "
+              f"trace={tr:.4e} eff_rank={tr/lam1:.2f} of {C*S}", flush=True)
+    return batches, sigma_stats
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data_dir", default="/mnt/hdd2/u37314kd/data_breast_v2_pca23")
@@ -108,60 +185,9 @@ def main() -> None:
         if w % args.num_heads != 0:
             raise SystemExit(f"width {w} not divisible by num_heads {args.num_heads}")
 
-    split_file = Path(args.data_dir) / f"splits_fold{args.fold}.json"
-    if not split_file.exists():
-        raise SystemExit(f"missing split file: {split_file}")
-
-    # CoreDataset eagerly preloads every core in the split (~0.4 GB each), so
-    # asking for the full 115-core train split to measure 4 batches would cost
-    # ~50 GB of I/O. Hand it a trimmed split file instead: same class, same
-    # preprocessing, only the cores we actually touch.
-    # Load a few more cores than needed: many cores are mostly padding /
-    # unlabelled, and a batch with too few labelled pixels gives a noisy
-    # estimate of both blocks. We keep the most-labelled ones.
-    n_cores_needed = args.n_batches * args.batch_size
-    full_split = json.loads(split_file.read_text())
-    core_names = full_split[args.split][: n_cores_needed * args.core_oversample]
-    trimmed = {k: (core_names if k == args.split else []) for k in full_split}
-    tmp_split = Path(args.tmp_dir) / f"_split_{args.dataset_name}_f{args.fold}_{args.split}.json"
-    tmp_split.parent.mkdir(parents=True, exist_ok=True)
-    tmp_split.write_text(json.dumps(trimmed))
-    print(f"[data] using {len(core_names)} of {len(full_split[args.split])} "
-          f"{args.split} cores: {core_names}", flush=True)
-
-    ds = CoreDataset(
-        data_dir=args.data_dir, split_file=str(tmp_split), split=args.split,
-        spatial_size=args.spatial_size, augment=False,
-    )
-    print(f"[data] {args.dataset_name} fold{args.fold} {args.split}: {len(ds)} cores "
-          f"@ {args.spatial_size}x{args.spatial_size}", flush=True)
-
-    # Rank the loaded cores by labelled-pixel count, keep the densest.
-    scored = []
-    for i in range(len(ds)):
-        _, y = ds[i]
-        scored.append((int((torch.as_tensor(y) != 255).sum().item()), i))
-    scored.sort(reverse=True)
-    chosen = [i for n, i in scored if n > 0][: args.n_batches * args.batch_size]
-    if not chosen:
-        raise SystemExit("no usable cores (all pixels ignored)")
-
     # Fixed batches, identical across every (width, seed) config, so the
     # sweep varies only the architecture.
-    batches = []
-    for b in range(0, len(chosen), args.batch_size):
-        idxs = chosen[b: b + args.batch_size]
-        xs, ys = zip(*(ds[i] for i in idxs))
-        X = torch.stack([torch.as_tensor(v) for v in xs]).float().to(args.device)
-        Y = torch.stack([torch.as_tensor(v) for v in ys]).long().to(args.device)
-        n_valid = int((Y != 255).sum().item())
-        if n_valid == 0:
-            continue
-        batches.append((X, Y, n_valid))
-    print(f"[data] {len(batches)} batches, valid px/batch: "
-          f"{[b[2] for b in batches]} "
-          f"(valid frac {[f'{b[2]/b[1][0].numel():.1%}' for b in batches]})",
-          flush=True)
+    batches, sigma_stats = load_real_batches(args)
 
     rows = []
     out_path = Path(args.out)
@@ -191,6 +217,7 @@ def main() -> None:
                     C_f=Cf, C_g=Cg, ratio_Cg_Cf=Cg / Cf,
                     reduce_dim=args.reduce_dim, spatial_size=args.spatial_size,
                     peak_gb=peak, secs=time.time() - t0,
+                    **sigma_stats[bi],
                 ))
                 print(f"  M={width:4d} seed={seed} b={bi} | "
                       f"lam_phi={lam_phi:.4e} lam_theta={lam_th:.4e} "
