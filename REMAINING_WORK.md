@@ -238,10 +238,27 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
             G_thetatheta by deflation + top-eigenvector alignment
             with mean-spectrum direction (~30 min). Turns the
             inverted ratio into the Section 8 figure.
-      - [ ] E3c. Exp 1.7 EGR: requires RETRAINING (full 30-run matrix
-            ~10 GPU-days, does not fit). PILOT proposed: breast
-            fold0, joint vs frozen, ~50 epochs, ~1 day — EGR collapse
-            is early-training. AWAITING author go.
+      - [ ] E3c. Exp 1.7 EGR retraining. DESIGN LOCKED 2026-08-25 by
+            5-lens deep research (wf_4a9c5133-769; dissents resolved
+            4-1, full synthesis in task output):
+            A1 joint-linear, BlockViTv2 6-layer h in {48,96,192,384},
+            3 seeds (28-30 GPU-h); A2 frozen-random + A3 frozen-PCA
+            h in {48,192} (3 GPU-h, run FIRST); B joint 2-layer MLP
+            f_theta 942->512->GELU->64 = companion's GlobalMLPEncoder
+            = Prop-35 class (14 GPU-h); C frozen-pretrained companion
+            stack, PCA 128->64 K-match (4 GPU-h); optional B2
+            spectral-width dial + D U-Net pair. ~50 GPU-h core.
+            HYGIENE (from research): spectral_norm=False / reassign
+            post-proj BN to phi (Assumption 1!); no DataParallel;
+            fixed 60 epochs no early stop (envelope fits); one lr/wd
+            everywhere; per-step EGR hooks; epoch theta snapshots;
+            K=64 interface in ALL arms (kills historical d=128
+            confound); profile one h=384 epoch before the sweep.
+            PRE-REGISTERED falsifiers: B can falsify the nonlinear-
+            persistence sentence; joint>PCA gap falsifies practical
+            Thm-2 reading. Companion stack NEVER as a joint arm
+            (@torch.no_grad shipped, ~90-100GB activations).
+            AWAITING author go to build + launch.
       - [x] E3d. DONE 2026-08-24: full replication, eff rank 1.02,
             D_curv inverted at M=192, parity ~M=384. Was: replicate on
             --data_dir swap, ~40 min) — is rank-1 Sigma_X universal?
