@@ -319,6 +319,9 @@ def evaluate(model, loader, device):
 
 
 def append_csv(path: Path, rows, fieldnames):
+    # Re-mkdir defensively: the out tree is shared and external cleanup racing
+    # a write has been observed to FileNotFoundError an otherwise healthy run.
+    path.parent.mkdir(parents=True, exist_ok=True)
     new = not path.exists()
     with open(path, "a", newline="") as f:
         wr = csv.DictWriter(f, fieldnames=fieldnames)
@@ -444,6 +447,7 @@ def main():
         device_name=(torch.cuda.get_device_name(0)
                      if device.type == "cuda" else "cpu"),
     )
+    out_dir.mkdir(parents=True, exist_ok=True)   # tree may be cleaned externally
     (out_dir / "config.json").write_text(json.dumps(config, indent=2))
     print(f"[cfg] arm={args.arm} h={args.width} {args.optimizer} seed={args.seed} "
           f"| C_f={C_f:,} C_g={C_g:,} total={C_total:,} -> {out_dir}", flush=True)
@@ -527,6 +531,7 @@ def main():
               f"r_rms={last_rrms:.4f}  th_disp_rel={th_d / max(theta0_norm, 1e-30):.4g}"
               f"{jac_str}  ({secs:.0f}s)", flush=True)
 
+    out_dir.mkdir(parents=True, exist_ok=True)   # tree may be cleaned externally
     torch.save({
         "epoch": args.epochs,
         "model_state_dict": model.state_dict(),
