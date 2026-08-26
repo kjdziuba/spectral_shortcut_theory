@@ -130,6 +130,10 @@ def load_real_batches(args):
         n_valid = int((Y != 255).sum().item())
         if n_valid == 0:
             continue
+        if getattr(args, "center_inputs", False):
+            keep = (Y != 255)
+            mu = (X * keep[:, None, :, :, None]).sum(dim=(0, 2, 3)) / n_valid
+            X = X - mu[None, :, None, None, :]
         batches.append((X, Y, n_valid))
     print(f"[data] {len(batches)} batches, valid px/batch: "
           f"{[b[2] for b in batches]} "
@@ -177,6 +181,11 @@ def main() -> None:
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--core_oversample", type=int, default=6,
                     help="load this many times n_batches cores, keep densest")
+    ap.add_argument("--center_inputs", action="store_true",
+                    help="subtract the valid-pixel mean spectrum (per channel x "
+                         "wavenumber) from the whole input tensor before "
+                         "measurement -- tests the centering-restores-disparity "
+                         "prediction (E3e)")
     ap.add_argument("--tmp_dir", default="/tmp/claude-1008/spectral_shortcut_scratch")
     ap.add_argument("--out", default=str(THEORY_ROOT / "results" / "exp1_8_real_dcurv.csv"))
     args = ap.parse_args()

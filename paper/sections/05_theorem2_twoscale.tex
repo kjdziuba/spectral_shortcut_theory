@@ -217,6 +217,50 @@ $1 + \mu T_\delta \leq C / \delta$, so $\log(1 + \mu T_\delta) \leq
 \log(C/\delta)$.
 \end{proof}
 
+\begin{corollary}[Attribution of the loss decrease]
+\label{cor:attribution}
+Under the hypotheses of Theorem~\ref{thm:twoscale}, with $g_\phip$
+smooth (Assumption~\ref{ass:reg}) so that $t \mapsto \loss(t)$ is
+differentiable along the flow, the energy identity
+$-\frac{d}{dt}\loss = \norm{\nabla_\thetap \loss}^2 +
+\norm{\nabla_\phip \loss}^2$ holds, and the spectral module's
+cumulative share of the loss decrease obeys
+\[
+    \mathcal{A}_\thetap(T)
+    \;:=\; \frac{\int_0^T \norm{\nabla_\thetap \loss(t)}^2\,dt}
+                {\loss(0) - \loss(T)}
+    \;\leq\; \frac{B_T^2\,C^2}
+                  {\mu\,\bigl(\loss(0) - \loss(T)\bigr)}.
+\]
+\end{corollary}
+
+\begin{proof}
+By~\eqref{eq:theta_grad_bound} and Assumption~\ref{ass:residual},
+$\norm{\nabla_\thetap \loss(t)}^2 \leq B_T^2 C^2/(1 + \mu t)^2$ for
+almost every $t \leq T$. Integrating,
+$\int_0^T \norm{\nabla_\thetap \loss}^2\,dt
+\leq B_T^2 C^2 \int_0^\infty (1 + \mu t)^{-2}\,dt
+= B_T^2 C^2/\mu$, and the energy identity makes the denominator the
+total dissipation, of which the numerator is the spectral part.
+\end{proof}
+
+\begin{remark}[Two instantiations, one honest caveat]
+\label{rem:attribution_use}
+Corollary~\ref{cor:attribution} is the asymmetry statement
+Theorem~\ref{thm:twoscale} alone does not provide: the displacement
+bound has the same \emph{form} for both modules, whereas the
+attribution bound's constant is capacity-independent only for
+$\thetap$. It admits two instantiations. With the a priori cap
+$B_T \leq \widetilde{L}\sqrt{\lambda_{\max}(\Sigma_X)}$ of
+Lemma~\ref{lem:opcap} the bound may exceed $1$ and thus be vacuous
+at realistic constants---we report the ratio rather than hide it.
+With the \emph{realized} gain
+$\widehat{B}_T := \sup_{t \leq T}
+\norm{\nabla_\thetap \loss(t)}/\norm{r(t)} \leq B_T$, measurable
+from any training run, it becomes a per-run diagnostic.
+Section~\ref{sec:experiments} reports both.
+\end{remark}
+
 \subsection{Interpretation}
 
 Theorem~\ref{thm:twoscale} is a statement about \emph{training-time}
@@ -338,6 +382,68 @@ beyond the fitting time the logarithm can grow without bound; see
 independently checkable: the envelope is a measurable property of a
 training run, verified or refuted by the run's own residual curve,
 with no reference to $\thetap$.
+\end{remark}
+
+\begin{proposition}[The witness direction is a residual-fitting direction]
+\label{prop:ntk_classprior}
+Suppose $g_\phip$ ends in a dense classifier head over penultimate
+features $h_n \in \R^{M_h}$ with $M_h = \Theta(M)$, as in
+Lemma~\ref{lem:phi_scaling}. In the normalized logit coordinates
+$\tilde{y} := N^{-1/2}(\hat{y}_1, \dots, \hat{y}_N)$
+of~\eqref{eq:jacobians}, gradient flow moves the logits by
+$\dot{\tilde{y}} = -\widehat{\Theta}\,r$, with
+$\widehat{\Theta} := J J^\top$ the normalized empirical tangent
+kernel. Let $c \perp \mathbf{1}$ be a unit class contrast and
+$w := N^{-1/2}(c, \dots, c)$ the unit direction applying $c$ at
+every pixel (the \emph{class-prior direction}). If the mean
+penultimate feature $\bar{h} := N^{-1}\sum_n h_n$ satisfies
+$\norm{\bar{h}}^2 \geq \bar{q}\,M_h$ at initialization---as proved
+for the instance of Proposition~\ref{prop:verified_instance},
+Step~A---then
+\[
+    w^\top \widehat{\Theta}\,w
+    \;=\; \norm{J^\top w}^2
+    \;\geq\; \norm{\bar{h}}^2
+    \;\geq\; \bar{q}\,M_h
+    \;=\; \Omega(M):
+\]
+the tangent-kernel quadratic form along the class-prior direction
+grows linearly in the spatial width.
+\end{proposition}
+
+\begin{proof}
+The chain rule with~\eqref{eq:gf} gives
+$\dot{\tilde{y}} = N^{-1/2}(\partial \hat{Y}/\partial p)\,\dot{p}
+= J \cdot (-J^\top r)$, the first display. For the second,
+restricting $\norm{J^\top w}^2$ to the head-weight coordinates only
+lowers it. With $\hat{y}_n = W h_n + b$ and
+$\partial \hat{y}_{n,i}/\partial W_{i'j} = \delta_{ii'} h_{n,j}$,
+the head-weight block of $J^\top w$ is
+$N^{-1}\sum_n c\,h_n^\top = c\,\bar{h}^\top$, whose squared
+Frobenius norm is $\norm{c}^2 \norm{\bar{h}}^2 = \norm{\bar{h}}^2$.
+\end{proof}
+
+\begin{remark}[What the proposition does and does not add]
+\label{rem:classprior_scope}
+Proposition~\ref{prop:ntk_classprior} is a first link between
+Theorem~\ref{thm:hessian}'s geometry and the \emph{content} of
+Assumption~\ref{ass:residual}, and we state its limits plainly. It
+is an instantaneous, initialization-time statement: it identifies
+the class-prior contrast---the constant-across-pixels component of
+the residual, i.e.\ the majority-class shortcut---as a direction
+the wide spatial module is geometrically fastest to fit, at a rate
+growing linearly in width. It does not control the trajectory, does
+not derive the envelope of Assumption~\ref{ass:residual}, and
+concerns one component of $r$: the evolution
+$\dot{r} = H_\tau \dot{\tilde{y}}$ couples all components, so the
+decay of $\langle w, r \rangle$ along the flow also depends on the
+rest of the residual. What it converts is the reading of
+Theorem~\ref{thm:hessian}: the width-linear curvature direction is
+not merely capacity to move
+(Remark~\ref{rem:instance_interpretation}) but capacity to move
+\emph{along a residual-fitting direction}---exactly the mechanism
+Assumption~\ref{ass:residual} postulates and Experiment~1.2
+measures.
 \end{remark}
 
 \paragraph{Rate separation is motivated, not derived.}
