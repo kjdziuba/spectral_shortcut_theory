@@ -275,8 +275,14 @@ moves the constants. What no input transformation can touch is the
 width-scaling of the spatial block (Lemma~\ref{lem:phi_scaling}):
 capacity moves the rate. On raw nonnegative spectra, whose second
 moment is dominated by the shared mean shape, the cap is large and
-the realized disparity correspondingly small; mean-centering is
-predicted to restore it (Section~\ref{sec:real}).
+the realized disparity correspondingly small. Whether an input
+transformation moves the \emph{realized} disparity, however, depends
+on the architecture between $f_\thetap$ and the loss: internal
+normalization layers can absorb input shifts entirely (their
+Jacobians annihilate constant directions), in which case the
+effective regressor is already centered and the lever acts through
+the normalization choice, not the preprocessing. We measure exactly
+this on the production architecture in Section~\ref{sec:real}.
 
 \paragraph{Weight decay.}
 Adding $\alpha \norm{w}^2$ to the loss shifts the Hessian by

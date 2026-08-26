@@ -4,6 +4,54 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-26 (evening) — E3e complete: the normalization, not the preprocessing, is the lever
+
+Four at-init configs (36 measurements each), breast fold 0:
+
+| config                        | lam_th(192) | D_curv(48/192/384) |
+|-------------------------------|-------------|--------------------|
+| BN + uncentered (E3a baseline)| 471         | 0.33 / 0.46 / 0.70 |
+| BN + centered                 | 448         | 0.34 / 0.47 / 0.74 |
+| no-BN + uncentered            | 194         | 0.58 / 1.18 / 1.31 |
+| no-BN + CENTERED              | 194         | 0.58 / 1.18 / 1.31 |
+
+Three findings:
+1. **Input centering is a NO-OP for this architecture class** — with
+   the internal wn_norm present it re-standardizes the input; without
+   it, the post-projection BatchNorm2d cancels constant input shifts
+   exactly (linear proj + BN: a global input shift becomes a constant
+   feature shift, which BN's centering removes; its Jacobian
+   annihilates the constant direction). The no-BN centered run is
+   IDENTICAL to uncentered to 4 digits despite sigma_lam1 dropping
+   0.93 -> 0.042 (22x). My "centering restores disparity" prediction
+   was WRONG as stated — 04's sentence revised same session to the
+   correct statement (the lever is the normalization choice; internal
+   normalizations define the effective regressor).
+2. **The per-wavenumber BatchNorm (wn_norm) INFLATES the spectral cap
+   ~2.4x** (lam_th 471 -> 194 without it): dividing mean-dominated
+   wavenumbers by their tiny std amplifies the shared-shape component
+   (post-BN lam_max(Sigma) ~ 1279 vs raw 0.93).
+3. **Without wn_norm, D_curv crosses parity at production width**
+   (1.18 at M=192, 1.31 at 384): the E3a "inversion" is partly an
+   artifact of the production model's own normalization choice. The
+   E3c joint_linear arm (spectral_norm=False per Assumption-1
+   hygiene) is EXACTLY the no-BN config -> its at-init D_curv ~ 1.18,
+   coherent for Section 8.
+
+Honest scope: all at-init; the "effective regressor after internal
+normalization" framing needs one careful paragraph in P2, not a
+theorem change (the cap lemma is about the actual f_theta input and
+remains true; the REALIZED top depends on downstream Jacobians, which
+is what rem:irrelevance/Section-8 prose must carry).
+
+E3c lanes launched (lane48: 9 adamw + 2 sgd; lane192: 9) after
+runner smokes passed (frozen theta_disp=0 exact, counterfactual EGR
+~0.9, joint theta moving). frozen_pca is lane48's first run
+(deliberately: only never-smoked arm). Builder agent terminated after
+delivering post-commit mkdir hardening (audited, committed).
+
+---
+
 ## 2026-08-26 (later) — Review round 2b (correct file): converged, high-value; Tier-1 fixes applied
 
 All three reviewers passed the sentinel gate — the round is VALID.

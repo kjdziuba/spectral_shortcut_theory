@@ -289,7 +289,12 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
             the displacement test); log ||dg_phi/dZ||_op along
             training (containment as tested hypothesis, Fable F6).
             BUILD STARTS with cheap arms A2/A3 first.
-      - [ ] E3e. Centered at-init exp1_8 rerun (~1h, decision-free):
+      - [x] E3e. DONE 2026-08-26. RESULT INVERTS THE PREDICTION:
+            centering is a NO-OP (internal BNs absorb shifts; no-BN
+            centered == uncentered to 4 digits); the LEVER is the
+            wn_norm itself (inflates cap 2.4x); without it D_curv
+            crosses parity at M=192 (1.18). E3c joint_linear arm ==
+            no-BN config. 04 prose fixed. Was:
             mean-center inputs on valid pixels, re-measure D_curv +
             alignment. Prediction (from cap + 19-32x lam_max
             deflation): D_curv rises to ~10 at M=192 — the
