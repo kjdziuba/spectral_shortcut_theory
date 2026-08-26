@@ -265,13 +265,18 @@ single block.
 
 \paragraph{Feature normalization.}
 Scale asymmetry or collinearity among input features degrades the
-conditioning of $\Sigma_X$ and is cured by standardizing inputs.
-The population picture behind Assumption~\ref{ass:subg}
-(Remark~\ref{rem:subg_population}) already grants this cure:
-well-conditioned (e.g.\ normalized) inputs. The disparity persists regardless, because its growth is
-driven by the width-scaling of the spatial block
-(Lemma~\ref{lem:phi_scaling}), which is untouched by any
-transformation of the input features.
+conditioning of $\Sigma_X$ and is classically cured by
+standardizing (e.g.\ mean-centering) the inputs. Here the cure has
+a sharper, quantitative role: Lemma~\ref{lem:opcap} places
+$\lambda_{\max}(\Sigma_X)$ in the spectral cap, so input
+transformations that deflate the top of the input spectrum
+\emph{raise} the realized disparity at every width---normalization
+moves the constants. What no input transformation can touch is the
+width-scaling of the spatial block (Lemma~\ref{lem:phi_scaling}):
+capacity moves the rate. On raw nonnegative spectra, whose second
+moment is dominated by the shared mean shape, the cap is large and
+the realized disparity correspondingly small; mean-centering is
+predicted to restore it (Section~\ref{sec:real}).
 
 \paragraph{Weight decay.}
 Adding $\alpha \norm{w}^2$ to the loss shifts the Hessian by
@@ -290,10 +295,16 @@ while freezing does.
 
 \paragraph{Adaptive optimizers.}
 Adam and RMSProp precondition per-coordinate gradient magnitudes with
-a diagonal rescaling. A diagonal preconditioner can equalize
-per-parameter step sizes but does not restructure the eigenvalue
-disparity between the two blocks, which is a statement about the
-blocks' spectra rather than their diagonals. Empirically, the
+a diagonal rescaling. The raw block spectra are
+optimizer-invariant, but the \emph{dynamics} under a diagonal
+preconditioner $P$ are governed by the preconditioned spectra of
+$P^{-1/2} G P^{-1/2}$ and need not respect the disparity: under
+Adam, per-coordinate steps are near-constant in gradient magnitude,
+so small spectral gradients do not imply small spectral movement.
+The gradient-flow statements of Section~\ref{sec:thm2} are
+accordingly scoped to (stochastic) gradient descent; joint-vs-frozen
+gaps observed under Adam are evidence about the phenomenon, not
+applications of the theorem. Empirically, the
 canonical dynamics experiment (Experiment~1.2) is run under Adam and
 the joint-vs-frozen gap persists at every width; we treat the stronger
 claim---that no shared-learning-rate adaptive method can remove the
@@ -379,10 +390,16 @@ spectral block---is unambiguous in the data.
 A natural objection is that, since $f_\thetap$ is linear, the analysis
 must reduce to principal component analysis (PCA) of the input. This
 is not the case. PCA finds directions of maximum input variance
-\emph{without reference to labels}. Theorem~\ref{thm:hessian} concerns
-the curvature of the supervised cross-entropy loss, which depends on
-the current state of $g_\phip$ through the Jacobian
-$\partial \hat{y}/\partial Z$. The pathology we identify is precisely
-that this supervised signal fails to reach $\thetap$, not that
-$f_\thetap$ is incapable of representing useful features.
+\emph{without reference to labels}. At initialization, however, the
+distinction is limited, and we state this candidly: the
+Gauss--Newton blocks carry no label information there (the softmax
+weights are near-uniform), and $G_{\thetap\thetap}$ is, by
+Lemma~\ref{lem:opcap}, an input-second-moment object propagated
+through a label-free random network. The defense against
+PCA-triviality is therefore a statement about \emph{training}: along
+the trajectory the supervised residual shapes
+$\partial \hat{y}/\partial Z$ and hence the curvature, and the
+pathology we identify is precisely that this supervised signal
+fails to reach $\thetap$---not that $f_\thetap$ is incapable of
+representing useful features.
 \end{remark}

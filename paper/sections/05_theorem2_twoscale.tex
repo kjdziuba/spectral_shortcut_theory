@@ -43,8 +43,13 @@ satisfying~\eqref{eq:gf} for almost every $t$: under the smoothness
 of Assumption~\ref{ass:reg} the flow is classically well posed, and
 the almost-everywhere formulation additionally covers
 piecewise-smooth models such as ReLU networks, for
-which~\eqref{eq:gf} is read as the corresponding subdifferential
-inclusion. A discrete-SGD extension (Robbins--Monro tracking, with
+which~\eqref{eq:gf} is read as: at almost every $t$,
+$\dot{\thetap}(t) = -J_\thetap(t)^\top r(t)$ with $J_\thetap(t)$ a
+measurable selection of the limiting (Clarke) Jacobians. Every
+such selection obeys the velocity bound used in the proof: each
+limiting Jacobian is a limit of Jacobians attained within
+$\Phi_{\mathrm{reg}} \times \mathcal{Z}_{\mathrm{reg}}$ and hence
+inherits the operator-norm cap of Lemma~\ref{lem:opcap}. A discrete-SGD extension (Robbins--Monro tracking, with
 gradient noise entering the constants) is a natural further step in
 the standard stochastic-approximation framework
 (Borkar~\cite{borkar2008stochastic}, Ch.~2); we do not develop it
@@ -91,18 +96,28 @@ for homogeneous deep networks by the margin-maximization dynamics
 of Lyu and Li~\cite{lyu2020gradient}---so a bound on
 $\|\partial g_\phip/\partial Z\|_{\mathrm{op}}$ that is uniform over
 \emph{all} $t$ cannot be assumed. Two standard settings restore it:
-weight decay or norm constraints (bounded iterates; strictly, these
-modify the flow~\eqref{eq:gf}, and the theorem then applies to the
-modified flow, whose residual envelope may differ), and the
+weight decay or norm constraints, and the
 maximal-update parameterization~\cite{yang2021tensor}, which leaves
 the flow unchanged (activation-level width-uniform stability is
 established there; the operator-norm form we need is a motivated
 assumption, per the discussion after
-Assumption~\ref{ass:inputlip}). In the pure max-margin limit, $\widetilde{L}$ grows at
-most logarithmically in $T$, which turns the displacement bound of
-Theorem~\ref{thm:twoscale} into
-$\mathcal{O}(\varepsilon \log^2(1/\delta))$---the same conclusion up
-to a log factor.
+Assumption~\ref{ass:inputlip}). Weight decay and norm constraints,
+however, \emph{modify} the flow~\eqref{eq:gf} by an additional term
+the residual envelope does not control---under $L_2$ decay on
+$\thetap$ the flow gains $-2\alpha\thetap$, and even at $r \equiv 0$
+the displacement is $\thetap_0(1 - e^{-2\alpha T}) \neq 0$---so
+Theorem~\ref{thm:twoscale} as stated applies only to the
+unregularized flow. A regularized variant would carry the extra
+displacement $\int_0^T \|2\alpha\,\thetap(t)\|\,dt$; equivalently,
+an experiment matching the theorem must place $\thetap$ in a
+zero-weight-decay parameter group, with decay (if any) on $\phip$
+only, which is what supplies containment. For homogeneous
+architectures within the scope of Lyu and
+Li~\cite{lyu2020gradient}, margin dynamics suggest $\widetilde{L}$
+growing at most logarithmically in $T$, which would turn the
+displacement bound into $\mathcal{O}(\varepsilon
+\log^2(1/\delta))$; we do not claim this for attention-based
+$g_\phip$, which is not homogeneous in the required sense.
 \end{remark}
 
 \begin{assumption}[Shortcut residual decay]
@@ -258,13 +273,18 @@ in the spirit of Chizat, Oyallon, and
 Bach~\cite{chizat2019lazy}. The differences are the driver and the
 scope. In the lazy-training literature, small movement follows from
 a scaling of the \emph{model} (width or output scale) that makes the
-linearization accurate for \emph{all} parameters; here, movement is
-small for \emph{one module only}, it is driven by the interaction of
-two module-asymmetric quantities---the operator-norm cap of
-Lemma~\ref{lem:opcap} and the shortcut fitting rate---and the other
-module is entirely free to travel. The phenomenon is a
-\emph{selective} laziness induced by the compositional position of
-the spectral module, not a global linearization regime.
+linearization accurate for \emph{all} parameters; here, the bound
+is \emph{informative} for one module only. The identical
+integration applied to $\phip$ carries
+$\sup_t \|J_\phip(t)\|_{\mathrm{op}}$ in place of the cap, so the
+asymmetry lies in the constants---the spectral factor is
+capacity-independent (Lemma~\ref{lem:opcap}) while the spatial
+factor is free to grow with capacity---not in the form of the
+inequality. Whether the constants actually separate at a given
+scale is an empirical question (Section~\ref{sec:experiments}).
+The phenomenon, where present, is a \emph{selective} laziness
+induced by the compositional position of the spectral module, not
+a global linearization regime.
 
 \subsection{On the hypotheses}
 \label{sec:thm2_hypotheses}

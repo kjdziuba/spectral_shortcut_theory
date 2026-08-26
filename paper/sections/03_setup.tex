@@ -69,8 +69,9 @@ Define the \emph{mean empirical input Gram}
 with $x_n$ enumerating the per-pixel spectra of all images. We
 assume $\lambda_{\max}(\Sigma_X) \leq \Lambda_X < \infty$, with
 $\Lambda_X$ uniform over the datasets under consideration. Every
-constant below is stated in terms of $\lambda_{\max}(\Sigma_X)$ and
-is therefore independent of the dataset size.
+constant below is stated in terms of $\lambda_{\max}(\Sigma_X)$
+(or, where noted, $\mathrm{tr}(\Sigma_X)$) and is therefore
+independent of the dataset size.
 \end{assumption}
 
 \begin{remark}[Population motivation---not used in proofs]
@@ -160,7 +161,8 @@ boundedness is exactly what Assumption~\ref{ass:inputlip}
 postulates---but we prove it for a concrete two-layer ReLU head in
 Proposition~\ref{prop:verified_instance} (supplement), where
 $\E\,\|\partial \hat{y}/\partial z\|_F^2 = \mathcal{O}(1)$
-uniformly in width while the naive operator-norm product would give
+uniformly in width while the \emph{squared} naive product bound
+$\|W_2\|_{\mathrm{op}}^2 \|W_1\|_{\mathrm{op}}^2$ would give
 $\Theta(M/K)$. Under the maximal-update
 parameterization ($\mu$P), Yang and
 Hu~\cite{yang2021tensor} establish coordinate-wise $\Theta(1)$

@@ -238,10 +238,12 @@ theorem in the degenerate case. Our hypothesis has the parallel
 structure, and its degenerate behavior \emph{can} be evaluated
 directly: for odd activations with $\sigma_b = 0$ and uncorrelated
 inputs the features lose their common direction, and the per-vector
-norms alone still give $\lambda_{\max}(S_h) \geq
-\mathrm{tr}(S_h)/\min(N, M_h)$, so the hypothesis survives only
-with $q_h = \Theta(1/N)$: the width scaling remains, but the
-sample-size-independent leading constant is lost. For CNN and ViT
+norms alone give only $\lambda_{\max}(S_h) \geq
+\mathrm{tr}(S_h)/\min(N, M_h)$. In our regime $N \gg M_h$, so this
+floor is $\Theta(1)$---\emph{no} width scaling. Width-linear growth
+in the degenerate case would require a separate argument, which we
+do not attempt---consistent with Karakida et al.'s footnote placing
+that case outside their scope as well. For CNN and ViT
 heads we state the hypothesis as an explicit assumption rather than
 a theorem, and check it empirically in
 Section~\ref{sec:experiments}.
@@ -434,7 +436,11 @@ $\lambda_{\max} \leq \mathrm{tr}$ for positive semidefinite
 matrices, (ii) follows with $C_G = N_{\mathrm{cls}} \sigma_w^4
 \mathrm{tr}(\Sigma_X)$, free of $M_h$ and $N$.
 
-\emph{Step E (combining).} Let $E_1$ be the event of (i)
+\emph{Step E (combining).} If $C_G = 0$ then $\Sigma_X = 0$, the
+spectral block vanishes almost surely, and
+$\mathcal{D}_{\mathrm{curv}} = +\infty$ by the convention of
+Definition~\ref{def:dcurv}; assume $C_G > 0$ below. Let $E_1$ be
+the event of (i)
 ($\Pr \geq 1/2$) and $E_2 := \{ \lambda_{\max}(G_{\thetap\thetap})
 \leq 8 C_G \}$, which by (ii) and Markov has $\Pr[E_2] \geq 7/8$. On
 $E_1 \cap E_2$ (probability at least $1 - 1/2 - 1/8 = 3/8$), the
@@ -725,8 +731,11 @@ Lemma~\ref{lem:opcap},
     \lambda_{\max}(G_{\thetap\thetap})
     \;\leq\; \|J_\thetap\|_{\mathrm{op}}^2 \;\leq\; C_\thetap
 \]
-with $C_\thetap$ independent of $M$ and $\Cg$. The cap is
-deterministic---valid for every realization of the
+with $C_\thetap$ independent of $M$ and $\Cg$. (If $C_\thetap = 0$
+the spectral block vanishes identically and the bound holds
+trivially under the $+\infty$ convention of
+Definition~\ref{def:dcurv}; assume $C_\thetap > 0$ below.) The cap
+is deterministic---valid for every realization of the
 initialization---so it divides through inside the expectation:
 \begin{equation}
     \E\!\left[\mathcal{D}_{\mathrm{curv}}^{(M)}\right]
@@ -817,22 +826,8 @@ is part of the experimental programme
 
 \subsection{Empirical robustness}
 
-We here report robustness experiments referenced in the main text.
-
-\subsubsection{Optimizer ablation (SGD vs Adam)}
-\TODO{Phase 5 follow-up. Show EGR collapse pattern in both regimes;
-note Adam masks the natural gradient ratio.}
-
-\subsubsection{Loss-variant ablation}
-\TODO{Phase 5 follow-up. Cross-entropy, focal loss, label smoothing.}
-
-\subsubsection{Regularizer ablation}
-\TODO{Phase 5 follow-up. Weight decay, dropout, batch norm.
-Pezeshki et al.~\cite{pezeshki2021gradient}, App.~B, already show
-gradient starvation is robust to these; we reproduce briefly in our
-setting.}
-
-\subsubsection{Smallest capacity ratio where the pathology disappears}
-\TODO{Phase 5 follow-up. Sweep $\Cg/\Cf$ from 1 to 1000, identify
-the threshold below which joint training reaches frozen
-performance.}
+The robustness studies referenced in the main text (optimizer,
+loss-variant, and regularizer ablations; the capacity-ratio
+threshold sweep) belong to the experimental programme of
+Section~\ref{sec:experiments} and are reported there as they are
+run; this supplement makes no claim about them.

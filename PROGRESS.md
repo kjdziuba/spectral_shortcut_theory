@@ -4,6 +4,64 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-26 (later) — Review round 2b (correct file): converged, high-value; Tier-1 fixes applied
+
+All three reviewers passed the sentinel gate — the round is VALID.
+Gemini's output is DEGENERATE (boilerplate "Standard processing
+applied" x6, one finding attacking a claim the packet no longer
+makes, outlier 75/85% numbers) — discarded; optional fresh-chat redo,
+low priority. ChatGPT (weak reject, 33% now / ~60% ceiling) and
+Fable (weak reject, 15% / 40%) CONVERGED: math now sound; ceiling set
+by experiments + claims that outrun theorems. 9/10 fixes verified
+genuinely resolved by both.
+
+**Headline catch (ChatGPT #1): weight decay breaks the
+Theorem-2-matching arm.** With L2 decay on theta the flow gains
+-2*alpha*theta uncontrolled by the envelope (r=0 counterexample).
+rem:containment's "applies to the modified flow" was FALSE; E3c's
+AdamW wd=0.05 default would have invalidated the displacement test.
+FIXED in text; E3c: theta in zero-wd param group in all
+theorem-matching arms.
+
+**Tier-1 fixes applied this session** (commit this session):
+A.3 TODO stubs deleted (honest pointer paragraph); weight-decay
+correction + theta-no-wd protocol in rem:containment; max-margin
+log(T) claim restricted to homogeneous nets; Clarke-selection
+clause added to the a.e. formulation (every limiting Jacobian
+inherits the cap); "entirely free to travel" replaced by the honest
+constants-asymmetry statement (both reviewers: the phi-bound is
+SMALLER at measured widths); zero-constant case splits (C_theta=0,
+C_G=0); rem:not_pca restricted to training time (at init the GGN is
+label-free input-Gram arithmetic — Fable F2); 04 feature-
+normalization paragraph rewritten (input transformations MOVE the
+cap; centering predicted to restore disparity — ties to the 19-32x
+measurement); adaptive-optimizer paragraph corrected (preconditioned
+spectra; theorems scoped to GD/flow); MY ERROR fixed (degenerate
+q_h=Theta(1/N) claim wrong for N >> M_h — floor is Theta(1), no
+width scaling; Fable F8); squared-product-bound wording; tr(Sigma_X)
+constants clause.
+
+**Tier-2 (UNFREEZE DECISION, awaiting author): two one-paragraph
+additions both reviewers converged on:**
+(a) Loss-attribution corollary: theta's share of the training-loss
+decrease <= B_T^2 C^2/(mu * DeltaL) — elementary, both suggested.
+(b) Fable's class-prior residual-rate proposition: the witness
+direction is the class-prior residual component; via r-dot =
+-H_tau(JJ^T)r its initial fitting rate is Omega(M) — the first
+cheap PROVED link Thm1 -> envelope for one residual component.
+Sanity-checked; would need in-house adversarial verification, then
+freeze v1.1.
+Queued P3/P4 (from round): Assumption-7 init/trajectory split;
+06-intro/EGR alignment; Remark-39 stale candidate-cause update;
+Prop-34 R-conditional + c2>=c1*M0 + Phi_reg-a.s. clauses; 02 fixes
+(Huang theorem-level; O'Leary mischaracterization); "freezing
+prescription" split (Thm 2 predicts joint~frozen-random; pretrain-
+and-freeze is a separate empirical escape route — ChatGPT #3).
+E3c additions: log ||dg_phi/dZ||_op along training (containment as
+tested hypothesis, Fable F6); theta-no-wd groups.
+
+---
+
 ## 2026-08-26 — Review round 2: stale-attachment mix-up diagnosed; standing findings triaged; centering measurement
 
 **Mix-up**: ChatGPT + Fable both audited the OLD theory_scope_2026-08-20.pdf
