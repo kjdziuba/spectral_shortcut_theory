@@ -50,8 +50,9 @@ $f_\thetap$ is replaced by a small MLP.
 
 \begin{assumption}[Spatial model regularity]
 \label{ass:reg}
-$g_\phip$ is twice continuously differentiable in $\phip$ with
-$L$-Lipschitz gradients. For piecewise-smooth models (e.g.\
+$g_\phip$ is twice continuously differentiable jointly in
+$(\phip, Z)$ with $L$-Lipschitz gradients. For piecewise-smooth
+models (e.g.\
 ReLU-type activations) this is relaxed: the gradient flow is
 interpreted in the almost-everywhere sense of
 Section~\ref{sec:thm2}, and no quantitative bound in this paper
@@ -126,13 +127,15 @@ $\mathcal{Z}_{\mathrm{reg}}$.
 \end{assumption}
 
 \begin{remark}[Why Assumption~\ref{ass:inputlip} is separate from Assumption~\ref{ass:reg}]
-Assumption~\ref{ass:reg} bounds the second derivatives of $g_\phip$
-with respect to \emph{parameters}~$\phip$ (the standard
-$L$-smoothness condition of the optimization literature).
-Assumption~\ref{ass:inputlip} bounds the first derivative with respect
-to \emph{input features} $Z$---a different object with a different
-constant. Parameter-side smoothness does not imply input-side
-Lipschitzness. Assumption~\ref{ass:reg}'s role is to keep the
+Assumption~\ref{ass:reg} is a \emph{regularity} statement:
+smoothness of $g_\phip$ jointly in parameters and features, which
+is what well-posedness of the joint flow---and the chain rule along
+it---require ($\thetap$ enters the loss only through $Z$, so
+differentiability of $t \mapsto \loss(t)$ needs the $Z$-derivative
+too). Assumption~\ref{ass:inputlip} is a \emph{quantitative,
+width-uniform bound} on the first $Z$-derivative---a different kind
+of statement with a different constant: smoothness alone implies no
+uniform bound. Assumption~\ref{ass:reg}'s role is to keep the
 gradient flow~\eqref{eq:gf} well posed; the quantitative bounds of
 Theorems~\ref{thm:hessian} and~\ref{thm:twoscale} use only
 Assumption~\ref{ass:inputlip}.

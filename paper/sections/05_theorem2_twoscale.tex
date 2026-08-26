@@ -123,7 +123,8 @@ $g_\phip$, which is not homogeneous in the required sense.
 \begin{assumption}[Shortcut residual decay]
 \label{ass:residual}
 There exist constants $C \geq 1$ and $\mu > 0$ such that, along the
-joint trajectory~\eqref{eq:gf},
+joint trajectory~\eqref{eq:gf} and on the horizon $[0, T]$ of any
+statement invoking this assumption,
 \[
     \norm{r(t)} \;\leq\; \frac{C}{1 + \mu t},
 \]
@@ -220,8 +221,10 @@ $1 + \mu T_\delta \leq C / \delta$, so $\log(1 + \mu T_\delta) \leq
 \begin{corollary}[Attribution of the loss decrease]
 \label{cor:attribution}
 Under the hypotheses of Theorem~\ref{thm:twoscale}, with $g_\phip$
-smooth (Assumption~\ref{ass:reg}) so that $t \mapsto \loss(t)$ is
-differentiable along the flow, the energy identity
+smooth jointly in $(\phip, Z)$ (the smooth branch of
+Assumption~\ref{ass:reg}) so that $t \mapsto \loss(t)$ is
+differentiable along the joint flow, and whenever
+$\loss(T) < \loss(0)$, the energy identity
 $-\frac{d}{dt}\loss = \norm{\nabla_\thetap \loss}^2 +
 \norm{\nabla_\phip \loss}^2$ holds, and the spectral module's
 cumulative share of the loss decrease obeys
@@ -257,8 +260,8 @@ at realistic constants---we report the ratio rather than hide it.
 With the \emph{realized} gain
 $\widehat{B}_T := \sup_{t \leq T}
 \norm{\nabla_\thetap \loss(t)}/\norm{r(t)} \leq B_T$, measurable
-from any training run, it becomes a per-run diagnostic.
-Section~\ref{sec:experiments} reports both.
+from any training run, it becomes a per-run diagnostic. Both are
+computable from a run's logs.
 \end{remark}
 
 \subsection{Interpretation}
@@ -397,9 +400,10 @@ kernel. Let $c \perp \mathbf{1}$ be a unit class contrast and
 $w := N^{-1/2}(c, \dots, c)$ the unit direction applying $c$ at
 every pixel (the \emph{class-prior direction}). If the mean
 penultimate feature $\bar{h} := N^{-1}\sum_n h_n$ satisfies
-$\norm{\bar{h}}^2 \geq \bar{q}\,M_h$ at initialization---as proved
-for the instance of Proposition~\ref{prop:verified_instance},
-Step~A---then
+$\norm{\bar{h}}^2 \geq \bar{q}\,M_h$ at initialization---as holds
+with probability $1 - \mathcal{O}(1/M_h)$ for the instance of
+Proposition~\ref{prop:verified_instance} (Step~A, with
+$\bar{q} = \sigma_b^2/(4\pi)$)---then
 \[
     w^\top \widehat{\Theta}\,w
     \;=\; \norm{J^\top w}^2

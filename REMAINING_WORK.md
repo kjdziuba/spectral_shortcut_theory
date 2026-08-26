@@ -216,15 +216,22 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       **THEORY STAMPED FROZEN 2026-08-20.** Remaining reviewer points
       are Phase-P positioning scope (novelty delta, related work).
 
-- [ ] T6. Freeze v1.1 amendment (author-approved 2026-08-26): write
+- [x] T6. DONE 2026-08-26. Freeze v1.1 amendment: write
       (a) the loss-attribution corollary (theta's share of loss
       decrease <= B_T^2 C^2/(mu*DeltaL)) and (b) the class-prior
       residual-rate proposition (witness direction = class-prior
       residual component; initial fitting rate Omega(M) via
       r-dot = -H_tau(JJ^T)r) — the first proved Thm1->envelope link
-      for one residual component. Then in-house adversarial
-      verification pass, restamp FROZEN v1.1. ~2 days writing +
-      verification.
+      for one residual component. In-house adversarial verification
+      (wf_4cfaff04-bb1, 4 attack agents): factor audit SOUND (NTK
+      computation numerically cross-checked 1e-16), counterexample
+      hunt SOUND on the inequalities; 1 major (energy identity needs
+      joint (phi,Z) smoothness -- ass:reg amended + contrast remark
+      rewritten) + 4 minors (Step-A provenance qualified with
+      probability + q-bar = sigma_b^2/(4pi); false forward reference
+      softened; L(T)<L(0) guard; ass:residual horizon scoped) all
+      FIXED same session. **THEORY RESTAMPED FROZEN v1.1
+      2026-08-26.**
 
 **Phase E — experiments to test the frozen theory (weeks 2-3)**
 - [ ] E1. Exp 1.1 v3: measure GN blocks (not full Hessian — A24), plot vs M,
