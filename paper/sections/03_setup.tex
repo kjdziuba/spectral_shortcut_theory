@@ -51,7 +51,11 @@ $f_\thetap$ is replaced by a small MLP.
 \begin{assumption}[Spatial model regularity]
 \label{ass:reg}
 $g_\phip$ is twice continuously differentiable in $\phip$ with
-$L$-Lipschitz gradients.
+$L$-Lipschitz gradients. For piecewise-smooth models (e.g.\
+ReLU-type activations) this is relaxed: the gradient flow is
+interpreted in the almost-everywhere sense of
+Section~\ref{sec:thm2}, and no quantitative bound in this paper
+consumes second derivatives.
 \end{assumption}
 
 \begin{assumption}[Bounded input second moment]
@@ -164,12 +168,15 @@ stability of activations throughout training in the infinite-width
 limit; we take the corresponding operator-norm stability as a
 modeling assumption motivated by that result, not as a consequence
 of it. Under standard-parameterization training with weight
-decay $\lambda > 0$ and bounded-norm iterates,
-Assumption~\ref{ass:inputlip} follows from the boundedness of
-$\|\phip\|$ combined with the per-layer product-of-operator-norms
-bound; the constant $\widetilde{L}$ then depends multiplicatively on
-the network depth (a symbol-free statement: one factor per layer)
-but not on the width. Softmax self-attention is Lipschitz
+decay $\lambda > 0$ and bounded-norm iterates, the per-layer
+product-of-operator-norms bound gives a \emph{finite}
+$\widetilde{L}$ over any training horizon---but not a
+width-uniform one, since per-layer norms at Kaiming scale grow like
+$\sqrt{M}$ and weight decay holds them near that scale rather than
+below it. Width-uniformity is therefore the modeling content of
+Assumption~\ref{ass:inputlip}, supported at initialization by the
+composition-cancellation effect above (proved in expectation for
+the two-layer head) rather than derived from norm control. Softmax self-attention is Lipschitz
 only on bounded inputs~\cite{kim2021lipschitz}, so
 $\mathcal{Z}_{\mathrm{reg}}$ should be taken compact whenever
 $g_\phip$ uses attention. Pre-attention LayerNorm (standard

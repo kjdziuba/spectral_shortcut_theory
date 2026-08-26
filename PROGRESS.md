@@ -4,6 +4,76 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-26 — Review round 2: stale-attachment mix-up diagnosed; standing findings triaged; centering measurement
+
+**Mix-up**: ChatGPT + Fable both audited the OLD theory_scope_2026-08-20.pdf
+(ChatGPT's header names it; Fable's F1 quotes old text verbatim and itself
+diagnosed the mismatch). Cause: continued chats still held the stale
+attachment. Verified the 2026-08-25 packet DOES contain all ten fixes
+(sentinel greps). Their theory re-audit findings are therefore VOID where
+they re-report fixed items — which is silver lining: ChatGPT independently
+re-derived the same defects a second time (confirms fix targets were real)
+and re-validated Prop 35 / witness / Kronecker / Thm-2 integration as sound.
+
+**Standing findings (prompt-based, valid regardless of PDF), triaged:**
+- F2 (Fable, blocker-class, GENERATIVE): the rank-1 Sigma_X + 0.954
+  alignment are properties of UNCENTERED nonnegative spectra; at init the
+  linear module's GGN is label-free input-Gram arithmetic (Wu et al.
+  "Dissecting Hessian" arXiv:2010.04261 anticipate u (x) E[x] structure;
+  Papyan 2019/2020). MEASURED same day: mean-centering on valid pixels
+  deflates lam_max(Sigma_X) 19-32x per core (centered eff rank ~1.7-2.0)
+  -> predicted D_curv rises ~20-30x under centered preprocessing, i.e.
+  ~10 at M=192: the inversion likely REVERSES under a preprocessing
+  choice. Response: (a) report input preprocessing explicitly; (b) add
+  mean-centered at-init exp1_8 variant + input-energy control ratio next
+  to the 19x contrast ratio; (c) reposition C4 as
+  confirmation-in-new-domain + quantification, citing Wu/Papyan; (d)
+  centering becomes a PREDICTED MITIGATION LEVER (theory-consistent:
+  the cap is set by lam_max(Sigma_X)). Note: model's wn_norm BN does NOT
+  center tissue pixels (padding dilutes the batch mean) — explains why
+  post-BN eff rank stayed ~1.2.
+- F3 (Fable, major, real): Thm 2's bound applied to phi is LARGER than
+  for theta at measured widths (ratio of bounds = sqrt(D_curv) < 1) —
+  "selective laziness" not derivable from the bound alone at these
+  constants. Adopt their loss-attribution substitute: fraction of loss
+  decrease attributable to theta <= B_T^2 C^2/(mu * DeltaL), computable
+  from E3c logs; report honestly even if vacuous.
+- F4 (Fable, major, real): Thm-2 bound with B_T ~ sqrt(544) exceeds
+  ||theta_0|| — displacement-vs-bound plot would be vacuous. Log ALSO
+  feature-space displacement ||Z(t)-Z(0)|| and projection of
+  theta(t)-theta_0 onto contrast directions (the direction-wise
+  dynamical test). Report bound/realized ratio explicitly.
+- F5 (Fable, major, real): Adam vs gradient-flow mismatch — under Adam
+  small gradients do not imply small steps. E3c: add SGD control at one
+  width (A2-vs-A1 pair) as the theorem's actual regime; fix 04's
+  adaptive-methods sentence in P3 (preconditioned dynamics need not
+  respect the disparity).
+- F10 (Fable, major, sharp): the sublinear slope is DIAGNOSABLE —
+  measure lam_max(S_h^p) directly at each width (cheap Gram) to see if
+  q_h is effectively width-dependent, and whether the head-vs-full-phi
+  measurement mismatch explains the deficit. Added to E3c probes.
+- ChatGPT-7 (major, real): mu in the envelope is not canonical (any
+  smaller mu also satisfies it). E3c defines the estimator explicitly:
+  mu-hat := sup{mu : ||r(t)|| <= C-hat/(1+mu t) for all t <= T} with
+  C-hat = ||r(0)||, reported with fit residuals.
+- New must-cites (P4): Zhang et al. 2024 "Why Transformers Need Adam"
+  (block heterogeneity); Karakida et al. 2021 softmax extension; Wu et
+  al. Dissecting Hessian; Papyan 2019/2020. Huang 2022 miscast = A27
+  (already tracked); Coil/Cheney = A44 (already tracked).
+- Residual defects in NEW packet caught by F8/F9, FIXED this session:
+  weight-decay route sentence rewritten (bounded iterates give finite,
+  not width-uniform, L~ — width-uniformity is the assumption's modeling
+  content); ass:reg gains the piecewise-smooth a.e. clause. Recompiled;
+  packet theory_scope_2026-08-26.pdf regenerated (26 pp, sentinels
+  verified).
+
+**Redo protocol**: re-send task 1 (theory re-audit) ONLY, in same chats,
+with theory_scope_2026-08-26.pdf and a sentinel-check instruction; the
+measurement/design findings stand and are folded into E3c. Gemini's
+review not yet delivered by author.
+
+---
+
 ## 2026-08-24 (later) — E3b + E3d complete: the rank-1 diagnosis is CONFIRMED and quantified
 
 **E3d (prostate QCL, 48 rows, results/exp1_8_real_dcurv_prostate_qcl.csv):**

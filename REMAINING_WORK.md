@@ -258,7 +258,15 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
             persistence sentence; joint>PCA gap falsifies practical
             Thm-2 reading. Companion stack NEVER as a joint arm
             (@torch.no_grad shipped, ~90-100GB activations).
-            AWAITING author go to build + launch.
+            REVIEW-ROUND DELTAS (2026-08-26, from standing findings):
+            + SGD control pair at one width (F5); + mean-centered-input
+            arm and at-init centered exp1_8 rerun (F2); + per-width
+            lam_max(S_h^p) probe (F10); + logging: feature-space
+            displacement ||Z(t)-Z(0)||, contrast-direction projection
+            of theta(t)-theta_0, loss-attribution fraction (F3),
+            bound/realized ratio (F4); + canonical mu-hat estimator
+            defined (ChatGPT-7). Author approved arm B (MLP tokenizer
+            encoder). BUILD STARTS with cheap arms A2/A3 first.
       - [x] E3d. DONE 2026-08-24: full replication, eff rank 1.02,
             D_curv inverted at M=192, parity ~M=384. Was: replicate on
             --data_dir swap, ~40 min) — is rank-1 Sigma_X universal?
