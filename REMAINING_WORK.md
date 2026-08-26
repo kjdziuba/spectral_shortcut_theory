@@ -216,6 +216,16 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       **THEORY STAMPED FROZEN 2026-08-20.** Remaining reviewer points
       are Phase-P positioning scope (novelty delta, related work).
 
+- [ ] T6. Freeze v1.1 amendment (author-approved 2026-08-26): write
+      (a) the loss-attribution corollary (theta's share of loss
+      decrease <= B_T^2 C^2/(mu*DeltaL)) and (b) the class-prior
+      residual-rate proposition (witness direction = class-prior
+      residual component; initial fitting rate Omega(M) via
+      r-dot = -H_tau(JJ^T)r) — the first proved Thm1->envelope link
+      for one residual component. Then in-house adversarial
+      verification pass, restamp FROZEN v1.1. ~2 days writing +
+      verification.
+
 **Phase E — experiments to test the frozen theory (weeks 2-3)**
 - [ ] E1. Exp 1.1 v3: measure GN blocks (not full Hessian — A24), plot vs M,
       add fixed-depth MxM architecture; D_curv branding in code/CSVs (A64).
@@ -266,7 +276,21 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
             of theta(t)-theta_0, loss-attribution fraction (F3),
             bound/realized ratio (F4); + canonical mu-hat estimator
             defined (ChatGPT-7). Author approved arm B (MLP tokenizer
-            encoder). BUILD STARTS with cheap arms A2/A3 first.
+            encoder). ROUND-2b DELTAS: theta in ZERO-weight-decay
+            param group in all theorem-matching arms (ChatGPT's
+            counterexample — AdamW wd=0.05 would have invalidated
+            the displacement test); log ||dg_phi/dZ||_op along
+            training (containment as tested hypothesis, Fable F6).
+            BUILD STARTS with cheap arms A2/A3 first.
+      - [ ] E3e. Centered at-init exp1_8 rerun (~1h, decision-free):
+            mean-center inputs on valid pixels, re-measure D_curv +
+            alignment. Prediction (from cap + 19-32x lam_max
+            deflation): D_curv rises to ~10 at M=192 — the
+            centering-restores-disparity test both the theory (04
+            feature-normalization rewrite) and reviewers demand.
+            Optional E3b+: rerun contrast curvature on
+            stroma-containing cores (adds CancerEpi-NormalStroma
+            pair, ~30 min).
       - [x] E3d. DONE 2026-08-24: full replication, eff rank 1.02,
             D_curv inverted at M=192, parity ~M=384. Was: replicate on
             --data_dir swap, ~40 min) — is rank-1 Sigma_X universal?
@@ -289,6 +313,16 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       evidence from EGR pilot (E3c).
 - [ ] P3. Remnant-prose sweep against frozen theorems (A14, A15, A16, A25,
       A41, A42, A43, A48, A49, A54, A55, A57, A62, A63).
+      ROUND-2b QUEUE: split Assumption 7 into init/trajectory forms
+      (Thm 1 consumes only init — ChatGPT minor); align 06 intro
+      with rem:egr_ratio_caveat (F11i); update Remark 39's stale
+      loss-Hessian-vs-GGN candidate cause (F11ii); Prop 34 clauses
+      (R conditional on W; c2 >= c1*M0 for the proved instance;
+      init in Phi_reg a.s. for the expectation division — F10);
+      SPLIT THE FREEZING CLAIM everywhere (ChatGPT #3): Thm 2
+      predicts joint ~ frozen-at-init (a theorem test);
+      pretrain-and-freeze is a separate, empirically-supported
+      escape route — never "theorem-guaranteed".
 - [ ] P4. Related work: Huang 2022 into 2.4 (A27), four anchors (A28), 2024
       multimodal wave (A45), remote-sensing cites or soften (A50),
       layer-wise-Hessian adjacents (A33), quote fixes (A32).
@@ -311,6 +345,14 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       AutoML 2025, PMLR 293 -- they HYPOTHESIZE freezing ~
       regularization after refuting Cover's-theorem story; keep 02
       wording to "hypothesize" (A44 text fix confirmed needed);
+      (f) ROUND-2 ADDS: Zhang et al. 2024 "Why Transformers Need
+      Adam" (Hessian block heterogeneity — closest optimizer-side
+      antecedent); Karakida et al. 2021 (softmax extension of the
+      FIM spectra); Wu et al. "Dissecting Hessian" arXiv:2010.04261
+      (u (x) E[x] top-eigenvector structure — reposition C4 as
+      confirmation-in-new-domain); Papyan 2019/2020; fix 2.5's
+      O'Leary mischaracterization (their 16-feature result is
+      frozen compression, not joint training).
       (e) "modality laziness" coined in Du et al. ICML 2023 (PMLR
       v202, "On Uni-Modal Feature Learning..."); Peng 2022 uses
       "optimization imbalance"; Wang 2020 has zero hits (A32
