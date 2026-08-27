@@ -389,15 +389,19 @@ def main():
         split_file = tmp
 
     train_ds = CoreDataset(args.data_dir, str(split_file), "train",
-                           spatial_size=SPATIAL, augment=True)
+                           spatial_size=SPATIAL, augment=False)
     val_ds = CoreDataset(args.data_dir, str(split_file), "val",
                          spatial_size=SPATIAL, augment=False)
+    # PROTOCOL (2026-08-27): augmentation and pinning OFF -- the per-step
+    # GB-scale numpy churn plus page-locking caused a 98%-stime kernel
+    # stall at full heap (27min user vs 21.7h kernel). Identical setting
+    # across all arms, so arm comparisons are unaffected.
     train_loader = torch.utils.data.DataLoader(
         train_ds, batch_size=args.batch_size, shuffle=True,
-        num_workers=0, pin_memory=True, drop_last=True)
+        num_workers=0, pin_memory=False, drop_last=True)
     val_loader = torch.utils.data.DataLoader(
         val_ds, batch_size=args.batch_size, shuffle=False,
-        num_workers=0, pin_memory=True)
+        num_workers=0, pin_memory=False)
     assert len(train_ds.wavenumbers) == NUM_SPECTRAL, \
         f"expected S={NUM_SPECTRAL}, got {len(train_ds.wavenumbers)}"
 
