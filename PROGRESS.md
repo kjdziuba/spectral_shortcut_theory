@@ -4,6 +4,67 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-28 — E3c COMPLETE (20/20 runs): frozen beats joint decisively; the mechanism is richer than pinning
+
+Full matrix landed clean post-fix (~50 min/run h48, ~57 min h192).
+results/e3c_analysis_runs.csv; analyzer code/experiments/analyze_e3c.py
+(canonical sup mu-hat, realized B-hat, dissipation shares, containment
+trajectory).
+
+**Final val macro-F1 (last-5-epoch mean, 3 seeds, AdamW):**
+  h=48 : joint 0.538+/-0.082 | frozen-random 0.648+/-0.063 | frozen-PCA 0.731+/-0.003
+  h=192: joint 0.646+/-0.050 | frozen-random 0.731+/-0.023 | frozen-PCA 0.727+/-0.012
+
+Five findings, in decreasing confidence:
+1. **The practical claim REPLICATES, amplified**: frozen >= joint at
+   both widths by +0.08-0.19; even freezing theta at the SAME RANDOM
+   INIT beats jointly training it. The pre-registered falsifier
+   (joint > PCA) did NOT fire — it is strongly negative. The
+   companion's 0.896-vs-0.675 anomaly now has a controlled,
+   fully-logged replication.
+2. **Thm-2's naive functional read (joint ~ frozen-random) FAILS under
+   AdamW — in the direction that strengthens the prescription**: theta
+   moved 55-60% relative (not pinned) and the movement was HARMFUL
+   (-0.09..-0.11 F1 vs never moving). Consistent with F5 (Adam breaks
+   small-gradient->small-step) and with prop:ntk_classprior: theta's
+   gradient is dominated by mean-reader/class-prior directions, so
+   when Adam amplifies it, theta drifts along shortcut-serving axes.
+   "Harmful drift", not "pinning", is the real-data pathology.
+3. **Scalar EGR does NOT detect the pathology on real data**: EGR
+   ~0.7-0.9 at epoch 1, GROWING to 4-12 by epoch 60; theta's
+   dissipation share is 94-99.9%. Rank-one input energy pumps
+   ||grad_theta|| — the spectral module is never norm-starved, it is
+   DIRECTION-starved (E3b: 19x contrast starvation). Major reframe
+   for Section 6/8: the honest diagnostic is direction-wise. Also
+   eq:egr_init heuristic undershoots 4-7x on real data (predicts
+   0.10-0.19, measured 0.67-0.88) — rank-1 input violates its
+   per-entry-magnitude premise.
+4. **mu-hat grows with width in joint arms**: 0.0006 (h48) ->
+   0.0019 (h192), ~3.2x — the first real-data datapoint for the
+   mu(C_g) bridge hypothesis (direction correct; 2 widths only).
+   frozen-PCA fits fastest (mu-hat ~0.004-0.005) — informative
+   features accelerate fitting.
+5. **Containment is violated during training, spectacularly**:
+   ||dg_phi/dZ||_op grows 0.16 (init) -> 100-12,000 (epoch 60;
+   largest in frozen-PCA, consistent with margin growth after
+   interpolation). Fable-F6's tested-hypothesis check FIRED: B_T is
+   not width-modest along real trajectories, and Thm-2's bound with
+   realized constants is vacuous by ~1e5 (reported per F4, not
+   hidden). The theorem's value on real data is structural
+   (attribution/contrapositive), not numerical.
+Also: frozen-random ~ frozen-PCA at h192 (0.731 vs 0.727) — random
+projections suffice at high spatial capacity (Rahimi-Recht echo);
+PCA >> random at h48 (+0.08) — informative reduction matters when
+spatial capacity is small. SGD pair (1 seed): joint 0.587 >
+frozen-random 0.455 — OPPOSITE ordering, but SGD frozen underfit;
+2 more SGD seeds launched before reading anything into it.
+
+Next: arm B (joint MLP, nonlinear persistence — does it escape or
+drift?) x 2 widths x 3 seeds + SGD seeds 1,2 pairs launched. Arm C
+(frozen-pretrained companion stack) still needs checkpoint plumbing.
+
+---
+
 ## 2026-08-27 — E3c stall diagnosed and fixed: 75x speedup, matrix relaunched
 
 Lanes ran 21h at ~3,600 s/epoch (projected ~120): 27min USER vs 21.7h
