@@ -4,6 +4,24 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-27 — E3c stall diagnosed and fixed: 75x speedup, matrix relaunched
+
+Lanes ran 21h at ~3,600 s/epoch (projected ~120): 27min USER vs 21.7h
+KERNEL time per trainer, GPU 0% — per-step GB-scale numpy alloc/free
+churn (augmentation copies on 412MB cores) + per-batch page-locking
+(pin_memory) inside a 47GB heap. Constant from epoch 1; absent in the
+8-core smoke (small heap). Fix: augment=False + pin_memory=False
+(identical across arms -> comparisons unaffected; augmentation not
+load-bearing for the theory tests). Post-fix: 45-52 s/epoch at h48.
+Ops notes: pkill pattern matched own shell twice (use pgrep -f
+'pat[t]ern' bracket trick); author's bhargava_rf.py RF baselines (x3)
+share the box CPU. 20-epoch pilot curves archived in e3c_pilot_slow/
+(already showing the right shape: joint h192 valF1 0.78 theta moved
+27%; frozen_pca h48 valF1 0.73 theta pinned, r_rms 0.01-0.09 —
+phi alone crushes the residual). Full matrix ETA overnight.
+
+---
+
 ## 2026-08-26 (evening) — E3e complete: the normalization, not the preprocessing, is the lever
 
 Four at-init configs (36 measurements each), breast fold 0:
