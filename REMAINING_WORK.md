@@ -288,7 +288,12 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
             counterexample — AdamW wd=0.05 would have invalidated
             the displacement test); log ||dg_phi/dZ||_op along
             training (containment as tested hypothesis, Fable F6).
-            BUILD STARTS with cheap arms A2/A3 first.
+            STATUS 2026-08-28: breast matrix 30/30 DONE (A1 h48/h192,
+            A2, A3, B, SGD pairs x3). Frozen>=joint everywhere under
+            AdamW (falsifier negative); SGD: joint~frozen-random
+            (Thm-2 read holds in-regime); MLP arm persists (harmful
+            drift). REMAINING: arm C plumbing; A1 h{96,384} for
+            4-point mu-hat(M); prostate key cells.
       - [x] E3e. DONE 2026-08-26. RESULT INVERTS THE PREDICTION:
             centering is a NO-OP (internal BNs absorb shifts; no-BN
             centered == uncentered to 4 digits); the LEVER is the

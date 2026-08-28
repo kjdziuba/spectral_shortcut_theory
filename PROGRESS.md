@@ -4,6 +4,35 @@ Running session-by-session log. Newest entries at the top.
 
 ---
 
+## 2026-08-28 (later) — laneB complete: nonlinear persistence CONFIRMED; SGD dissociation resolves the Thm-2 read
+
+**Arm B (joint MLP = companion's GlobalMLPEncoder), 2 widths x 3 seeds:**
+h48 0.566+/-0.070, h192 0.575+/-0.184 — the nonlinear encoder does NOT
+escape: joint-MLP loses to frozen-random by -0.08/-0.16 and moves even
+further from init (theta_rel 0.86-0.95). "Proved for linear,
+empirically persists for nonlinear" is now backed by artifacts, in the
+amplified harmful-drift form. (h192 sd 0.18: one seed collapsed —
+report per-seed in Section 8.)
+
+**SGD pairs now n=3 — the optimizer dissociation is clean:**
+  SGD:   joint 0.538+/-0.075 vs frozen-random 0.510+/-0.050
+         -> joint - frozen = +0.03 (within noise): Thm-2's functional
+         read (joint ~ frozen-random) HOLDS in the theorem's regime;
+         theta moves less (0.36 rel vs 0.60 under AdamW).
+  AdamW: joint < frozen-random by -0.09..-0.11: preconditioning
+         amplifies theta's shortcut-aligned gradients into HARMFUL
+         drift (scope caveat the reviewers forced is now empirically
+         load-bearing, in the theory's favor).
+Both regimes support the freeze prescription; the theorem's scoping
+to GD/flow is vindicated rather than embarrassed.
+
+E3c breast matrix: 30/30 runs. Remaining experimental scope: arm C
+plumbing (deferred), A1 widths {96,384} for a 4-point mu-hat(M) curve,
+prostate replication of key cells (joint/frozen-random/frozen-PCA at
+h192). Section 8 (P2) now has its complete evidence base.
+
+---
+
 ## 2026-08-28 — E3c COMPLETE (20/20 runs): frozen beats joint decisively; the mechanism is richer than pinning
 
 Full matrix landed clean post-fix (~50 min/run h48, ~57 min h192).
