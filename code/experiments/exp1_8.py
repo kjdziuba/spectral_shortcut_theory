@@ -63,7 +63,7 @@ def build_model(width: int, seed: int, args) -> nn.Module:
         reduce_dim=args.reduce_dim, patch_tok_size=args.patch_tok_size,
         hidden_dim=width, num_layers=args.num_layers, num_heads=args.num_heads,
         mlp_ratio=4.0, dropout=0.0, spatial_size=args.spatial_size,
-        spectral_norm=True,
+        spectral_norm=not getattr(args, "no_spectral_norm", False),
     ).to(args.device)
     model.train()
     freeze_bn_running_stats(model)
@@ -181,6 +181,10 @@ def main() -> None:
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--core_oversample", type=int, default=6,
                     help="load this many times n_batches cores, keep densest")
+    ap.add_argument("--no_spectral_norm", action="store_true",
+                    help="build the model WITHOUT the internal per-wavenumber "
+                         "BatchNorm (wn_norm), which otherwise re-standardizes "
+                         "the input and absorbs any external centering")
     ap.add_argument("--center_inputs", action="store_true",
                     help="subtract the valid-pixel mean spectrum (per channel x "
                          "wavenumber) from the whole input tensor before "
