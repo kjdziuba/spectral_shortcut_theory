@@ -1500,3 +1500,32 @@ ViT sweep:
   completion (default weights + fixed bias). Pre-registered: if width-scaled/
   zero-bias arms stay flat, sigma_b is causal for deep heads; if they grow,
   the weight law was the culprit and P1 keeps the scheme-level phrasing.
+
+## 2026-09-01 (late night) — sigma_b isolation complete; E1 CLOSED
+
+- Workflow wf_04c597a9 (commit 9bcae8d, pushed): 3 new init arms on deep_mlp,
+  validation 1.1e-15, default/theorem arms verified bit-exact preserved,
+  slopes reproduced to <0.01% by independent auditor.
+- RESULT (lam_phi width slopes, deep head): default 0.105, theorem 0.989,
+  default_fixedbias 0.924 (level 3.3x below theorem), he_scaledbias 0.696,
+  he_zerobias 0.606 (tail-3-point slopes 0.92/0.82, rising toward ~1).
+- CAUSAL READING (judge, mixed->resolved): fixing sigma_b is SUFFICIENT
+  under either weight law (0.105->0.924) but NOT necessary (he_zerobias
+  still grows 12x); components strongly subadditive — exactly Step A's
+  additive pre-activation variance: floor survives if EITHER
+  sigma_w^2||h||^2/fan_in or sigma_b^2 is O(1) width-independent; PyTorch
+  default kills both legs at once (6x-contractive weight gain per ReLU
+  layer + 1/fan_in bias variance). Mediator verified by forward hooks
+  (width-stable mean-activation floor m~0.073 at sigma_b=0 He arms).
+- P1 phrasing constraints (verbatim in workflow journal wf_04c597a9): (1)
+  sigma_b sufficient-not-necessary; (2) default flatness is a CONJUNCTION;
+  (3) He-only slopes are finite-range fits, do not cite against Step A;
+  (4) dominance is instance-specific (bottleneck scale sigma_b^2=0.25 vs
+  weight term ~0.05); (5) he_scaledbias is not a clean control (layer-1
+  fan_in=K fixed); (6) NEVER attribute across arms via D_curv (default
+  arms have lam_theta~5e-4 -> D_curv~1.2e5 artifact) — lam_phi only;
+  (7) slope parity is not level parity; (8) Step A's sigma_b>0 route is
+  sufficient, not exclusive — remark at supplement ~L460-472 must not
+  imply bias is the only guarantee.
+- E-phase for Section 7 is now COMPLETE: E1 (5 arms), E2 (42 runs).
+  Next: P1 (Section 7 rewrite against these artifacts + A17/A20/A53).

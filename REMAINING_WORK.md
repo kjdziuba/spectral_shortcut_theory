@@ -234,13 +234,19 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       2026-08-26.**
 
 **Phase E — experiments to test the frozen theory (weeks 2-3)**
-- [~] E1. RUN 2026-09-01 (exp1_1v3.py, validation 6.9e-16, bit-exact repro):
-      mlp lam_phi slope 0.705, D_curv slope 0.714 (sublinear vs pred. 1.0);
-      deep_mlp (MxM, Theta(M^2)) lam_phi ~Theta(1), D_curv FLAT (0.036).
-      DIAGNOSIS: PyTorch default init has bias var Theta(1/M); the Omega(M)
-      floor (supplement Step A) requires FIXED sigma_b. Pre-registered
-      reconciliation rerun under theorem init (sigma_b=0.5) IN PROGRESS
-      (workflow wf_974de58f). Prediction: slope turns on. Then P1 write-up.
+- [x] E1. COMPLETE 2026-09-01 (exp1_1v3.py, 5 init arms, all validated
+      <1e-14, slopes independently reproduced). Deep-head lam_phi width
+      slopes: default 0.105 / theorem(He+fixed sigma_b) 0.989 /
+      default_fixedbias 0.924 / he_scaledbias 0.696 / he_zerobias 0.606.
+      CAUSAL STORY (matches Step A's s^2 = sigma_w^2||h||^2/fan_in +
+      sigma_b^2): floor survives if EITHER variance term is O(1)
+      width-independent; default init kills BOTH (contractive weights +
+      width-vanishing bias). Fixed sigma_b sufficient, NOT necessary.
+      Mediator (mean-activation floor) verified directly via hooks.
+      8 phrasing constraints for P1 logged in PROGRESS (2026-09-01 night,
+      isolation entry) — esp.: never use D_curv for cross-arm attribution
+      (lam_theta denominator artifact), quote slope AND level, He-only
+      slopes are finite-range fits (tail ~0.8-0.9, rising).
 - [x] E2. DONE 2026-09-01: exp1_2v4 rerun, 42 runs, 84 per-run EGR CSVs +
       results/exp1_2v4_summary.csv + README stating the A60 metric
       (final-epoch test acc, frozen-joint gaps +0.014..+0.038, frozen wins
