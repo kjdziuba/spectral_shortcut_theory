@@ -1401,3 +1401,19 @@ ViT sweep:
 - LaTeX-first for proofs; markdown drafts in `proofs/` for early iteration
 - EGR diagnostic will be released as standalone PyPI package
 - Target ICML/NeurIPS theory track first, AISTATS as backup
+
+## 2026-09-01 — P2 kickoff + E1/E2 launched
+
+- Author decisions: Section 8 uses BOTH companion (backed rows only) + E3c
+  (two roles: observation → controlled mechanism study); Section 7 stays in
+  main text as compact synthetic verification (non-vacuousness defense).
+- Re-ran analyze_e3c.py from raw CSVs: all 30 runs reproduce (headline gaps
+  joint−frozen_random = −0.110 h48 / −0.085 h192; falsifier negative).
+  New nuance logged: frozen_pca ≈ frozen_random at h192 (0.727 vs 0.731);
+  informativeness advantage exists only at h48 → weaken monotone claim.
+- Wrote P2_SECTION8_SKELETON.md (structure, page budget, claim→artifact map,
+  A29/A51/A52 citation fixes folded in). Tex rewrite waits on provenance.
+- Launched agents: (1) provenance trace of the 7 companion table rows across
+  both repos (A7: 4/7 expected unbacked → cut); (2) E1v3 (GGN-block rerun of
+  exp1_1 + fixed-depth MxM arch, validation-first) + E2 (exp1_2v4 rerun with
+  persisted per-run EGR CSVs, A19/A60).
