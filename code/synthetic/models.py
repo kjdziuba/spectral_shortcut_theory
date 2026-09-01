@@ -57,22 +57,63 @@ class SpectralReduction(nn.Module):
         return self.proj(X)
 
 
+def _apply_theorem_init(module: nn.Module, sigma_b: float) -> None:
+    """Theorem-matching init for a spatial module (exp1_1v3 follow-up).
+
+    For every nn.Linear in `module`:
+      - weights ~ N(0, 2/fan_in)   (He-style Gaussian)
+      - biases  ~ N(0, sigma_b^2)  with sigma_b a FIXED constant across
+        widths and layers (including the final head layer)
+
+    This matches the supplement's Step A assumptions (Omega(M) floor), whose
+    floor constant is proportional to sigma_b^2 with sigma_b independent of
+    width. PyTorch's default nn.Linear init instead has bias variance
+    Theta(1/fan_in), under which the proved floor is only Theta(1).
+
+    Called only when init_mode='theorem'; the default path consumes no extra
+    RNG draws, so existing results reproduce bit-exact.
+    """
+    if sigma_b < 0:
+        raise ValueError(f"sigma_b must be >= 0, got {sigma_b}")
+    for m in module.modules():
+        if isinstance(m, nn.Linear):
+            nn.init.normal_(m.weight, mean=0.0,
+                            std=math.sqrt(2.0 / m.in_features))
+            if m.bias is not None:
+                nn.init.normal_(m.bias, mean=0.0, std=sigma_b)
+
+
+def _check_init_mode(init_mode: str) -> str:
+    if init_mode not in ("default", "theorem"):
+        raise ValueError(
+            f"init_mode must be 'default' or 'theorem', got {init_mode!r}")
+    return init_mode
+
+
 class SpatialMLP(nn.Module):
     """Per-pixel MLP head with one hidden layer of width `width`.
 
     Operates independently per pixel (acts on the last axis only), so it has
     zero spatial receptive field — useful as the "no spatial context" baseline
     contrast against SpatialCNN.
+
+    init_mode='default' keeps PyTorch's nn.Linear init (bias var Theta(1/fan_in));
+    init_mode='theorem' applies _apply_theorem_init (fixed sigma_b, default 0.5).
     """
 
-    def __init__(self, K: int, n_classes: int, width: int) -> None:
+    def __init__(self, K: int, n_classes: int, width: int,
+                 init_mode: str = "default", sigma_b: float = 0.5) -> None:
         super().__init__()
         self.K = K
         self.n_classes = n_classes
         self.width = width
+        self.init_mode = _check_init_mode(init_mode)
+        self.sigma_b = sigma_b
         self.fc1 = nn.Linear(K, width)
         self.act = nn.ReLU(inplace=False)  # see module docstring
         self.fc2 = nn.Linear(width, n_classes)
+        if self.init_mode == "theorem":
+            _apply_theorem_init(self, sigma_b)
 
     def forward(self, Z: torch.Tensor) -> torch.Tensor:
         # Z: (B, H, W, K) -> logits: (B, H, W, n_classes)
@@ -90,9 +131,13 @@ class SpatialDeepMLP(nn.Module):
 
     Same channels-LAST contract as SpatialMLP: acts on the last axis only,
     zero spatial receptive field. ReLU(inplace=False) — see module docstring.
+
+    init_mode='default' keeps PyTorch's nn.Linear init (bias var Theta(1/fan_in));
+    init_mode='theorem' applies _apply_theorem_init (fixed sigma_b, default 0.5).
     """
 
-    def __init__(self, K: int, n_classes: int, width: int, n_hidden: int = 3) -> None:
+    def __init__(self, K: int, n_classes: int, width: int, n_hidden: int = 3,
+                 init_mode: str = "default", sigma_b: float = 0.5) -> None:
         super().__init__()
         if n_hidden < 1:
             raise ValueError(f"n_hidden must be >= 1, got {n_hidden}")
@@ -100,11 +145,15 @@ class SpatialDeepMLP(nn.Module):
         self.n_classes = n_classes
         self.width = width
         self.n_hidden = n_hidden
+        self.init_mode = _check_init_mode(init_mode)
+        self.sigma_b = sigma_b
         layers: list[nn.Module] = [nn.Linear(K, width), nn.ReLU(inplace=False)]
         for _ in range(n_hidden - 1):
             layers += [nn.Linear(width, width), nn.ReLU(inplace=False)]
         layers.append(nn.Linear(width, n_classes))
         self.net = nn.Sequential(*layers)
+        if self.init_mode == "theorem":
+            _apply_theorem_init(self, sigma_b)
 
     def forward(self, Z: torch.Tensor) -> torch.Tensor:
         # Z: (B, H, W, K) -> logits: (B, H, W, n_classes)

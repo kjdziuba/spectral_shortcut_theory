@@ -27,10 +27,18 @@ Usage:
     python exp1_1v3.py            # validation gate, then full sweep
     python exp1_1v3.py --smoke    # validation gate + 1 width/seed per arch,
                                   # writes exp1_1_v3_ggn_smoke.csv
+    python exp1_1v3.py --init_mode theorem
+                                  # theorem-matching init (He weights, fixed
+                                  # sigma_b=0.5 biases) on the SPATIAL module
+                                  # only; writes exp1_1_v3_ggn_theoreminit.csv
+
+--init_mode default (the default) reproduces the original run bit-exact; the
+spectral module's init is never touched in either mode.
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 import time
 from pathlib import Path
@@ -79,11 +87,12 @@ LANCZOS_M = 80           # Lanczos steps (top-1 needed; generous margin)
 VALIDATION_TOL = 1e-6
 
 
-def build_spatial(arch: str, M: int) -> torch.nn.Module:
+def build_spatial(arch: str, M: int, init_mode: str = "default") -> torch.nn.Module:
     if arch == "mlp":
-        return SpatialMLP(K=K, n_classes=N_CLASSES, width=M)
+        return SpatialMLP(K=K, n_classes=N_CLASSES, width=M, init_mode=init_mode)
     if arch == "deep_mlp":
-        return SpatialDeepMLP(K=K, n_classes=N_CLASSES, width=M, n_hidden=3)
+        return SpatialDeepMLP(K=K, n_classes=N_CLASSES, width=M, n_hidden=3,
+                              init_mode=init_mode)
     raise ValueError(arch)
 
 
@@ -104,18 +113,19 @@ def _top1_ggn(model, X, y, block_module, seed: int) -> float:
 # --------------------------------------------------------------------- #
 # Validation gate (A24): operator vs brute-force dense GGN
 # --------------------------------------------------------------------- #
-def validate(device: torch.device) -> float:
+def validate(device: torch.device, init_mode: str = "default") -> float:
     """Cross-check Lanczos-on-operator lambda_max against a dense J^T H_tau J
     eigendecomposition on tiny configs. Returns the worst relative error.
     Asserts < VALIDATION_TOL."""
-    print("[exp1_1v3] === VALIDATION GATE: operator vs brute-force dense GGN ===")
+    print(f"[exp1_1v3] === VALIDATION GATE: operator vs brute-force dense GGN "
+          f"(init_mode={init_mode}) ===")
     Hs = Ws = 4          # tiny spatial grid so the explicit J is tractable
     Bs = 4
     worst = 0.0
     for arch in ("mlp", "deep_mlp"):
         torch.manual_seed(0)
         spectral = SpectralReduction(S=S, K=K)
-        spatial = build_spatial(arch, 16)
+        spatial = build_spatial(arch, 16, init_mode=init_mode)
         model = CompositionModel(spectral, spatial).to(device).double()
         X, y = make_problem(n_samples=Bs, S=S, H=Hs, W=Ws,
                             n_classes=N_CLASSES, alpha=1.0, beta=1.0, seed=0)
@@ -145,12 +155,13 @@ def validate(device: torch.device) -> float:
 # --------------------------------------------------------------------- #
 # Sweep
 # --------------------------------------------------------------------- #
-def measure_one(arch: str, M: int, seed: int, device: torch.device) -> dict:
+def measure_one(arch: str, M: int, seed: int, device: torch.device,
+                init_mode: str = "default") -> dict:
     torch.manual_seed(seed)
     np.random.seed(seed)
 
     spectral = SpectralReduction(S=S, K=K)
-    spatial = build_spatial(arch, M)
+    spatial = build_spatial(arch, M, init_mode=init_mode)
     model = CompositionModel(spectral, spatial).to(device).double()
 
     X, y = make_problem(n_samples=N_SAMPLES, S=S, H=H, W=W,
@@ -173,6 +184,7 @@ def measure_one(arch: str, M: int, seed: int, device: torch.device) -> dict:
         "arch": arch,
         "M": M,
         "seed": seed,
+        "init_mode": init_mode,
         "C_f": C_f,
         "C_g": C_g,
         "lambda_theta_ggn": float(lambda_theta),
@@ -186,11 +198,13 @@ def _fit_loglog_slope(x: np.ndarray, y: np.ndarray) -> float:
     return float(slope)
 
 
-def run(smoke: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
+def run(smoke: bool = False,
+        init_mode: str = "default") -> tuple[pd.DataFrame, pd.DataFrame]:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[exp1_1v3] device = {device}")
+    print(f"[exp1_1v3] init_mode = {init_mode}")
 
-    validate(device)
+    validate(device, init_mode=init_mode)
 
     arch_widths = {a: ws[:1] for a, ws in ARCH_WIDTHS.items()} if smoke else ARCH_WIDTHS
     seeds = SEEDS[:1] if smoke else SEEDS
@@ -203,7 +217,7 @@ def run(smoke: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
         for M in widths:
             for seed in seeds:
                 t = time.time()
-                row = measure_one(arch, M, seed, device)
+                row = measure_one(arch, M, seed, device, init_mode=init_mode)
                 rows.append(row)
                 print(f"[exp1_1v3] {arch:8s} M={M:5d} seed={seed}  "
                       f"C_g={row['C_g']:9d}  "
@@ -214,8 +228,9 @@ def run(smoke: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
     print(f"[exp1_1v3] sweep wall time: {time.time()-t0:.1f}s")
 
     raw_df = pd.DataFrame(rows)
+    tag = "_theoreminit" if init_mode == "theorem" else ""
     suffix = "_smoke" if smoke else ""
-    raw_path = RESULTS_DIR / f"exp1_1_v3_ggn{suffix}.csv"
+    raw_path = RESULTS_DIR / f"exp1_1_v3_ggn{tag}{suffix}.csv"
     raw_df.to_csv(raw_path, index=False)
     print(f"[exp1_1v3] wrote {raw_path}")
 
@@ -230,13 +245,14 @@ def run(smoke: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
         D_curv_std=("D_curv", "std"),
         n_seeds=("seed", "count"),
     ).reset_index()
-    agg_path = RESULTS_DIR / f"exp1_1_v3_ggn_aggregated{suffix}.csv"
+    agg_df.insert(2, "init_mode", init_mode)
+    agg_path = RESULTS_DIR / f"exp1_1_v3_ggn{tag}_aggregated{suffix}.csv"
     agg_df.to_csv(agg_path, index=False)
     print(f"[exp1_1v3] wrote {agg_path}")
     return raw_df, agg_df
 
 
-def plot(agg_df: pd.DataFrame, raw_df: pd.DataFrame) -> None:
+def plot(agg_df: pd.DataFrame, raw_df: pd.DataFrame, tag: str = "") -> None:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -271,7 +287,7 @@ def plot(agg_df: pd.DataFrame, raw_df: pd.DataFrame) -> None:
     ax.grid(True, which="both", alpha=0.3)
     ax.legend(fontsize=9)
     fig.tight_layout()
-    out = RESULTS_DIR / "exp1_1_v3_lambda_phi_vs_M.png"
+    out = RESULTS_DIR / f"exp1_1_v3_lambda_phi_vs_M{tag}.png"
     fig.savefig(out, dpi=150)
     plt.close(fig)
     print(f"[exp1_1v3] wrote {out}")
@@ -308,23 +324,33 @@ def plot(agg_df: pd.DataFrame, raw_df: pd.DataFrame) -> None:
     ax.grid(True, which="both", alpha=0.3)
     ax.legend(fontsize=9)
     fig.tight_layout()
-    out = RESULTS_DIR / "exp1_1_v3_Dcurv_vs_M.png"
+    out = RESULTS_DIR / f"exp1_1_v3_Dcurv_vs_M{tag}.png"
     fig.savefig(out, dpi=150)
     plt.close(fig)
     print(f"[exp1_1v3] wrote {out}")
 
 
 def main() -> None:
-    smoke = "--smoke" in sys.argv
-    raw_df, agg_df = run(smoke=smoke)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--smoke", action="store_true",
+                        help="validation gate + 1 width/seed per arch")
+    parser.add_argument("--init_mode", choices=["default", "theorem"],
+                        default="default",
+                        help="spatial-module init: 'default' (PyTorch nn.Linear, "
+                             "reproduces original run) or 'theorem' (He weights, "
+                             "fixed sigma_b=0.5 biases)")
+    args = parser.parse_args()
 
-    print("\n=== Exp 1.1 v3 (GGN blocks) — mean over seeds ===")
-    cols = ["arch", "M", "C_f", "C_g",
+    raw_df, agg_df = run(smoke=args.smoke, init_mode=args.init_mode)
+
+    print(f"\n=== Exp 1.1 v3 (GGN blocks, init_mode={args.init_mode}) — "
+          f"mean over seeds ===")
+    cols = ["arch", "M", "init_mode", "C_f", "C_g",
             "lambda_theta_ggn_mean", "lambda_phi_ggn_mean",
             "D_curv_mean", "D_curv_std", "n_seeds"]
     print(agg_df[cols].to_string(index=False, float_format=lambda v: f"{v:.4g}"))
 
-    if not smoke:
+    if not args.smoke:
         for arch in agg_df["arch"].unique():
             sub = agg_df[agg_df["arch"] == arch]
             s_lphi = _fit_loglog_slope(sub["M"].to_numpy(float),
@@ -335,7 +361,8 @@ def main() -> None:
                                      sub["C_g"].to_numpy(float))
             print(f"[exp1_1v3] {arch:8s} log-log slopes vs M:  "
                   f"C_g={s_cg:.3f}  lambda_phi_ggn={s_lphi:.3f}  D_curv={s_dcurv:.3f}")
-        plot(agg_df, raw_df)
+        plot(agg_df, raw_df,
+             tag="_theoreminit" if args.init_mode == "theorem" else "")
 
 
 if __name__ == "__main__":
