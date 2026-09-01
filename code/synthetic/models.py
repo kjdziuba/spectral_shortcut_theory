@@ -83,10 +83,66 @@ def _apply_theorem_init(module: nn.Module, sigma_b: float) -> None:
                 nn.init.normal_(m.bias, mean=0.0, std=sigma_b)
 
 
+#: Recognised spatial-module init modes (E1v3 + sigma_b-isolation controls).
+#: 'default' and 'theorem' are the two original arms and their behavior is
+#: frozen (bit-exact); the other three isolate weight law vs bias law:
+#:   'he_scaledbias'     He Gaussian weights N(0, 2/fan_in);
+#:                       biases ~ N(0, 1/(3*fan_in)) — Gaussian with PyTorch's
+#:                       default bias VARIANCE (width-scaled). Differs from
+#:                       'theorem' ONLY in the bias law.
+#:   'he_zerobias'       He Gaussian weights; biases = 0.
+#:   'default_fixedbias' PyTorch default weight init UNTOUCHED; only biases
+#:                       re-drawn ~ N(0, sigma_b^2) fixed across widths.
+#:                       Differs from 'default' ONLY in the bias law.
+INIT_MODES = ("default", "theorem", "he_scaledbias", "he_zerobias",
+              "default_fixedbias")
+
+
+def _apply_init_mode(module: nn.Module, init_mode: str,
+                     sigma_b: float) -> None:
+    """Dispatch spatial-module init by `init_mode` (see INIT_MODES).
+
+    'default' is a strict no-op — zero RNG draws — so existing default-init
+    results reproduce bit-exact. 'theorem' delegates to _apply_theorem_init
+    unchanged (same call, same RNG draw order), so theorem-init results also
+    reproduce bit-exact.
+    """
+    if init_mode == "default":
+        return
+    if init_mode == "theorem":
+        _apply_theorem_init(module, sigma_b)
+        return
+    if init_mode == "default_fixedbias":
+        if sigma_b < 0:
+            raise ValueError(f"sigma_b must be >= 0, got {sigma_b}")
+        for m in module.modules():
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                # Weights keep the PyTorch default draw made in reset_parameters;
+                # only the bias is re-drawn, with the theorem's fixed variance.
+                nn.init.normal_(m.bias, mean=0.0, std=sigma_b)
+        return
+    if init_mode in ("he_scaledbias", "he_zerobias"):
+        for m in module.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, mean=0.0,
+                                std=math.sqrt(2.0 / m.in_features))
+                if m.bias is not None:
+                    if init_mode == "he_scaledbias":
+                        # PyTorch's default bias variance 1/(3*fan_in), but
+                        # Gaussian instead of uniform.
+                        nn.init.normal_(
+                            m.bias, mean=0.0,
+                            std=math.sqrt(1.0 / (3.0 * m.in_features)))
+                    else:
+                        nn.init.zeros_(m.bias)
+        return
+    raise ValueError(f"unhandled init_mode {init_mode!r}")
+
+
 def _check_init_mode(init_mode: str) -> str:
-    if init_mode not in ("default", "theorem"):
+    if init_mode not in INIT_MODES:
         raise ValueError(
-            f"init_mode must be 'default' or 'theorem', got {init_mode!r}")
+            f"init_mode must be one of {INIT_MODES}, got {init_mode!r}")
     return init_mode
 
 
@@ -99,6 +155,8 @@ class SpatialMLP(nn.Module):
 
     init_mode='default' keeps PyTorch's nn.Linear init (bias var Theta(1/fan_in));
     init_mode='theorem' applies _apply_theorem_init (fixed sigma_b, default 0.5).
+    The sigma_b-isolation controls 'he_scaledbias', 'he_zerobias' and
+    'default_fixedbias' are documented at INIT_MODES / _apply_init_mode.
     """
 
     def __init__(self, K: int, n_classes: int, width: int,
@@ -112,8 +170,7 @@ class SpatialMLP(nn.Module):
         self.fc1 = nn.Linear(K, width)
         self.act = nn.ReLU(inplace=False)  # see module docstring
         self.fc2 = nn.Linear(width, n_classes)
-        if self.init_mode == "theorem":
-            _apply_theorem_init(self, sigma_b)
+        _apply_init_mode(self, self.init_mode, sigma_b)
 
     def forward(self, Z: torch.Tensor) -> torch.Tensor:
         # Z: (B, H, W, K) -> logits: (B, H, W, n_classes)
@@ -134,6 +191,8 @@ class SpatialDeepMLP(nn.Module):
 
     init_mode='default' keeps PyTorch's nn.Linear init (bias var Theta(1/fan_in));
     init_mode='theorem' applies _apply_theorem_init (fixed sigma_b, default 0.5).
+    The sigma_b-isolation controls 'he_scaledbias', 'he_zerobias' and
+    'default_fixedbias' are documented at INIT_MODES / _apply_init_mode.
     """
 
     def __init__(self, K: int, n_classes: int, width: int, n_hidden: int = 3,
@@ -152,8 +211,7 @@ class SpatialDeepMLP(nn.Module):
             layers += [nn.Linear(width, width), nn.ReLU(inplace=False)]
         layers.append(nn.Linear(width, n_classes))
         self.net = nn.Sequential(*layers)
-        if self.init_mode == "theorem":
-            _apply_theorem_init(self, sigma_b)
+        _apply_init_mode(self, self.init_mode, sigma_b)
 
     def forward(self, Z: torch.Tensor) -> torch.Tensor:
         # Z: (B, H, W, K) -> logits: (B, H, W, n_classes)

@@ -31,9 +31,19 @@ Usage:
                                   # theorem-matching init (He weights, fixed
                                   # sigma_b=0.5 biases) on the SPATIAL module
                                   # only; writes exp1_1_v3_ggn_theoreminit.csv
+    python exp1_1v3.py --arch deep_mlp \
+        --init_mode he_scaledbias he_zerobias default_fixedbias \
+        --out_csv results/exp1_1_v3_ggn_sigmab_isolation.csv
+                                  # sigma_b-isolation controls (E1v3 follow-up):
+                                  # runs the requested arms sequentially in ONE
+                                  # process and writes ONE combined CSV. The
+                                  # validation gate runs once, under
+                                  # 'he_zerobias' when it is among the modes.
 
 --init_mode default (the default) reproduces the original run bit-exact; the
-spectral module's init is never touched in either mode.
+spectral module's init is never touched in any mode. The isolation modes
+('he_scaledbias', 'he_zerobias', 'default_fixedbias') decouple the weight law
+from the bias law — see synthetic/models.py INIT_MODES for their definitions.
 """
 
 from __future__ import annotations
@@ -53,6 +63,7 @@ if str(CODE_DIR) not in sys.path:
 
 from synthetic.data import make_problem  # noqa: E402
 from synthetic.models import (  # noqa: E402
+    INIT_MODES,
     SpectralReduction,
     SpatialMLP,
     SpatialDeepMLP,
@@ -199,42 +210,66 @@ def _fit_loglog_slope(x: np.ndarray, y: np.ndarray) -> float:
 
 
 def run(smoke: bool = False,
-        init_mode: str = "default") -> tuple[pd.DataFrame, pd.DataFrame]:
+        init_modes: list[str] | None = None,
+        arch_sel: str = "all",
+        out_csv: str | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    init_modes = list(init_modes) if init_modes else ["default"]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[exp1_1v3] device = {device}")
-    print(f"[exp1_1v3] init_mode = {init_mode}")
+    print(f"[exp1_1v3] init_modes = {init_modes}")
 
-    validate(device, init_mode=init_mode)
+    # Validation gate runs ONCE per invocation. For multi-mode isolation runs
+    # we gate under 'he_zerobias' when it is among the requested modes (the
+    # pre-registered choice); otherwise under the first requested mode. For
+    # legacy single-mode runs this reduces to the original behavior.
+    gate_mode = "he_zerobias" if "he_zerobias" in init_modes else init_modes[0]
+    validate(device, init_mode=gate_mode)
 
-    arch_widths = {a: ws[:1] for a, ws in ARCH_WIDTHS.items()} if smoke else ARCH_WIDTHS
+    arch_widths = {a: ws for a, ws in ARCH_WIDTHS.items()
+                   if arch_sel in ("all", a)}
+    if not arch_widths:
+        raise ValueError(f"unknown arch selection {arch_sel!r}")
+    if smoke:
+        arch_widths = {a: ws[:1] for a, ws in arch_widths.items()}
     seeds = SEEDS[:1] if smoke else SEEDS
     print(f"[exp1_1v3] arch_widths = {arch_widths}")
     print(f"[exp1_1v3] seeds = {seeds}\n")
 
     rows: list[dict] = []
     t0 = time.time()
-    for arch, widths in arch_widths.items():
-        for M in widths:
-            for seed in seeds:
-                t = time.time()
-                row = measure_one(arch, M, seed, device, init_mode=init_mode)
-                rows.append(row)
-                print(f"[exp1_1v3] {arch:8s} M={M:5d} seed={seed}  "
-                      f"C_g={row['C_g']:9d}  "
-                      f"l_theta={row['lambda_theta_ggn']:.4e}  "
-                      f"l_phi={row['lambda_phi_ggn']:.4e}  "
-                      f"D_curv={row['D_curv']:.4e}  ({time.time()-t:.1f}s)",
-                      flush=True)
+    for init_mode in init_modes:
+        for arch, widths in arch_widths.items():
+            for M in widths:
+                for seed in seeds:
+                    t = time.time()
+                    row = measure_one(arch, M, seed, device,
+                                      init_mode=init_mode)
+                    rows.append(row)
+                    print(f"[exp1_1v3] {init_mode:17s} {arch:8s} M={M:5d} "
+                          f"seed={seed}  "
+                          f"C_g={row['C_g']:9d}  "
+                          f"l_theta={row['lambda_theta_ggn']:.4e}  "
+                          f"l_phi={row['lambda_phi_ggn']:.4e}  "
+                          f"D_curv={row['D_curv']:.4e}  ({time.time()-t:.1f}s)",
+                          flush=True)
     print(f"[exp1_1v3] sweep wall time: {time.time()-t0:.1f}s")
 
     raw_df = pd.DataFrame(rows)
-    tag = "_theoreminit" if init_mode == "theorem" else ""
     suffix = "_smoke" if smoke else ""
-    raw_path = RESULTS_DIR / f"exp1_1_v3_ggn{tag}{suffix}.csv"
+    if out_csv is not None:
+        raw_path = Path(out_csv)
+        raw_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        if len(init_modes) == 1:
+            tag = {"default": "", "theorem": "_theoreminit"}.get(
+                init_modes[0], f"_{init_modes[0]}")
+        else:
+            tag = "_" + "_".join(init_modes)
+        raw_path = RESULTS_DIR / f"exp1_1_v3_ggn{tag}{suffix}.csv"
     raw_df.to_csv(raw_path, index=False)
     print(f"[exp1_1v3] wrote {raw_path}")
 
-    agg_df = raw_df.groupby(["arch", "M"], sort=True).agg(
+    agg_df = raw_df.groupby(["init_mode", "arch", "M"], sort=True).agg(
         C_f=("C_f", "first"),
         C_g=("C_g", "first"),
         lambda_theta_ggn_mean=("lambda_theta_ggn", "mean"),
@@ -245,8 +280,11 @@ def run(smoke: bool = False,
         D_curv_std=("D_curv", "std"),
         n_seeds=("seed", "count"),
     ).reset_index()
-    agg_df.insert(2, "init_mode", init_mode)
-    agg_path = RESULTS_DIR / f"exp1_1_v3_ggn{tag}_aggregated{suffix}.csv"
+    # Legacy column order: arch, M, init_mode, ...
+    agg_df = agg_df[["arch", "M", "init_mode"] +
+                    [c for c in agg_df.columns
+                     if c not in ("arch", "M", "init_mode")]]
+    agg_path = raw_path.with_name(raw_path.stem + "_aggregated.csv")
     agg_df.to_csv(agg_path, index=False)
     print(f"[exp1_1v3] wrote {agg_path}")
     return raw_df, agg_df
@@ -334,16 +372,32 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--smoke", action="store_true",
                         help="validation gate + 1 width/seed per arch")
-    parser.add_argument("--init_mode", choices=["default", "theorem"],
-                        default="default",
-                        help="spatial-module init: 'default' (PyTorch nn.Linear, "
-                             "reproduces original run) or 'theorem' (He weights, "
-                             "fixed sigma_b=0.5 biases)")
+    parser.add_argument("--init_mode", nargs="+", choices=list(INIT_MODES),
+                        default=["default"],
+                        help="spatial-module init mode(s). One value keeps the "
+                             "legacy behavior/filenames; several values run the "
+                             "arms sequentially in one process and write one "
+                             "combined CSV (see --out_csv). Modes: 'default' "
+                             "(PyTorch nn.Linear, reproduces original run), "
+                             "'theorem' (He weights, fixed sigma_b=0.5 biases), "
+                             "'he_scaledbias' (He weights, Gaussian biases with "
+                             "PyTorch's 1/(3*fan_in) variance), 'he_zerobias' "
+                             "(He weights, zero biases), 'default_fixedbias' "
+                             "(default weights, biases re-drawn N(0, 0.25))")
+    parser.add_argument("--arch", choices=["all", "mlp", "deep_mlp"],
+                        default="all",
+                        help="restrict the sweep to one architecture "
+                             "(default: all)")
+    parser.add_argument("--out_csv", default=None,
+                        help="override the raw-CSV output path (the aggregated "
+                             "CSV is written next to it with an _aggregated "
+                             "suffix)")
     args = parser.parse_args()
 
-    raw_df, agg_df = run(smoke=args.smoke, init_mode=args.init_mode)
+    raw_df, agg_df = run(smoke=args.smoke, init_modes=args.init_mode,
+                         arch_sel=args.arch, out_csv=args.out_csv)
 
-    print(f"\n=== Exp 1.1 v3 (GGN blocks, init_mode={args.init_mode}) — "
+    print(f"\n=== Exp 1.1 v3 (GGN blocks, init_modes={args.init_mode}) — "
           f"mean over seeds ===")
     cols = ["arch", "M", "init_mode", "C_f", "C_g",
             "lambda_theta_ggn_mean", "lambda_phi_ggn_mean",
@@ -351,18 +405,28 @@ def main() -> None:
     print(agg_df[cols].to_string(index=False, float_format=lambda v: f"{v:.4g}"))
 
     if not args.smoke:
-        for arch in agg_df["arch"].unique():
-            sub = agg_df[agg_df["arch"] == arch]
-            s_lphi = _fit_loglog_slope(sub["M"].to_numpy(float),
-                                       sub["lambda_phi_ggn_mean"].to_numpy(float))
-            s_dcurv = _fit_loglog_slope(sub["M"].to_numpy(float),
-                                        sub["D_curv_mean"].to_numpy(float))
-            s_cg = _fit_loglog_slope(sub["M"].to_numpy(float),
-                                     sub["C_g"].to_numpy(float))
-            print(f"[exp1_1v3] {arch:8s} log-log slopes vs M:  "
-                  f"C_g={s_cg:.3f}  lambda_phi_ggn={s_lphi:.3f}  D_curv={s_dcurv:.3f}")
-        plot(agg_df, raw_df,
-             tag="_theoreminit" if args.init_mode == "theorem" else "")
+        for init_mode in agg_df["init_mode"].unique():
+            for arch in agg_df["arch"].unique():
+                sub = agg_df[(agg_df["arch"] == arch)
+                             & (agg_df["init_mode"] == init_mode)]
+                if sub.empty:
+                    continue
+                s_lphi = _fit_loglog_slope(
+                    sub["M"].to_numpy(float),
+                    sub["lambda_phi_ggn_mean"].to_numpy(float))
+                s_dcurv = _fit_loglog_slope(
+                    sub["M"].to_numpy(float),
+                    sub["D_curv_mean"].to_numpy(float))
+                s_cg = _fit_loglog_slope(sub["M"].to_numpy(float),
+                                         sub["C_g"].to_numpy(float))
+                print(f"[exp1_1v3] {init_mode:17s} {arch:8s} log-log slopes "
+                      f"vs M:  C_g={s_cg:.3f}  lambda_phi_ggn={s_lphi:.3f}  "
+                      f"D_curv={s_dcurv:.3f}")
+        if len(args.init_mode) == 1:
+            # Legacy plots are single-arm; skip them for multi-mode runs.
+            plot(agg_df, raw_df,
+                 tag={"default": "", "theorem": "_theoreminit"}.get(
+                     args.init_mode[0], f"_{args.init_mode[0]}"))
 
 
 if __name__ == "__main__":
