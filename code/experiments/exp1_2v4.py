@@ -47,6 +47,11 @@ from egr.callback import EGRLogger  # noqa: E402
 RESULTS_DIR = Path("/home/u37314kd/Projects/spectral_shortcut_theory/results")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
+# Per-run persistence (audit A19: every quoted number must be reproducible
+# from a persisted CSV) and the canonical summary path (audit A60).
+OUT_DIR = RESULTS_DIR / "exp1_2v4"
+SUMMARY_PATH = RESULTS_DIR / "exp1_2v4_summary.csv"
+
 
 # ------------------------------------------------------------------ #
 # Config
@@ -299,6 +304,64 @@ def plot_universality(results: list[RunResult]) -> None:
     print(f"[exp1_2 {TAG}] wrote {out}")
 
 
+def write_readme(summary_df: pd.DataFrame) -> None:
+    """results/exp1_2v4/README.md — states explicitly which metric backs the
+    ViT universality claim (audit A60) and tabulates joint-vs-frozen gaps."""
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    lines = [
+        "# Exp 1.2 v4 — per-run artifacts and claim provenance",
+        "",
+        "## Metric backing the ViT universality claim (audit A60)",
+        "",
+        "The claim that the joint-vs-frozen dissociation is NOT CNN-specific is",
+        "backed by **final-epoch test accuracy** (`final_test_acc` in",
+        "`../exp1_2v4_summary.csv`), mean over seeds {42, 43, 44}, comparing",
+        "condition `frozen` vs `joint` at each ViT width — the SAME metric used",
+        "for the CNN. Peak test accuracy (`peak_test_acc`) is reported as a",
+        "secondary check. The EGR time series (`egr_*.csv`, column `egr` =",
+        "||grad_theta|| / ||grad_phi||, logged every step after backward) are",
+        "mechanistic support for the two-timescale interpretation, not the",
+        "headline claim.",
+        "",
+        "## Files",
+        "",
+        "- `egr_{arch}_{cond}_D{width}_s{seed}.csv` — per-step EGR:",
+        "  `step, grad_theta_norm, grad_phi_norm, egr`. In the `frozen`",
+        "  condition `grad_theta_norm` is 0 by construction (requires_grad=False).",
+        "- `metrics_{arch}_{cond}_D{width}_s{seed}.csv` — per-epoch:",
+        "  `epoch, train_loss, test_loss, test_acc`.",
+        "- `../exp1_2v4_summary.csv` — one row per run (final/peak metrics).",
+        "",
+        "## Joint-vs-frozen gaps (mean over seeds; gap = frozen - joint)",
+        "",
+        "| arch | width | final_acc joint | final_acc frozen | gap (final) | peak_acc joint | peak_acc frozen | gap (peak) |",
+        "|------|-------|-----------------|------------------|-------------|----------------|-----------------|------------|",
+    ]
+    g = summary_df.groupby(["arch", "width", "condition"]).agg(
+        final=("final_test_acc", "mean"), peak=("peak_test_acc", "mean"))
+    for (arch, width) in sorted({(a, w) for a, w, _ in g.index}):
+        try:
+            j = g.loc[(arch, width, "joint")]
+            f = g.loc[(arch, width, "frozen")]
+        except KeyError:
+            continue
+        lines.append(
+            f"| {arch} | {width} | {j['final']:.4f} | {f['final']:.4f} | "
+            f"{f['final'] - j['final']:+.4f} | {j['peak']:.4f} | "
+            f"{f['peak']:.4f} | {f['peak'] - j['peak']:+.4f} |")
+    lines += [
+        "",
+        f"Setup: S={S}, K={K}, H=W={H}, {N_CLASSES} classes, N_train={N_TRAIN},",
+        f"N_test={N_TEST}, batch={BATCH_SIZE}, {EPOCHS} epochs, Adam lr={LEARNING_RATE},",
+        f"data noise={DATA_NOISE}. Regenerate everything with:",
+        "`python code/experiments/exp1_2v4.py`.",
+        "",
+    ]
+    path = OUT_DIR / "README.md"
+    path.write_text("\n".join(lines))
+    print(f"[exp1_2 {TAG}] wrote {path}")
+
+
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[exp1_2 {TAG}] device = {device}")
@@ -321,6 +384,17 @@ def main():
                           flush=True)
                     r = train_one(arch, cond, w, seed, device)
                     all_results.append(r)
+                    # Persist per-run EGR time series + per-epoch metrics (A19).
+                    # EGR columns: step, grad_theta_norm, grad_phi_norm, egr.
+                    # NOTE: in the frozen condition grad_theta_norm is 0 by
+                    # construction (spectral params have requires_grad=False).
+                    OUT_DIR.mkdir(parents=True, exist_ok=True)
+                    r.egr_df.to_csv(
+                        OUT_DIR / f"egr_{arch}_{cond}_D{w}_s{seed}.csv",
+                        index=False)
+                    r.metrics_df.to_csv(
+                        OUT_DIR / f"metrics_{arch}_{cond}_D{w}_s{seed}.csv",
+                        index=False)
                     summary_rows.append({
                         "arch": arch, "condition": cond, "width": w, "seed": seed,
                         "n_spectral": r.n_spectral,
@@ -339,7 +413,9 @@ def main():
                         torch.cuda.empty_cache()
 
     summary_df = pd.DataFrame(summary_rows)
-    summary_df.to_csv(RESULTS_DIR / f"exp1_2{TAG}_summary.csv", index=False)
+    summary_df.to_csv(SUMMARY_PATH, index=False)
+    print(f"[exp1_2 {TAG}] wrote {SUMMARY_PATH}")
+    write_readme(summary_df)
 
     for arch in ARCH_WIDTHS.keys():
         plot_joint_vs_frozen(all_results, arch)

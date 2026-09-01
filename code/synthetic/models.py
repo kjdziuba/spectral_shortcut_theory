@@ -3,6 +3,8 @@
 Provides:
     - SpectralReduction: per-pixel linear projection S -> K (the f_theta block).
     - SpatialMLP:        per-pixel MLP head K -> n_classes (one g_phi option).
+    - SpatialDeepMLP:    fixed-depth per-pixel MLP, hidden layers all width M,
+                         so C_g = Theta(M^2) (capacity-class probe, exp1_1v3).
     - SpatialCNN:        2-layer 3x3 CNN head K -> n_classes (other g_phi option).
     - CompositionModel:  wires spectral and spatial together, exposing the
                          submodule names `.spectral` and `.spatial` that
@@ -75,6 +77,38 @@ class SpatialMLP(nn.Module):
     def forward(self, Z: torch.Tensor) -> torch.Tensor:
         # Z: (B, H, W, K) -> logits: (B, H, W, n_classes)
         return self.fc2(self.act(self.fc1(Z)))
+
+
+class SpatialDeepMLP(nn.Module):
+    """Fixed-depth per-pixel MLP whose hidden layers are ALL width M.
+
+    Layout (n_hidden=3 default):  K -> M -> M -> M -> n_classes, ReLU between.
+    The two (or n_hidden-1) M x M matrices dominate the parameter count, so
+    C_g = Theta(M^2) — the capacity class needed to test the parameter-count
+    corollary of Theorem 1 (audit A64). Contrast with SpatialMLP, whose single
+    hidden layer gives C_g = Theta(M).
+
+    Same channels-LAST contract as SpatialMLP: acts on the last axis only,
+    zero spatial receptive field. ReLU(inplace=False) — see module docstring.
+    """
+
+    def __init__(self, K: int, n_classes: int, width: int, n_hidden: int = 3) -> None:
+        super().__init__()
+        if n_hidden < 1:
+            raise ValueError(f"n_hidden must be >= 1, got {n_hidden}")
+        self.K = K
+        self.n_classes = n_classes
+        self.width = width
+        self.n_hidden = n_hidden
+        layers: list[nn.Module] = [nn.Linear(K, width), nn.ReLU(inplace=False)]
+        for _ in range(n_hidden - 1):
+            layers += [nn.Linear(width, width), nn.ReLU(inplace=False)]
+        layers.append(nn.Linear(width, n_classes))
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, Z: torch.Tensor) -> torch.Tensor:
+        # Z: (B, H, W, K) -> logits: (B, H, W, n_classes)
+        return self.net(Z)
 
 
 class SpatialCNN(nn.Module):
