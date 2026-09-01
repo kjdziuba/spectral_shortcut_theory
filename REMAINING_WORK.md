@@ -374,8 +374,10 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       v202, "On Uni-Modal Feature Learning..."); Peng 2022 uses
       "optimization imbalance"; Wang 2020 has zero hits (A32
       refined).
-- [ ] P5. Figures: regenerate D_curv-branded exp1_1 + Exp 1.7 EGR figures,
-      place all headline figures, kill Figure ?? (A10).
+- [~] P5. DONE 2026-09-01: Fig-8A (E3b geometry) + Fig-8B (E3c dynamics)
+      built (paper/figures_src/) and placed in Section 8. Remaining:
+      exp1_1 v3 figure (fig:exp11_paired, waits on E1v3 results), Exp 1.7
+      EGR appendix figures, kill Figure ?? (A10).
 - [ ] P6. Structure for ICLR: theorem numbering (A37), drop unused
       lem:interlacing or mark auxiliary (A38), universality hedges (A31),
       EGR framing (A40), 09 remedies paragraph (A49).

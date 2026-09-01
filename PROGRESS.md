@@ -1438,3 +1438,13 @@ ViT sweep:
   datapoint" (0.70>0.675 was within noise, sd 0.104), fine-tuning
   degradation, "all conform to the predicted theory", FTIR/QCL caption
   (QCL only, A52).
+
+## 2026-09-01 (later still) — Section 8 figures built and placed
+
+- paper/figures_src/make_fig8a_geometry.py: block spectra (theta top-40 vs
+  phi top-15, dashed lambda1(phi) reference, overtake at rank 2-5) +
+  paired mean-direction vs contrast-direction curvature (12-28x, exact
+  ratios 11.7-28.0). make_fig8b_dynamics.py: AdamW arm x width bars with
+  per-seed dots + SGD equivalence panel. Both from committed CSVs only.
+- Wired into 08_real_data.tex as fig:real_geometry / fig:e3c; compiles
+  clean, 43 pp. Only fig:exp11_paired still undefined (waits on E1v3).

@@ -163,10 +163,24 @@ directions hold $83\%$ of the trace. Along the clinically decisive
 CancerEpi--CAS class-contrast direction, the spectral curvature is
 $12$--$28\times$ \emph{smaller} than along the mean-spectrum
 direction; the spatial block's top eigenvalue overtakes the spectral
-spectrum already at rank $2$--$5$. The gradient signal available for
-learning discriminative spectral features --- as opposed to re-encoding
-the mean spectrum --- is starved in exactly the directions that matter.
-% TODO(P5): Fig-8A here — E3b spectrum decay + contrast-starvation panel.
+spectrum already at rank $2$--$5$ (Figure~\ref{fig:real_geometry}).
+The gradient signal available for learning discriminative spectral
+features --- as opposed to re-encoding the mean spectrum --- is starved
+in exactly the directions that matter.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig8a_geometry.pdf}
+\caption{Direction-wise starvation at initialization (breast QCL,
+$M{=}192$, 3 seeds $\times$ 4 batches). (a)~GGN block eigenvalue
+spectra: thin lines are individual measurements, thick lines their
+means; the dashed line marks the spatial block's top eigenvalue, which
+overtakes the spectral spectrum at rank $2$--$5$. (b)~Spectral
+curvature along the mean-spectrum direction vs.\ along the
+CancerEpi--CAS class-contrast direction, per measurement: the
+discriminative direction is $12$--$28\times$ starved.}
+\label{fig:real_geometry}
+\end{figure}
 
 \paragraph{Normalization sets the cap.}
 The cap is not an immutable property of the tissue: removing the
@@ -212,12 +226,24 @@ Joint (MLP)     & $0.566 \pm 0.070$ & $0.575 \pm 0.184$ & $0.86$--$0.95$ \\
 \bottomrule
 \end{tabular}
 \end{table}
-% TODO(P5): Fig-8B here — arm × width bars or training curves.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig8b_dynamics.pdf}
+\caption{Controlled retraining study (breast QCL fold 0; bars: mean
+over 3 seeds, whiskers: sd, dots: individual seeds). (a)~Under AdamW
+every frozen arm beats every joint arm at both widths. (b)~Under plain
+SGD with zero weight decay --- the regime of
+Theorem~\ref{thm:twoscale} --- joint training and frozen-random are
+statistically indistinguishable.}
+\label{fig:e3c}
+\end{figure}
 
 \paragraph{Frozen beats joint everywhere.}
 Under AdamW, freezing the spectral module at a \emph{random}
 initialization outperforms training it jointly at both widths
-(gaps $-0.110$ at $M{=}48$, $-0.085$ at $M{=}192$). The
+(gaps $-0.110$ at $M{=}48$, $-0.085$ at $M{=}192$;
+Figure~\ref{fig:e3c}a, Table~\ref{tab:e3c}). The
 pre-registered falsifier --- joint beating frozen-PCA decisively ---
 comes out negative at both widths ($-0.193$, $-0.081$). The
 production-scale observation of Section~\ref{sec:real_observation}
