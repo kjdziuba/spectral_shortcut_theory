@@ -1470,3 +1470,33 @@ ViT sweep:
 - E2 done: 42 runs, per-run EGR CSVs, A60 metric stated in README
   (final-epoch test acc; frozen-joint gaps positive everywhere, ViT gap
   grows with width; peak-acc ~0 recorded as secondary).
+
+## 2026-09-01 (night) — init reconciliation CONFIRMED, with judge-mandated weakenings
+
+- Workflow wf_974de58f: theorem-matching init (He weights + fixed sigma_b=0.5)
+  turns the width scaling ON: deep_mlp lam_phi slope 0.105 -> 0.989, D_curv
+  0.036 -> 0.900; mlp 0.705 -> 0.895 (high-M 1.008). Validation 1.2e-15;
+  default mode verified bit-exact preserved; slopes independently reproduced
+  to 6 dp. Commit 72d76eb pushed.
+- Theory judge (mixed) — WRITE-UP CONSTRAINTS FOR P1 (Section 7):
+  (i) OFF-half restricted to deep head: default-init mlp is NOT switched off
+      (high-M slope 0.954) — theory-predicted exception, hidden fan_in=K=16
+      fixed so default bias variance is width-independent there and Step A's
+      floor survives sigma_b->0 via the sigma_w||z||/sqrt(K) term.
+  (ii) Say "initialization-scheme dependence", NOT "sigma_b is causal" —
+      the switch also changed weight law (uniform 1/(3 fan_in) -> He
+      2/fan_in); isolating control launched (see below).
+  (iii) deep_mlp ON = consistency with the ASSUMPTION-level hypothesis
+      (supplement: deeper heads "revert to assumption status"); the proved
+      floor covers the one-hidden-layer head only — and there it genuinely
+      floors the measured block top eigenvalue (rank-one witness,
+      eq:witness_bound), E[lam_max] >= (1/2) q_h M_h.
+  (iv) Width-flat default deep_mlp has the LARGEST absolute D_curv
+      (~1600-3200, lam_theta collapses to ~4e-4) — never imply default init
+      mitigates the hazard.
+  Judge's maximally-honest summary sentence saved in the workflow journal.
+- Isolating control (new workflow): deep_mlp with He weights HELD FIXED,
+  bias law toggled {fixed 0.5, width-scaled 1/fan_in, zero} + the 2x2
+  completion (default weights + fixed bias). Pre-registered: if width-scaled/
+  zero-bias arms stay flat, sigma_b is causal for deep heads; if they grow,
+  the weight law was the culprit and P1 keeps the scheme-level phrasing.
