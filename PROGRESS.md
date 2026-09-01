@@ -1417,3 +1417,24 @@ ViT sweep:
   both repos (A7: 4/7 expected unbacked → cut); (2) E1v3 (GGN-block rerun of
   exp1_1 + fixed-depth MxM arch, validation-first) + E2 (exp1_2v4 rerun with
   persisted per-run EGR CSVs, A19/A60).
+
+## 2026-09-01 (later) — Section 8 rewritten; companion provenance settled
+
+- Provenance trace (agent, verified by hand in logs): all 7 old table rows
+  are hand-means of SLURM-log test F1. Rows 1/4/5/6 match companion paper_v2
+  Table 6 (published) -> KEPT. Rows 2/3 (frozen-random 0.70, PCA 0.78): third
+  of three contradictory reruns, unpublished -> CUT (E3c covers these arms
+  properly). Row 7 (fine-tuned 0.79) INVALID: fold-3 evaluated an epoch-1
+  checkpoint mid-race between two SLURM jobs (0.573 vs 0.9716 properly
+  trained; corrected mean 0.87). "Fine-tuning degrades 0.90->0.79" is DEAD.
+- 08_real_data.tex fully rewritten per P2_SECTION8_SKELETON.md: observation
+  (4 published rows) -> geometry (D_curv 0.46 inversion, rank-1 Sigma_X,
+  direction-wise starvation 12-28x, normalization lever) -> controlled
+  dynamics (E3c 30 runs, SGD dissociation, mu-hat x3.2) -> honest scoping
+  (containment violated 3.2->157 / 1.7->1.2e4; bound vacuous 2e4-2e5x).
+  Every number verified against results/ CSVs this session. Compiles clean
+  (only pre-existing fig:exp11_paired placeholder undefined, P5).
+- Dropped claims (overclaims per audit + provenance): "strongest single
+  datapoint" (0.70>0.675 was within noise, sd 0.104), fine-tuning
+  degradation, "all conform to the predicted theory", FTIR/QCL caption
+  (QCL only, A52).

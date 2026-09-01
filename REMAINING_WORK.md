@@ -319,7 +319,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 **Phase P — rebuild the paper on frozen theory + fresh artifacts (weeks 3-4)**
 - [ ] P1. Section 7: Exp 1.6 subsection written in (A17); Exp 1.2/1.3
       numbers from new artifacts; corrected SEs (A20); setup honesty (A53).
-- [ ] P2. Section 8 rebuild, artifacts only, companion cited correctly
+- [~] P2. TEX DRAFTED 2026-09-01 (all numbers artifact-verified; A29/A51/A52 applied; compiles clean). Remaining: P5 figures (Fig-8A/8B + appendix), critique pass. Section 8 rebuild, artifacts only, companion cited correctly
       (A7, A8, A29, A51, A52) + separate critique pass per decision.
       MUST absorb the E3a finding (2026-08-24): the old "theory
       predicts large D_curv ~ c1'*sqrt(299)" framing is DEAD — the
@@ -437,7 +437,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 
 **Effort**: 3-4 hours (reframe) or 1-2 days (rerun)
 
-### A7 [BLOCKER — APPROACH DECIDED: full rerun via Exp 1.7/1.8, rows cut until backed] — 08_real_data.tex Table tab:real (lines 39-60) and lines 27-33, 62-83
+### A7 [RESOLVED 2026-09-01: provenance traced to SLURM logs; rows 2/3/7 CUT (unpublished, no citable home; row 7 additionally invalid — fold-3 checkpoint race, epoch-1 read 0.573 vs properly-trained 0.9716, corrected mean 0.87 kills the 0.90->0.79 degradation claim); Section 8 rebuilt on the 4 companion-published rows + E3c] — 08_real_data.tex Table tab:real (lines 39-60) and lines 27-33, 62-83
 
 **Issue**: Four of seven table rows (frozen random 0.70, frozen PCA-128 0.78, frozen Sliding Win 0.95, fine-tuned 0.79) have no artifact backing anywhere in either repository, the 0.95 would beat the companion paper's bolded best result (0.896) — a direct cross-paper contradiction — the headline 'strongest single datapoint' rests on an unbacked 0.025 gap with no error bars, and the text says 'five variants' against a seven-row table.
 
