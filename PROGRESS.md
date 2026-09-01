@@ -1448,3 +1448,25 @@ ViT sweep:
   per-seed dots + SGD equivalence panel. Both from committed CSVs only.
 - Wired into 08_real_data.tex as fig:real_geometry / fig:e3c; compiles
   clean, 43 pp. Only fig:exp11_paired still undefined (waits on E1v3).
+
+## 2026-09-01 (evening) — E1v3/E2 complete; deep-MLP init reconciliation launched
+
+- E1v3 (commit d22646e, pushed): GGN-block sweep validated 6.9e-16 vs dense,
+  bit-exact reproducible. mlp: lam_phi/D_curv slopes 0.705/0.714 (sublinear
+  vs predicted asymptote 1.0 — report honestly per A6). deep_mlp (MxM):
+  lam_phi ~Theta(1), D_curv FLAT (slope 0.036) — NOT the predicted Omega(M).
+- Reconciliation hypothesis (verified in code + tex): supplement Step A's
+  floor needs biases N(0, sigma_b^2) with FIXED sigma_b (q ~ sigma_b^2;
+  sigma_b=0 explicitly no-floor). SpatialMLP/SpatialDeepMLP used PyTorch
+  default nn.Linear init: bias var Theta(1/fan_in) -> proved floor Theta(1).
+  The flat measurement is CONSISTENT with the theory; the experiment tested
+  an init family outside the proposition's hypothesis.
+- Pre-registered follow-up running (workflow wf_974de58f): opt-in
+  init_mode='theorem' (weights N(0,2/fan_in), biases N(0,0.25) fixed),
+  full resweep -> exp1_1_v3_ggn_theoreminit.csv, then 3 adversarial
+  verifiers (code diff, slope recompute, theory-consistency judge).
+  Prediction: deep_mlp lam_phi slope turns on (~1). Either outcome goes
+  in Section 7: causal sigma_b switch, or honest scope finding.
+- E2 done: 42 runs, per-run EGR CSVs, A60 metric stated in README
+  (final-epoch test acc; frozen-joint gaps positive everywhere, ViT gap
+  grows with width; peak-acc ~0 recorded as secondary).

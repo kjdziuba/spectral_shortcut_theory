@@ -234,10 +234,17 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       2026-08-26.**
 
 **Phase E — experiments to test the frozen theory (weeks 2-3)**
-- [ ] E1. Exp 1.1 v3: measure GN blocks (not full Hessian — A24), plot vs M,
-      add fixed-depth MxM architecture; D_curv branding in code/CSVs (A64).
-- [ ] E2. Exp 1.2 rerun persisting per-run EGR CSVs so every quoted number
-      is reproducible (A19); state metric for ViT claim (A60).
+- [~] E1. RUN 2026-09-01 (exp1_1v3.py, validation 6.9e-16, bit-exact repro):
+      mlp lam_phi slope 0.705, D_curv slope 0.714 (sublinear vs pred. 1.0);
+      deep_mlp (MxM, Theta(M^2)) lam_phi ~Theta(1), D_curv FLAT (0.036).
+      DIAGNOSIS: PyTorch default init has bias var Theta(1/M); the Omega(M)
+      floor (supplement Step A) requires FIXED sigma_b. Pre-registered
+      reconciliation rerun under theorem init (sigma_b=0.5) IN PROGRESS
+      (workflow wf_974de58f). Prediction: slope turns on. Then P1 write-up.
+- [x] E2. DONE 2026-09-01: exp1_2v4 rerun, 42 runs, 84 per-run EGR CSVs +
+      results/exp1_2v4_summary.csv + README stating the A60 metric
+      (final-epoch test acc, frozen-joint gaps +0.014..+0.038, frozen wins
+      everywhere; peak-acc gaps ~0 recorded honestly as secondary).
 - [~] E3. SPLIT 2026-08-24 after checkpoint audit (NO joint BlockViT
       checkpoints exist locally — CSF3 runs never synced; only frozen
       breast fold0 survives in deep_dream/results/train3d/):
