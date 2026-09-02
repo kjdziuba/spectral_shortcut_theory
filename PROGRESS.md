@@ -1529,3 +1529,22 @@ ViT sweep:
   imply bias is the only guarantee.
 - E-phase for Section 7 is now COMPLETE: E1 (5 arms), E2 (42 runs).
   Next: P1 (Section 7 rewrite against these artifacts + A17/A20/A53).
+
+## 2026-09-02 — CSF3 reopened: April results salvaged, full rerun campaign launched
+
+- Author decision: rerun production-scale spatial experiments properly on all
+  3 datasets rather than lean on log archaeology ("best paper possible, not
+  compromise"). SSH control socket to CSF3 live at /tmp/csf3-socket.
+- SALVAGE: April run dirs survived in cluster ~/side_project/experiments
+  (home, not scratch) — all 9 breast 5-fold variants with checkpoints +
+  config/summary JSONs (val F1 only; test was never persisted). JSONs pulled
+  to spectral_tokenization/side_project/experiments_csf3/. finetune_fold3's
+  archived state is the properly-trained one (val 0.8123 ep30) — confirms
+  the race verdict. Cluster code md5-identical to local side_project.
+- CAMPAIGN (agent building now): R0 re-eval of all 45 April checkpoints
+  (val+test) -> artifact-backed test F1 for the old table within hours;
+  R1 clean breast rerun 9 arms x 5 folds (unique dirs, atomic saves,
+  in-job self-eval -> metrics.json; race impossible by design); R2 prostate
+  QCL + FTIR port after R1 smoke. Section 8's observation table will be
+  replaced by the first-party 3-dataset version when this lands; the
+  fine-tuning question returns as a properly testable claim.
