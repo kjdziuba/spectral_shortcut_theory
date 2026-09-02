@@ -1571,3 +1571,23 @@ ViT sweep:
 - R2 prep in progress (not submitted): export per-fold prostate encoders
   from experiments_final/v2.0 into FrozenSpectralReduction format, upload,
   336 center-crop decision, FTIR wn check, ready-to-submit scripts.
+
+## 2026-09-02 (evening) — FULL 3-dataset campaign queued (120 runs)
+
+- finetune_real verified by construction: April path spectral_delta=0
+  (0/59 grad tensors) vs real path delta=1.52 (59/59); eval-mode parity
+  exact. Gradient checkpointing over rows (epochs ~2.5-3x slower, early
+  stopping should fit 4-day limit; atomic ckpt survives timeout).
+- R2 corrections from prep: prostate encoders exported from
+  experiments_final/v1.0 (v2.0 is an empty stub — memory corrected);
+  30/30 exports validated through FrozenSpectralReduction forward.
+  FTIR S=326 wn (QCL 314), handled dynamically; FTIR cores 206-229 px
+  (PADDED to 336), QCL 343-373 px (center-crop, ~8-12% edge loss).
+- SUBMITTED: R2 QCL smoke 19676607 + 7 gated arms (19676608-14);
+  R2 FTIR smoke 19676615 + 7 gated arms (19676616-22). With R0
+  (19676079), R1 (19676080 smoke; 19676164-172 + 19676527), the full
+  campaign = 45 re-evals + 50 breast + 70 prostate runs, every matrix
+  gated on its smoke, every job self-evaluating with unique dirs.
+- Section 8 endgame once landed: first-party 3-dataset observation table
+  + production-scale finetune_real drift test (pre-registered: theory
+  predicts finetune_real < frozen-mlp).
