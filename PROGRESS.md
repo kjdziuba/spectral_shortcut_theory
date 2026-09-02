@@ -1548,3 +1548,26 @@ ViT sweep:
   QCL + FTIR port after R1 smoke. Section 8's observation table will be
   replaced by the first-party 3-dataset version when this lands; the
   fine-tuning question returns as a properly testable claim.
+
+## 2026-09-02 (later) — R0/R1 submitted; April finetune arm was VACUOUS
+
+- R0 (April ckpt re-eval): job 19676079, array 0-8%3 on gpuA, preflight
+  passed all 45 dirs; queue start est. ~05:50 next morning.
+- R1 (clean breast rerun): smoke 19676080 (linear f0, 3 ep) + full matrix
+  19676164-19676172 gated --dependency=afterok on smoke. Hygiene verified
+  in design: unique dirs + jobID, atomic saves, in-job self-eval, per-epoch
+  CSV, config snapshot w/ git describe. mem-per-gpu 120G (55GB core preload).
+- CRITICAL FINDING (rerun agent): FrozenSpectralReduction.forward has
+  @torch.no_grad() — the April "finetune" arm NEVER updated spectral
+  weights. It was frozen-MLP + train-mode dropout. So the fine-tuning
+  degradation story was doubly vacuous (race-corrupted fold AND no actual
+  fine-tuning). No published claim affected (companion Table 6 has no
+  finetune row; theory Section 8 already cut it).
+- ACTION: added finetune_real arm (agent implementing): gradients actually
+  flow to spectral module, spectral param group weight_decay=0 (theorem
+  regime), per-epoch theta drift logged -> direct production-scale analogue
+  of E3c's harmful-drift measurement. Replication finetune kept queued for
+  comparison.
+- R2 prep in progress (not submitted): export per-fold prostate encoders
+  from experiments_final/v2.0 into FrozenSpectralReduction format, upload,
+  336 center-crop decision, FTIR wn check, ready-to-submit scripts.
