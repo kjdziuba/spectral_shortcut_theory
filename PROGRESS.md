@@ -1603,3 +1603,16 @@ ViT sweep:
   LR sensitivity); 9 local SGD control runs launched (laneSGD2).
 - Refutation commitments adopted and logged. Section 8.4 rewrite is now
   the top writing task.
+
+## 2026-09-02 (campaign v2 queued) — LR-fairness arms in, verified
+
+- 32 new jobs (19679030-19679045), all gated on smoke 19676080, none of
+  the original queue had started -> whole campaign runs v2 code.
+- Mechanism evidence (1-step CPU checks, real checkpoint): spectral-LR
+  multiplier produces exactly 10.00x delta ratios with vit group constant;
+  LP-FT unfreeze verified on-curve (fresh AdamW state, scheduler tracks).
+- Drift logging now on EVERY spectral-in-model arm. Elegant touch: the
+  vacuous April-replication finetune arm will log spectral_drift = 0.0
+  for 200 epochs — a live production proof of the no_grad bug diagnosis.
+- Correction: baseline seed is 42 (April default), extra seeds {1,2}.
+- Campaign totals: R0 45 re-evals + R1 82 runs + R2 70 runs + smokes.
