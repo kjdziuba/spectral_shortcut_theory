@@ -1639,3 +1639,22 @@ ViT sweep:
   (CSF3 kills without notice) — any check runs via srun -p interactive
   or sbatch --wrap.
 - Queue: still 0 running; R0 + R1 smoke estimated ~18:05 today.
+
+## 2026-09-02 (laneSGD2 done) — SGD positive control PASSES; equivalence width-robust
+
+- 9/9 runs complete. Best-val (the honest metric; final5 under SGD is
+  late-curve noise): M=48 SGD: frozen_pca 0.695±0.071 > frozen_random
+  0.654±0.015 ≈ joint 0.655±0.009. POSITIVE CONTROL PASSES: SGD can
+  resolve arms that truly differ (PCA +0.042) while joint↔random gap is
+  +0.002 — the theorem-regime equivalence is informative, not a floor
+  artifact. M=192 SGD pair: joint 0.668±0.013 vs random 0.657±0.004
+  (+0.011, ~1 seed-sd) — equivalence replicates at production width.
+- Caveats to report: SGD absolute level ~0.65-0.70 vs AdamW ~0.77-0.87
+  (undertraining relative to adaptive methods, expected for ViTs per
+  Zhang 2020/Kunstner 2023 — cite); n=3, phrase as descriptive
+  equivalence within pre-declared ±0.02 margin, TOST-style, never
+  "statistically indistinguishable". SGD joint theta drift ~0.35
+  relative — movement exists but is functionally inert (functional-
+  equivalence reading, matches the theorem's actual claim).
+- Fable F14 items (1) floor-effect and (2) positive control now
+  answered with data; (4) width-uniformity answered (M=192 pair).
