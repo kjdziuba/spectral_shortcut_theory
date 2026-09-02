@@ -1624,3 +1624,18 @@ ViT sweep:
   patient. No leakage possible in any breast split (historical, E3c, R1).
   Fable F8.3 closed. Companion ACS methods line "169 cores from 84
   patients" is WRONG (~170 patients) — flag for proof-stage fix.
+
+## 2026-09-02 (cluster hygiene) — scratch-cleanup risk caught and mitigated
+
+- side_project/CSF3_REFERENCE.md reviewed against the campaign: partitions,
+  4-GPU free-tier cap (doc line 74, matches sacctmgr), -c 12/GPU, arrays OK.
+- RISK FOUND: all three campaign datasets on scratch had atime Apr 2-14
+  (~5 months unread) — past the 3-month auto-cleanup threshold, eligible
+  for deletion mid-campaign. Mitigated legitimately: integrity-manifest
+  job 19680849 (serial partition) md5sums every NPZ+JSON in the three
+  dataset dirs -> ~/side_project_rerun/manifests/, verifying readability
+  and giving a fresh 3-month window past the deadline.
+- Rule tightened for future agent briefs: NO python on login nodes at all
+  (CSF3 kills without notice) — any check runs via srun -p interactive
+  or sbatch --wrap.
+- Queue: still 0 running; R0 + R1 smoke estimated ~18:05 today.
