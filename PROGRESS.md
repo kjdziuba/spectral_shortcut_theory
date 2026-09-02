@@ -1591,3 +1591,15 @@ ViT sweep:
 - Section 8 endgame once landed: first-party 3-dataset observation table
   + production-scale finetune_real drift test (pre-registered: theory
   predicts finetune_real < frozen-mlp).
+
+## 2026-09-02 (round-3 triage) — best-val inversion found; campaign v2
+
+- Round-3 reviews triaged against artifacts (ROUND3_TRIAGE.md). Headline:
+  E3c "frozen >= joint" INVERTS under best-val selection (+0.03..+0.10
+  joint advantage); post-peak degradation and metric-robust SGD
+  equivalence (0.655 vs 0.654) are what survive. K confound REFUTED
+  (all arms K=128). FTIR padding already excluded from loss/metrics.
+- ~27 cluster jobs added (LR-multiplier discriminator, LP-FT, seeds,
+  LR sensitivity); 9 local SGD control runs launched (laneSGD2).
+- Refutation commitments adopted and logged. Section 8.4 rewrite is now
+  the top writing task.
