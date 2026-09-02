@@ -66,9 +66,14 @@ Verdicts below verified against artifacts before acting.
    early stopping.
 
 ## Open items
-- Breast folds patient-level? (Fable F8.3) — ASK AUTHOR: are there
-  multiple cores per patient in the breast TMA? If yes, historical folds
-  may leak patients across folds.
+- Breast folds patient-level? (Fable F8.3) — RESOLVED 2026-09-02 with
+  evidence: Biomax BR2082 spec sheets (isilon metadata/BR2082_H260.xlsx +
+  H262, position->TissueID identical 208/208 across sections) map all 170
+  dataset cores to 170 UNIQUE patients (cores-per-patient dist {1:170}).
+  Core-level folds ARE patient-level for breast; leakage structurally
+  impossible. Add one sentence to Section 8 methods citing the TMA spec.
+  SIDE FINDING: the companion ACS manuscript's "169 cores from 84
+  patients" is wrong (should be ~169-170 patients); fix at proof stage.
 - A1 mechanism check (Fable F11a): measure ||h_bar||^2/M_h and
   lambda_max(S_h^p)/M_h per arm/width — localize why default init kills
   the SLOPE not just level. + residual+LN arm and trunc-normal ViT-init

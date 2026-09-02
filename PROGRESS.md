@@ -1616,3 +1616,11 @@ ViT sweep:
   for 200 epochs — a live production proof of the no_grad bug diagnosis.
 - Correction: baseline seed is 42 (April default), extra seeds {1,2}.
 - Campaign totals: R0 45 re-evals + R1 82 runs + R2 70 runs + smokes.
+
+## 2026-09-02 (leakage audit) — breast folds ARE patient-level
+
+- Verified against Biomax BR2082 spec sheets (both serial sections agree
+  208/208): all 170 breast cores = 170 unique Tissue IDs, one core per
+  patient. No leakage possible in any breast split (historical, E3c, R1).
+  Fable F8.3 closed. Companion ACS methods line "169 cores from 84
+  patients" is WRONG (~170 patients) — flag for proof-stage fix.
