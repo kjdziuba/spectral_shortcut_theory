@@ -11,16 +11,19 @@ empirical study \citep{dziuba2026spatial}: end-to-end training of the
 spectral module loses badly to pretraining and freezing it. Second, a
 \emph{controlled, instrumented study} on the same data and architecture
 family, designed to test the theorems' predictions directly --- with
-matched arms, logged gradient dynamics, and the optimizer placed inside
-and outside the theorems' regime. The picture that emerges is sharper
-than simple confirmation: the block-scalar reading of
+matched arms, logged gradient dynamics, and the optimizer family varied
+across momentum SGD and AdamW. The picture that emerges is more
+qualified than simple confirmation: the block-scalar reading of
 Theorem~\ref{thm:hessian} does \emph{not} manifest at initialization,
-for a reason we can measure (rank-one input statistics); a
-direction-wise reading does manifest, strongly; and
-Theorem~\ref{thm:twoscale}'s functional prediction holds in its own
-regime while joint training outside that regime is \emph{worse} than
-the theorem predicts --- the spectral module is not merely starved but
-actively degraded.
+for a reason we can measure (rank-one input statistics); a strong
+directional curvature anisotropy is measurable at initialization,
+and whether it starves learning is a hypothesis we state and test; the
+momentum-SGD controls, which are the closest buildable approach to
+Theorem~\ref{thm:twoscale}'s regime without being inside it, show
+similar best-validation performance for joint and frozen arms; and
+outside that regime the joint-vs-frozen comparison depends on
+checkpoint policy: joint runs reach higher peak validation scores and
+then degrade.
 
 \subsection{Pipeline and capacity}
 \label{sec:real_setup}
@@ -70,11 +73,31 @@ we analyze is roughly three times larger.
 The capacity ratio is thus roughly two orders of magnitude, and the
 spatial module's dominant blocks---the transformer
 ($5.34 \times 10^6$) and the transposed convolution
-($9.44 \times 10^6$)---are both $\Theta(M^2)$ in the embedding width,
-so this architecture falls in the class treated by
-Theorem~\ref{thm:hessian}. Whether the curvature disparity the theorem
-permits actually manifests at initialization is an empirical question,
-which we now measure directly.
+($9.44 \times 10^6$)---are both $\Theta(M^2)$ in the embedding width.
+
+\paragraph{The architecture does not satisfy Theorem~\ref{thm:hessian}'s
+head hypothesis.}
+That $\Theta(M^2)$ scaling is not sufficient to place the model inside
+the theorem. BlockViT-v2's segmentation head is the chain
+$\mathrm{Conv}_{3\times3}(M{+}K \to 96) \to \mathrm{BN} \to
+\mathrm{ReLU} \to \mathrm{Conv}_{3\times3}(96 \to 48) \to \mathrm{BN}
+\to \mathrm{ReLU} \to \mathrm{Conv}_{3\times3}(48 \to 4)$, so the final
+affine classifier sees $48 \times 3 \times 3 = 432$ input features at
+\emph{every} width we build ($M \in \{48,192,384\}$,
+$K \in \{64,128\}$): the $\Theta(M)$ feature map is separated from the
+logits by two nonlinearities. Theorem~\ref{thm:hessian} requires a
+dense classifier head over penultimate features of dimension
+$\Theta(M)$ with no downstream nonlinearity
+(Lemma~\ref{lem:phi_scaling}), and that hypothesis is therefore not
+satisfied here; the $\Cg = \Theta(M^2)$ form of the statement is a
+change of variables conditional on the same hypothesis, not an
+independent sufficient condition. The theorem's lower bound on the
+curvature disparity consequently does not apply as stated to this
+model. This is different from the theorem being contradicted: failing a
+hypothesis removes a guarantee, it does not reverse the conclusion.
+Whether the curvature disparity the theorem permits actually manifests
+at initialization is an empirical question, which we now measure
+directly.
 
 \subsection{Production-scale observation}
 \label{sec:real_observation}
@@ -108,11 +131,12 @@ motivates the controlled study below}, not a theorem test: the
 variants differ in both stability (frozen vs.\ jointly trained) and
 informativeness (pretrained vs.\ learned from scratch), and the
 production runs log no gradient dynamics. Second, the theorems do not
-guarantee that pretrain-and-freeze wins. Theorem~\ref{thm:twoscale}'s
-falsifiable prediction is that joint training behaves like
-\emph{freezing the spectral module at initialization}; pretraining is
-a separate, empirically supported escape route. The controlled study
-disentangles exactly these factors.
+guarantee that pretrain-and-freeze wins. Theorem~\ref{thm:twoscale}
+bounds how far the spectral module moves along the \emph{joint}
+trajectory in its regime; it does not by itself bound the performance
+gap to a separately trained frozen model, and pretraining is a
+separate, empirically supported escape route. The controlled study
+below examines exactly these factors.
 
 \subsection{Geometry at initialization}
 \label{sec:real_geometry}
@@ -132,53 +156,78 @@ curvature, the opposite of the naive block-scalar expectation. The
 ratio rises with width ($0.33 \pm 0.12$ at $M{=}48$ to
 $0.70 \pm 0.19$ at $M{=}384$; on prostate QCL it reaches parity,
 $1.09 \pm 0.52$, at $M{=}384$) but the disparity regime is nowhere in
-sight at buildable widths. Both theorem ingredients behave exactly as
-proved: the spectral cap is width-independent as
-Theorem~\ref{thm:hessian} requires (log-log slope of
-$\lambda_{\max}(G_{\thetap\thetap})$ vs.\ $M$: $-0.003$ breast, $-0.012$
-prostate), and $\lambda_{\max}(G_{\phip\phip})$ grows with $M$, though
-sublinearly over this range ($115 \to 258$ across an $8\times$ width
-increase). What fails is the \emph{informativeness} of the bound, and
-the data tell us why.
+sight at buildable widths. The two width-scalings behave differently.
+The spectral cap is width-independent, as Theorem~\ref{thm:hessian}
+requires (log-log slope of $\lambda_{\max}(G_{\thetap\thetap})$ vs.\ $M$:
+$-0.003$ breast, $-0.012$ prostate). The spatial curvature grows, but
+sublinearly: the log-log slope of $\lambda_{\max}(G_{\phip\phip})$ vs.\
+$M$ is $0.38$ (breast) and $0.45$ (prostate), i.e.\ $115 \to 258$
+across an $8\times$ width increase, well short of the $\Omega(M)$
+growth of Lemma~\ref{lem:phi_scaling}. That $\Omega(M)$ floor is
+neither observed here nor, given the head hypothesis failure noted in
+Section~\ref{sec:real_setup}, guaranteed for this architecture. The
+denominator, by contrast, we can diagnose directly.
 
 \paragraph{Diagnosis: rank-one input statistics.}
 The input second-moment matrix $\Sigma_X$ of real tissue spectra has
-effective rank $1.07$ (breast) and $1.02$ (prostate) out of $942$:
-every tissue spectrum shares the same dominant mean shape. The cap
-$C_\theta \propto \lambda_{\max}(\Sigma_X)$ is therefore enormous ---
-the inequality of Theorem~\ref{thm:hessian} holds but is vacuous at
-buildable widths, because the data concentrate all their second-moment
-mass in one direction. This is a measurable regime violation, not a
-counterexample: the theorem's disparity is a statement about what
-capacity \emph{permits}, and rank-one inputs hand the spectral block a
-single direction of huge curvature.
+effective rank $1.07$ (breast) and $1.02$ (prostate) out of $942$ on
+the raw inputs; measured after the module's input batch normalization
+the same quantity is $1.21$ (breast), so the near-rank-one structure is
+a property of the spectra and not an artifact of the normalization.
+Every tissue spectrum shares the same dominant mean shape, and the cap
+$C_\theta \propto \lambda_{\max}(\Sigma_X)$ is correspondingly enormous.
+Theorem~\ref{thm:hessian}'s disparity bound is not established for this
+model (its head hypothesis fails); independently, rank-one inputs make
+the cap side uninformative: even where the bound applies, it constrains
+nothing at buildable widths, because the data concentrate almost all
+their second-moment mass in one direction. This is a regime in which
+the scalar bound is uninformative, not a counterexample: the theorem's
+disparity is a statement about what capacity \emph{permits}, and
+rank-one inputs hand the spectral block a single direction of huge
+curvature.
 
-\paragraph{Starvation is direction-wise.}
-Precisely because the spectral curvature is rank-deficient, the
-block-scalar ratio is the wrong lens. Restricting the GGN to
-informative directions shows the disparity the scalar hides: the
-spectral block's top eigenvector aligns $0.954$ with the
-mean-spectrum direction, and the top $40$ of $61{,}108$ spectral
-directions hold $83\%$ of the trace. Along the clinically decisive
-CancerEpi--CAS class-contrast direction, the spectral curvature is
-$12$--$28\times$ \emph{smaller} than along the mean-spectrum
-direction; the spatial block's top eigenvalue overtakes the spectral
-spectrum already at rank $2$--$5$ (Figure~\ref{fig:real_geometry}).
-The gradient signal available for learning discriminative spectral
-features --- as opposed to re-encoding the mean spectrum --- is starved
-in exactly the directions that matter.
+\paragraph{Directional curvature anisotropy.}
+Because the spectral curvature is rank-deficient, the block-scalar
+ratio is the wrong lens; restricting the GGN to individual directions
+reveals an anisotropy the scalar hides. Write $v_1$ for the leading
+eigenvector of the post-normalization input second-moment matrix; it
+coincides with the mean-spectrum direction ($|\cos| > 0.995$
+post-normalization, $> 0.9999$ on the raw inputs). Three measurements,
+all at initialization. First, the $\thetap$-block top eigenvector,
+matricized over the spectral projection weights, places
+$0.954 \pm 0.017$ of its norm in the $K$-dimensional subspace induced
+by $v_1$ (a subspace-projection fraction, not a vector cosine).
+Second, the top $40$ of $61{,}108$ spectral directions hold
+$0.83 \pm 0.12$ of the trace (per seed $0.69$--$1.00$, $n=3$). Third,
+along the component of the clinically decisive CancerEpi--CAS class
+contrast that is orthogonal to $v_1$ --- a component retaining
+$76$--$84\%$ of the contrast's squared norm --- the restricted
+curvature is $12$--$28\times$ smaller than along $v_1$ itself
+(2 seeds $\times$ 3 batches at $M{=}192$). The curvature along the
+\emph{un-orthogonalized} full contrast requires a separate computation
+that is pending; it will be reported in the appendix. Meanwhile the
+spatial
+block's top eigenvalue overtakes the spectral spectrum already at rank
+$2$--$5$ (Figure~\ref{fig:real_geometry}). On the strength of this
+geometry we \emph{hypothesize} that the gradient signal available for
+learning discriminative spectral features --- as opposed to re-encoding
+the mean spectrum --- is suppressed relative to the mean direction, and
+we test that hypothesis against the training dynamics of
+Section~\ref{sec:real_dynamics}. The geometry on its own establishes
+the anisotropy, not its consequence for learning.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig8a_geometry.pdf}
-\caption{Direction-wise starvation at initialization (breast QCL,
-$M{=}192$, 3 seeds $\times$ 4 batches). (a)~GGN block eigenvalue
+\caption{Directional curvature anisotropy at initialization (breast
+QCL, $M{=}192$, 3 seeds $\times$ 4 batches). (a)~GGN block eigenvalue
 spectra: thin lines are individual measurements, thick lines their
 means; the dashed line marks the spatial block's top eigenvalue, which
 overtakes the spectral spectrum at rank $2$--$5$. (b)~Spectral
-curvature along the mean-spectrum direction vs.\ along the
-CancerEpi--CAS class-contrast direction, per measurement: the
-discriminative direction is $12$--$28\times$ starved.}
+curvature along the leading input direction $v_1$ (the mean-spectrum
+direction) vs.\ along the $v_1$-orthogonalized CancerEpi--CAS
+class-contrast direction, per measurement: $12$--$28\times$ lower
+restricted curvature along the $v_1$-orthogonalized contrast.}
 \label{fig:real_geometry}
 \end{figure}
 
@@ -197,32 +246,66 @@ preprocessing pipeline.
 \subsection{Controlled retraining dynamics}
 \label{sec:real_dynamics}
 
-We then train the pipeline ourselves on breast QCL (fold 0), with full
+We then train the pipeline ourselves on breast QCL (fold 0), at reduced
+depth (6 transformer layers rather than the 12 of
+Section~\ref{sec:real_setup}) and with full
 instrumentation: arms $\{$joint-linear, frozen-random, frozen-PCA,
 joint-MLP$\}$ $\times$ widths $M \in \{48, 192\}$ $\times$ 3 seeds
 under AdamW (60 epochs), plus a $\{$joint-linear, frozen-random$\}$
-$\times$ 3-seed pair under plain SGD at $M{=}48$ --- the closest
-buildable match to the theorems' regime. Following
+$\times$ 3-seed pair under momentum SGD at both widths. Following
 Section~\ref{sec:thm2}, the spectral parameters sit in a
 zero-weight-decay group in every arm; frozen arms log counterfactual
 spectral gradients. Per-step residuals, block gradient norms, and
 per-epoch parameter displacements and input-Jacobian norms are
 recorded.
 
+\paragraph{What the SGD arm is, and is not.}
+The two optimizer families constitute an \emph{optimizer-family
+control}; the SGD arm is not an instantiation of
+Theorem~\ref{thm:twoscale}'s gradient flow, and we do not present it as
+one. It uses momentum $0.9$; weight decay $0.01$ on $\phip$ and $0$ on
+$\thetap$ (so only the spectral group is decay-free, and $\phip$ is
+over $99.6\%$ of the parameters); mini-batches of $4$ cores with
+reshuffling; and global gradient-norm clipping at $1.0$, which binds on
+$73$--$89\%$ of steps. Logged gradient norms are recorded before
+clipping, so the theory quantities we plot are not the quantities the
+trajectory applied. Two asymmetries between arms should be stated
+explicitly. First, the clip norm is computed over $\thetap{+}\phip$ in
+the joint arms but over $\phip$ alone in the frozen arms, so at
+identical gradients the frozen arm takes a larger $\phip$ step: the
+median extra clip factor paid by the joint arm is $1.10$--$1.12$ under
+SGD at $M{=}48$ and $3.0$--$3.6$ under AdamW at $M{=}192$. Second, the batch
+normalization following the spectral projection contributes $128$
+affine parameters that are trained in joint-linear, frozen in
+frozen-random, and structurally absent in frozen-PCA. We have not
+quantified how much of the gaps below either asymmetry accounts for;
+the batch-normalization affine parameters drift only $1$--$2\%$ over
+training, but the AdamW clip factor is not small. Both are optimization
+differences that the arm labels do not convey.
+
 \begin{table}[h]
 \centering
-\caption{Controlled study: held-out validation macro-F1 (mean $\pm$ sd
-over 3 seeds, mean of final 5 epochs) and relative spectral-parameter
-displacement at end of training, AdamW arms.}
+\caption{Controlled study, AdamW arms: validation macro-F1 (mean $\pm$
+sd over 3 seeds) under two checkpoint policies, and relative
+spectral-parameter displacement at end of training. \emph{Final-5} is
+the pre-registered metric (mean over the final 5 epochs).
+\emph{Best-val} is the maximum over the 60 per-epoch evaluations on the
+same 28 validation cores; it is a post-hoc curve maximum ---
+no test set exists in this study and no checkpoint was saved at the
+maximum --- and is reported as exploratory and selection-optimistic
+(see text). The two policies order the arms oppositely.}
 \label{tab:e3c}
-\begin{tabular}{lccc}
+\small
+\begin{tabular}{lccccr}
 \toprule
-Arm & $M{=}48$ & $M{=}192$ & $\|\Delta\thetap\|/\|\thetap_0\|$ \\
+& \multicolumn{2}{c}{Final-5 (pre-registered)} & \multicolumn{2}{c}{Best-val (exploratory)} & \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Arm & $M{=}48$ & $M{=}192$ & $M{=}48$ & $M{=}192$ & $\|\Delta\thetap\|/\|\thetap_0\|$ \\
 \midrule
-Joint (linear)  & $0.538 \pm 0.082$ & $0.646 \pm 0.050$ & $0.55$--$0.60$ \\
-Frozen random   & $0.648 \pm 0.063$ & $0.731 \pm 0.023$ & $0$ \\
-Frozen PCA      & $0.731 \pm 0.003$ & $0.727 \pm 0.012$ & $0$ \\
-Joint (MLP)     & $0.566 \pm 0.070$ & $0.575 \pm 0.184$ & $0.86$--$0.95$ \\
+Joint (linear)  & $0.538 \pm 0.082$ & $0.646 \pm 0.050$ & $0.873 \pm 0.030$ & $0.858 \pm 0.056$ & $0.54$--$0.64$ \\
+Frozen random   & $0.648 \pm 0.063$ & $0.731 \pm 0.023$ & $0.840 \pm 0.025$ & $0.817 \pm 0.017$ & $0$ \\
+Frozen PCA      & $0.731 \pm 0.003$ & $0.726 \pm 0.012$ & $0.769 \pm 0.021$ & $0.862 \pm 0.068$ & $0$ \\
+Joint (MLP)     & $0.566 \pm 0.070$ & $0.575 \pm 0.184$ & $0.900 \pm 0.000$ & $0.897 \pm 0.001$ & $0.85$--$0.96$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -231,102 +314,178 @@ Joint (MLP)     & $0.566 \pm 0.070$ & $0.575 \pm 0.184$ & $0.86$--$0.95$ \\
 \centering
 \includegraphics[width=\linewidth]{figures/fig8b_dynamics.pdf}
 \caption{Controlled retraining study (breast QCL fold 0; bars: mean
-over 3 seeds, whiskers: sd, dots: individual seeds). (a)~Under AdamW
-every frozen arm beats every joint arm at both widths. (b)~Under plain
-SGD with zero weight decay --- the regime of
-Theorem~\ref{thm:twoscale} --- joint training and frozen-random are
-statistically indistinguishable.}
+over 3 seeds, whiskers: sd, dots: individual seeds). (a)~Under AdamW,
+on the pre-registered final-window metric, every frozen arm beats every
+joint arm at both widths; the ordering reverses under a
+best-validation policy (Table~\ref{tab:e3c}). (b)~Under momentum SGD
+--- an optimizer-family control, not the regime of
+Theorem~\ref{thm:twoscale} --- joint training and frozen-random reach
+similar best-validation scores, while their final-window gaps differ in
+sign between the two widths.}
 \label{fig:e3c}
 \end{figure}
 
-\paragraph{Frozen beats joint everywhere.}
-Under AdamW, freezing the spectral module at a \emph{random}
-initialization outperforms training it jointly at both widths
-(gaps $-0.110$ at $M{=}48$, $-0.085$ at $M{=}192$;
-Figure~\ref{fig:e3c}a, Table~\ref{tab:e3c}). The
-pre-registered falsifier --- joint beating frozen-PCA decisively ---
-comes out negative at both widths ($-0.193$, $-0.081$). The
-production-scale observation of Section~\ref{sec:real_observation}
-survives the controlled setting with informativeness held fixed:
-\emph{stability alone} accounts for a large fraction of the gap.
-Indeed at $M{=}192$ frozen-PCA and frozen-random are statistically
-indistinguishable ($0.727$ vs.\ $0.731$); the informativeness of the
-frozen features matters at small width ($0.731$ vs.\ $0.648$ at
-$M{=}48$) but stability is what the theory speaks to, and stability is
-what does the work here.
+\paragraph{The comparison depends on checkpoint policy.}
+On the pre-registered metric --- mean validation macro-F1 over the
+final 5 epochs --- freezing the spectral module at a \emph{random}
+initialization outperforms training it jointly at both widths under
+AdamW (gaps $-0.110$ at $M{=}48$, $-0.085$ at $M{=}192$;
+Figure~\ref{fig:e3c}a, Table~\ref{tab:e3c}), and the pre-registered
+falsifier --- joint beating frozen-PCA --- is negative at both widths
+($-0.193$, $-0.081$).
 
-\paragraph{Harmful drift, not lazy pinning.}
-The joint arms' spectral parameters are not starved into stillness:
-they move $55$--$60\%$ in relative norm under AdamW ($86$--$95\%$ for
-the MLP spectral module) --- and this movement \emph{hurts}, since the
-same module left at its random initialization scores higher. Outside
-the theorems' regime the shortcut mechanism is thus stronger than the
-starvation story: adaptive preconditioning renormalizes the small
-spectral gradients (Section~\ref{sec:classical_conditioning}) and the spectral
-module chases the residual left by the faster spatial module,
-degrading rather than refining its features. The nonlinear joint-MLP
-arm shows the same phenomenology, so the effect is not an artifact of
-the linear parameterization.
+The ordering reverses under a best-validation policy. Taking each run's
+maximum over its 60 per-epoch evaluations gives joint $-$ frozen-random
+$= +0.033$ ($M{=}48$) and $+0.041$ ($M{=}192$), and joint $-$
+frozen-PCA $= +0.104$ ($M{=}48$) and $-0.004$ ($M{=}192$). We report
+this reanalysis as exploratory rather than as a second result, for
+three reasons: this study has no test set, so validation is also the
+selection split; the maximum is taken over 60 evaluations of the same
+28 validation cores that define the comparison; and no checkpoint was
+saved at the maximum (only the final model), so the best-validation
+figure is a post-hoc curve maximum that no held-out data ever
+confirmed. It is selection-optimistic by construction.
 
-\paragraph{SGD dissociation: the theorem's regime behaves as proved.}
-Under plain SGD with zero weight decay --- the setting of
-Theorem~\ref{thm:twoscale} --- the story reverts to the theorem's:
-joint training and frozen-random become statistically
-indistinguishable ($0.538 \pm 0.075$ vs.\ $0.510 \pm 0.051$; gap
-$+0.028$, within seed noise), which is precisely the theorem's
-functional-equivalence prediction, and the spectral share of total
-squared gradient flow drops from $\approx 0.94$ (AdamW joint) to
-$\approx 0.27$. The optimizer is the dissociating variable: the flow
-theorems describe SGD-like dynamics correctly, and adaptive
-preconditioning is what carries the dynamics out of their scope ---
-consistent with the preconditioned-spectrum discussion in
-Section~\ref{sec:classical_conditioning}.
+The switch between the two policies is an arithmetic identity: the
+change in every gap is exactly the difference in peak-to-final
+degradation between the two arms. Averaged over seeds, that degradation
+is $0.335$ ($M{=}48$) and $0.212$ ($M{=}192$) for joint-linear against
+$0.192$ and $0.086$ for frozen-random --- both arms are still far from
+convergence at epoch 60, and the joint arms give back more of their
+peak. What the two policies agree on is that the joint and frozen arms
+are not interchangeable at fixed informativeness; they disagree on
+which is better, and we do not claim a resolution. Within the
+final-window metric, frozen-PCA and frozen-random are close at
+$M{=}192$ ($0.726$ vs.\ $0.731$) and further apart at $M{=}48$
+($0.731$ vs.\ $0.648$), suggesting that informativeness of the frozen
+features matters most at small width; with $n=3$ neither difference is
+resolvable, and the sign of the small-width effect does not survive the
+metric switch.
+
+\paragraph{Large drift, not lazy pinning.}
+The joint arms' spectral parameters do not sit still: they move
+$54$--$64\%$ in relative norm under AdamW ($85$--$96\%$ for the MLP
+spectral module). Whether that movement helps or hurts is
+metric-conditional. On the final-window metric the same module left at
+its random initialization scores higher; on the best-validation metric
+the jointly trained module scores higher (Table~\ref{tab:e3c}). Two
+cautions follow. First, a large parameter displacement is not by itself
+evidence that spectral information was lost: a linear projection can
+change scale or basis substantially while spanning much the same
+subspace, and such changes are compensable by the downstream
+normalization and the spatial module. Second, we have not measured the
+features. Probes of the learned spectral representation --- subspace
+overlap with the frozen initialization, and linear decodability of
+class identity from the projection output --- are pending, and until
+they are run the displacement is a description of the trajectory rather
+than a diagnosis of it. What the instrumentation does show is that
+adaptive preconditioning renormalizes the small spectral gradients
+(Section~\ref{sec:classical_conditioning}) and the spectral module then
+travels far while tracking the residual left by the faster spatial
+module. The nonlinear joint-MLP arm shows the same displacement
+phenomenology, so the effect is not an artifact of the linear
+parameterization.
+
+\paragraph{Optimizer-family dissociation.}
+Under momentum SGD, joint training and frozen-random reach similar
+best-validation scores. The paired gap is $+0.002$ at $M{=}48$ and
+$+0.011$ at $M{=}192$, with $90\%$ paired-$t$ intervals
+$[-0.008, +0.011]$ and $[-0.007, +0.030]$ ($n=3$). On the final-window
+metric the same pairs give $+0.028$ and $-0.057$, with intervals
+$[-0.173, +0.228]$ and $[-0.124, +0.010]$ --- gaps that differ in sign
+between the two widths, and intervals an order of magnitude wider than
+the effect they bracket. What this establishes is
+similar best-validation performance for joint and frozen arms in
+under-fitted momentum-SGD controls, in which both arms lose
+$0.12$--$0.22$ macro-F1 between their peak and their final window. It
+does not establish broader functional equivalence, and it is not a test
+of Theorem~\ref{thm:twoscale}: that theorem bounds the displacement of
+$\thetap$ along the joint trajectory, and says nothing about the
+difference between that trajectory and a separately trained frozen
+model. Descriptively, the spectral share of total squared gradient flow
+drops from $\approx 0.94$ (AdamW joint) to $\approx 0.27$ (SGD joint).
+The optimizer family is the variable that changes the outcome;
+momentum, clipping, weight decay and adaptivity all differ between the
+two families, so no single factor is isolated here. The direction of
+the change is consistent with the preconditioned-spectrum discussion in
+Section~\ref{sec:classical_conditioning} without demonstrating it.
 
 \paragraph{Envelope curvature grows with width.}
-The fitted residual-envelope rate for the joint-linear arm grows from
-$\hat\mu = 6.0 \times 10^{-4}$ ($M{=}48$) to $1.9 \times 10^{-3}$
-($M{=}192$), a factor $3.2$ for a $4\times$ width increase ---
-qualitatively consistent with the width-growing NTK floor of
-Proposition~\ref{prop:ntk_classprior}, which is the theory's proved
-mechanism for why the spatial module's fast fit accelerates with
-capacity.
+The fitted residual-envelope rate for the joint-linear arm, expressed
+per optimizer step, grows from $\hat\mu = 6.0 \times 10^{-4}$
+($M{=}48$) to $1.9 \times 10^{-3}$ ($M{=}192$), a factor $3.2$ for a
+$4\times$ width increase. The ratio is invariant to the step-clock-to-flow-time
+conversion discussed in Section~\ref{sec:real_scope}; the absolute
+values are not. This is
+directionally consistent with a width-growing NTK rate of the kind
+Proposition~\ref{prop:ntk_classprior} describes, but it is not a test
+of that proposition: the proposition assumes the same dense-head
+hypothesis this architecture does not meet
+(Section~\ref{sec:real_setup}), and two widths do not establish a
+trend.
 
 \paragraph{The scalar EGR diagnostic is blind here.}
 The scalar effective-gradient-ratio \emph{rises} during joint AdamW
 training (epoch-1 median $\approx 0.8$ to $\approx 4$ by epoch 60)
 even as the jointly trained module underperforms its own frozen
-initialization. A single global ratio cannot see direction-wise
-starvation (cf.\ Remark~\ref{rem:egr_ratio_caveat}): the spectral
-gradients are large along the mean-spectrum direction and starved
-along the discriminative ones, exactly as the initialization geometry
-of Section~\ref{sec:real_geometry} predicts. Direction-resolved
-diagnostics are future work.
+initialization on the final-window metric. A single global ratio cannot
+see a direction-wise anisotropy (cf.\
+Remark~\ref{rem:egr_ratio_caveat}): the spectral gradients are large
+along the mean-spectrum direction and small along the discriminative
+ones, consistent with the initialization geometry of
+Section~\ref{sec:real_geometry}. Direction-resolved diagnostics are
+future work, and they are what would turn the anisotropy hypothesis of
+Section~\ref{sec:real_geometry} into a test.
 % TODO(P5): appendix figure — EGR trajectories + envelope fit example.
 
 \subsection{What the theorems do and do not predict here}
 \label{sec:real_scope}
 
-Honest scoping of the quantitative statements. The containment
-assumption of Theorem~\ref{thm:twoscale} is violated on real data: the
-spatial module's input-Jacobian operator norm grows by orders of
-magnitude over training ($3.2 \to 157$ on average for joint-linear, up
-to $414$; $1.7 \to 1.2 \times 10^{4}$ for joint-MLP). Instantiating
-the theorem's displacement bound with measured constants accordingly
-yields a bound $2 \times 10^{4}$--$2 \times 10^{5}$ times the measured
-displacement: on this pipeline the bound is true but vacuous, and we
-report it as such. The synthetic setting of
-Section~\ref{sec:experiments}, where containment holds by
-construction, is where the bound is quantitatively informative; the
-real-data value of the theory lies in its verified ingredients
-(width-independent spectral cap, width-growing spatial curvature, the
-class-prior NTK floor) and in the regime-resolved dynamics above ---
-the functional equivalence it predicts appears exactly where its
-assumptions apply, and the failure outside that regime is worse for
-joint training, not better.
+Honest scoping of the quantitative statements. The spatial module's
+input-Jacobian operator norm grows by orders of magnitude over training
+($3.2 \to 157$ on average for joint-linear, up to $414$;
+$1.7 \to 1.2 \times 10^{4}$ for joint-MLP). This rejects an
+initialization-scale stability approximation for the containment
+constant of Theorem~\ref{thm:twoscale}, though it does not refute the
+existence of a finite-horizon constant over the training window.
+
+We do not obtain a useful certified bound for the production regime. A
+proxy instantiation of the theorem's displacement bound --- a per-step
+envelope fitted to a 25-step smoothed mini-batch residual, a
+99th-percentile rather than supremum gain, and no conversion from the
+optimizer's step clock to flow time --- exceeds the measured
+displacement by $10^{4}$--$10^{5}$. Correcting the time units
+($\hat\mu_{\mathrm{flow}} = \hat\mu_{\mathrm{step}}/\eta$) and using
+the supremum gain, the proxy still exceeds the measured displacement by
+$\approx 17$--$47\times$ under AdamW and $\approx 450$--$1900\times$
+under momentum SGD; and the raw per-step residual violates the fitted
+envelope on $22$--$28\%$ of steps, so the residual-envelope assumption
+is verified for the smoothed curve rather than for the logged quantity.
+None of these figures is a certified instantiation of
+Theorem~\ref{thm:twoscale}. Momentum, gradient clipping and adaptive
+preconditioning all lie outside its hypotheses, and under AdamW the
+measured displacement exceeds
+$\eta \sum_k \|\nabla_{\thetap}\loss_k\|$ by more than an order of
+magnitude, so no $\eta$-rescaled flow bound describes that trajectory
+in either direction. No certified instantiation exists for this
+pipeline at present.
+
+The synthetic setting of Section~\ref{sec:experiments}, where
+containment holds by construction, is where the bound is quantitatively
+informative. On real data the theory's contribution is narrower. Two of
+its ingredients are measured directly here: a width-independent
+spectral cap, and a width-growing --- though sublinear, and not
+guaranteed for this architecture --- spatial curvature. The class-prior
+NTK floor of Proposition~\ref{prop:ntk_classprior} was not measured on
+this model, and its head hypothesis is not met by this architecture, so
+it is neither verified nor available as an explanation here. And the
+regime-resolved dynamics above are an optimizer-family control rather
+than a confirmation of the theorem inside its own regime.
 
 The companion study \citep{dziuba2026spatial} additionally provides a
 pixel-level tokenization benchmark across three datasets and the
 spatial-transfer experiment on breast QCL from which
 Table~\ref{tab:real} is drawn; those results characterize \emph{what}
-performs well, while the present analysis addresses \emph{why}
-end-to-end training of the spectral stage underperforms.
+performs well, while the present analysis asks \emph{why} end-to-end
+training of the spectral stage may underperform, and how far the
+present theory can account for it.
