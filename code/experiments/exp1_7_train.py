@@ -104,6 +104,19 @@ arm's optimisation changes):
     theta under AdamW weight_decay=0.01, which the runner's own protocol
     forbids for theta. Both must be stated wherever those arms are compared.
     These keys appear ONLY for the pretrained arms.
+  * (fix round 2) the selection split / caveats are derived from the
+    CHECKPOINT's fold+data_dir, not from args.fold. The previous version
+    asserted "selected on the val cores this run scores" even when
+    --allow_pretrained_mismatch had loaded another fold's or another
+    dataset's theta, i.e. it wrote a false provenance record on exactly the
+    path the flag exists for. config.json also records pretrained_mismatch
+    and pretrained_selection_matches_run_val.
+  * (fix round 2) clip_coef mirrors torch's clamp instead of min(): a bare
+    min(1.0, nan) is 1.0, so a NaN grad norm used to be logged as "no clip"
+    while torch had scaled every gradient by NaN.
+  * (fix round 2) probe_features' docstring no longer claims feat_disp == 0
+    for frozen arms; under --bn_affine_mode train_all the reduction's BN
+    affine trains, so a frozen arm's probe features move.
 
 steps.csv gained four columns (appended after the existing eight, which are
 unchanged): grad_total_norm_preclip, clip_coef, upd_theta_norm, upd_phi_norm.
@@ -314,32 +327,77 @@ def resolve_pretrained(args) -> dict:
         else:
             raise SystemExit(msg + "  [pass --allow_pretrained_mismatch to "
                                    "override deliberately]")
+
+    # ---- WHICH split actually selected the pretrain epoch -----------------
+    # v2-fix: this was hard-coded to f"val_fold{args.fold}" and the caveat
+    # asserted unconditionally that theta had been selected on the val cores
+    # THIS run scores. Under --allow_pretrained_mismatch that is false, and
+    # false in the dangerous direction: another fold's checkpoint was FITTED
+    # on cores that are in this run's val split (k-fold val sets are
+    # disjoint, so fold-A's TRAIN set contains fold-B's VAL cores). Derive
+    # the selection split from the CHECKPOINT and describe the
+    # situation that actually holds.
+    ck_fold = int(ck["fold"]) if "fold" in ck else None
+    ck_data_dir = str(ck["data_dir"]) if "data_dir" in ck else None
+    ck_wd = float(ck["weight_decay"]) if "weight_decay" in ck else None
+    if ck_fold is None or ck_data_dir is None:
+        same_split = None
+        sel_split = None
+        sel_caveat = (
+            "UNKNOWN: the checkpoint carries no fold and/or data_dir, so "
+            "which split selected the pretrain epoch cannot be determined; "
+            "claim neither a val-selection advantage nor its absence")
+    elif (ck_fold, ck_data_dir) == (args.fold, args.data_dir):
+        same_split = True
+        sel_split = f"val_fold{ck_fold} [{ck_data_dir}]"
+        sel_caveat = (
+            "pretrain_spectral_mlp.py picked this epoch by macro-F1 on the "
+            "SAME fold val cores this run scores, so frozen_pretrained / "
+            "finetune_real carry a val-selection advantage that joint_linear "
+            "/ joint_mlp / frozen_random / frozen_pca do not; state it "
+            "wherever those arms are compared")
+    else:
+        same_split = False
+        sel_split = (f"val_fold{ck_fold} [{ck_data_dir}] -- NOT this run's "
+                     f"val split (fold {args.fold} [{args.data_dir}])")
+        sel_caveat = (
+            "CROSS-CONDITION run (--allow_pretrained_mismatch): the pretrain "
+            f"epoch was picked on val_fold{ck_fold} [{ck_data_dir}], NOT on "
+            f"this run's fold-{args.fold} val cores, so the usual "
+            "val-selection-advantage caveat does not apply. Check the other "
+            "direction instead -- the pretrainer's TRAIN cores may contain "
+            "cores that are in THIS run's val split (k-fold val sets are "
+            "disjoint), which would be outright train-on-val leakage")
+    if ck_wd is None:
+        wd_caveat = ("the checkpoint records no weight_decay, so whether "
+                     "theta was pretrained under a decay the runner's "
+                     "protocol forbids (weight_decay_theta=0.0) is unknown")
+    elif ck_wd == 0.0:
+        wd_caveat = ("theta was pretrained under weight_decay=0.0, which "
+                     "matches the runner's protocol (weight_decay_theta=0.0)")
+    else:
+        wd_caveat = (f"theta was pretrained under AdamW weight_decay={ck_wd}, "
+                     "which the runner's own protocol forbids for theta "
+                     "(weight_decay_theta=0.0)")
     meta.update(
         pretrained_path=str(p),
         pretrained_pixel_val_f1=float(ck["pixel_val_f1"]),
         pretrained_epoch=int(ck["epoch"]),
         pretrained_seed=int(ck["seed"]),
-        # ---- provenance + the two disclosed confounds (verifier round) ----
-        pretrained_fold=(int(ck["fold"]) if "fold" in ck else None),
-        pretrained_data_dir=(str(ck["data_dir"]) if "data_dir" in ck else None),
-        pretrained_weight_decay=(float(ck["weight_decay"])
-                                 if "weight_decay" in ck else None),
-        pretrained_selection_split=f"val_fold{args.fold}",
-        pretrained_selection_caveat=(
-            "pretrain_spectral_mlp.py picked this epoch by macro-F1 on the "
-            "SAME fold val cores this run scores, so frozen_pretrained / "
-            "finetune_real carry a val-selection advantage that joint_linear "
-            "/ joint_mlp / frozen_random / frozen_pca do not; state it "
-            "wherever those arms are compared"),
+        # ---- provenance + the disclosed confounds (verifier round) --------
+        pretrained_fold=ck_fold,
+        pretrained_data_dir=ck_data_dir,
+        pretrained_weight_decay=ck_wd,
+        pretrained_mismatch=(mismatch or None),
+        pretrained_selection_matches_run_val=same_split,
+        pretrained_selection_split=sel_split,
+        pretrained_selection_caveat=sel_caveat,
         pretrained_augment_caveat=(
             "pretraining flattened pixels with augment=False while the runner "
             "trains with augment=True (spatial flip/rot90 before the 336 "
             "center-crop), so for cores larger than 336 px the pretrainer "
             "never saw the border pixels the runner trains on"),
-        pretrained_theta_weight_decay_caveat=(
-            "theta was pretrained under AdamW weight_decay="
-            f"{ck.get('weight_decay')}, which the runner's own protocol "
-            "forbids for theta (weight_decay_theta=0.0)"),
+        pretrained_theta_weight_decay_caveat=wd_caveat,
     )
     return meta
 
@@ -507,7 +565,10 @@ def probe_features(model, probe_x, device):
     Train mode matches what g_phi sees during optimization (batch-stat BN for
     the linear arms). BN momentum is zeroed for the call so the probe forward
     never contaminates running statistics, then restored. Deterministic given
-    parameters + the fixed probe batch, so frozen arms give feat_disp == 0.
+    parameters + the fixed probe batch, so a frozen arm gives feat_disp == 0
+    under --bn_affine_mode arm_default / freeze_all. NOT under train_all: the
+    reduction's BN affine is then in phi and trains, so a frozen arm's probe
+    features DO move and feat_disp is no longer a theta-displacement proxy.
     """
     sr = model.spectral_reduce
     was_training = sr.training
@@ -837,14 +898,21 @@ def main():
               f"(pixel_val_f1={pretrained_meta['pretrained_pixel_val_f1']})",
               flush=True)
     if pretrained_meta["pretrained_path"]:
-        # Loud, per-run disclosure of the two confounds recorded in
-        # config.json (verifier round) — these arms are NOT a clean contrast.
-        print(f"[bias] theta was selected on the fold-{args.fold} VAL cores "
-              f"this run also scores (val-selection advantage vs the "
-              f"non-pretrained arms) and pretrained under weight_decay="
-              f"{pretrained_meta.get('pretrained_weight_decay')} on theta "
-              f"(runner protocol: 0.0); pretrain saw augment=False data, this "
-              f"run trains with augment=True", flush=True)
+        # Loud, per-run disclosure of the confounds recorded in config.json —
+        # these arms are NOT a clean contrast. v2-fix: read the strings from
+        # pretrained_meta (derived from the CHECKPOINT) instead of restating
+        # args.fold, which was false whenever --allow_pretrained_mismatch
+        # loaded another fold's / another dataset's theta.
+        print(f"[bias] pretrain epoch selected on "
+              f"{pretrained_meta['pretrained_selection_split']}", flush=True)
+        for key in ("pretrained_selection_caveat",
+                    "pretrained_theta_weight_decay_caveat",
+                    "pretrained_augment_caveat"):
+            print(f"[bias] {pretrained_meta[key]}", flush=True)
+        if pretrained_meta.get("pretrained_mismatch"):
+            print("[bias] checkpoint/run mismatch overridden: "
+                  + "; ".join(pretrained_meta["pretrained_mismatch"]),
+                  flush=True)
 
     step_fields = ["step", "epoch", "loss", "n_valid_px",
                    "grad_theta_norm", "grad_phi_norm", "egr", "r_rms",
@@ -891,7 +959,12 @@ def main():
                 # nothing about the gradients.
                 total_norm = float(nn.utils.clip_grad_norm_(
                     clip_params, CLIP_MAX_NORM))       # AFTER EGR logging
-                clip_coef = min(1.0, CLIP_MAX_NORM / (total_norm + 1e-6))
+                # torch applies clamp(max_norm/(total+1e-6), max=1.0); mirror
+                # it exactly. v2-fix: a bare min() logged 1.0 for a NaN norm
+                # (`nan < 1.0` is False) while torch had multiplied every grad
+                # by NaN — the column must show the blow-up, not hide it.
+                _cc = CLIP_MAX_NORM / (total_norm + 1e-6)
+                clip_coef = _cc if math.isnan(_cc) else min(1.0, _cc)
             snapshot_into(theta_snap, theta)
             snapshot_into(phi_snap, phi)
             optimizer.step()

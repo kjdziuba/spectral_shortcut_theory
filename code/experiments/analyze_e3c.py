@@ -30,7 +30,9 @@ only), clip_coef, upd_theta_norm, upd_phi_norm (per-run means over steps.csv).
 Verifier-round fixes: '_speclr<M>' is appended only for the arms whose theta
 is actually in the optimizer (a stray multiplier on a frozen arm used to
 create a phantom arm identical to the plain one), and the spectral-lr
-sensitivity block now covers SGD runs too instead of silently dropping them.
+sensitivity block now covers SGD runs too instead of silently dropping them
+(fix round 2: including widths that have SGD speclr runs but no AdamW run,
+which the first pass still dropped via the AdamW-only width loop).
 Neither changes any output for the pre-existing runs.
 """
 from __future__ import annotations
@@ -222,7 +224,13 @@ def main():
     print(g.to_string(index=False, float_format=lambda v: f"{v:.4g}"))
 
     print("\n=== pre-registered comparisons (final val F1, mean+/-sd) ===")
-    for w in sorted(adamw.width.unique()):
+    # v2-fix: the previous round widened the speclr block to every optimizer
+    # but left this loop ranging over the ADAMW widths alone, so a width that
+    # exists only as SGD speclr runs was still dropped. Union the speclr
+    # widths in. No-op when every speclr width already has an AdamW run (true
+    # of the archived matrix), so pre-existing output is unchanged.
+    _spec_widths = set(df[df.arm.str.contains("_speclr")].width.unique())
+    for w in sorted(set(adamw.width.unique()) | _spec_widths):
         sub = adamw[adamw.width == w]
         line = [f"h={w}:"]
         for arm in ("joint_linear", "frozen_random", "frozen_pca",
