@@ -1770,3 +1770,39 @@ ViT sweep:
   block train- vs eval-mode BN) -> claude_math_reply_01.md draft.
 - Workflow wf_e996f8be resumed: BN-recal on 17 ckpts + full-contrast
   directions + hygiene skeptic.
+
+## 2026-09-09 (night) — Astra math audited; production interior-witness measurement
+
+- Three Fable proof audits of math_01.md: 54 verdicts, NO false statement;
+  12 one-line fixes (Cor 1.5 M0 >= 72N^2/rho — asymptotic existence only;
+  Thm 3.2 constant ~1e-40 — existence only; (5.12) amplitude C=1 vs 1/sqrt2;
+  (5.11) constant improvable to 2(1+2m^2)/M; Ctrex 3.4 needs eps>0; (2.5)
+  decoupling hypothesis; margin bound constant 4->2; etc.). Positioning gap:
+  Thm 5.1's invariant is the depth-2 layer-balance law (Saxe et al.).
+- Numerics: Theorem 5.1 verified in full (3 independent paths, 327
+  quantities, zero violations; commit 494fd5d). Interior-witness toy:
+  (3.6) holds with slack, CE floor slope ~1.0, BN counterexample confirmed
+  (657fb86). PRODUCTION (179a0fa, exp1_8c_interior_witness): lam_max(S_h)
+  of the seg_head[0] input is EXACTLY FLAT in M (50.16 at 48/192/384) —
+  top direction lives in the K=64 skip block; the width-M ViT sub-block
+  Gram is 4 orders smaller (M^0.30). Train-mode BN is the SOLE source of
+  lam_WW width growth (slope +0.71 with BN vs +0.03 with head-BN frozen
+  on identical features); site-constant witness erased exactly (<3e-7).
+  => exp1_8's sublinear lam_phi growth (+0.38-0.46) is a BN-gain
+  compensation of init-scale dilution, NOT a Theta(M) Gram floor.
+  QUEUE (P3): rewrite 8.3's "spatial curvature grows sublinearly"
+  sentence with this attribution; Thm 3.2's hypothesis is false on this
+  model independently of BN. Only 2 seeds; do not quote +0.71 sharply.
+- claude_math_reply_01.md (9.2k words) committed (36c2a04) — accepts the
+  whole note for the appendix with the 12 fixes; proposes theory spine:
+  Thm 1.3 + Cor 1.5 (bridge), Thm 5.1 (constructive instance where the
+  bound bites, ratio 4.5-6.3 or ~3.8 with true amplitude), P4 lemmas,
+  counterexamples as scope ledger.
+- Hygiene skeptic (still running) found: pretrained arms were selected by
+  macro-F1 on the SAME fold-0 val cores the runner scores (val-selection
+  advantage) and pretrained theta under AdamW wd=0.01 -> both must be
+  disclosed; it is adding config caveat keys + input validation (uncommitted
+  edits to exp1_7_train.py/run_lane.sh/analyze_e3c.py are its work; a
+  /tmp smoke process is its check). Lane run 1 (frozen_random_m s0) at
+  epoch 11 by 18:44 — slowed by concurrent GPU jobs; reassess pace in the
+  morning and trim seed-2 of low-priority arms if >24 h.
