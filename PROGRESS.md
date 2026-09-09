@@ -1658,3 +1658,26 @@ ViT sweep:
   equivalence reading, matches the theorem's actual claim).
 - Fable F14 items (1) floor-effect and (2) positive control now
   answered with data; (4) width-uniformity answered (M=192 pair).
+
+## 2026-09-09 — CSF3 DOWN (CSF3/CSF4 merger); local pivot launched
+
+- Public CSF3 banner: "CSF3 maintenance shutdown begins at 08:00 on Monday
+  7th September"; CSF4 retired and merged INTO CSF3 (CSF3 is the surviving
+  system). Login host unreachable (port 22 closed); /tmp/csf3-socket gone.
+  Return date only on the SSO-gated merger page — author to paste.
+- Campaign (queued 2026-09-02) had until Sep 7 08:00: with a maintenance
+  reservation SLURM will not start jobs whose walltime crosses it, so the
+  4-day finetune_real/lpft/ft_real_speclr jobs almost certainly never ran;
+  R0 re-evals + 1-day arms likely partially complete. To be salvaged when
+  the cluster returns. Home (backed up) should persist; datasets on scratch
+  are re-uploadable from local copies.
+- DECISION: pivot the pre-registered questions to the LOCAL E3c runner
+  (~50 min/run): new arms frozen_pretrained (E3c MLP encoder pretrained on
+  fold-0 train pixels, frozen), finetune_real (same init, theta trainable,
+  wd=0), joint_speclr0.1 / joint_speclr10 (mechanism discriminator),
+  finetune_speclr0.1. Workflow wf_3deda532 implementing + adversarially
+  verifying; runs to follow (priority: h192 finetune_real + frozen_pretrained
+  x3 seeds, then speclr arms, then h48).
+- Astra (senior-reviewer model, Codex, has workspace access) briefing
+  dossier being assembled by workflow wf_29fa56cd with fact-check; will add
+  a workspace directory map since Astra can read files directly.
