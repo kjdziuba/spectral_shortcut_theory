@@ -1850,3 +1850,18 @@ ViT sweep:
   at best-val (0.836 vs 0.837): pretrained informativeness adds nothing at
   h48 under this protocol. All provisional until seeds 1-2 (lane ETA ~09:30).
 - Pace 30-41 min/run with the GPU alone.
+
+## 2026-09-09 (22:50) — LR-discriminator seed 0 (matched, h48)
+
+  arm                 best    ep  final5  th_drift  upd_theta  clip
+  joint_speclr0.1_m  0.8485   29  0.6894   0.077    6.8e-4     0.49
+  joint_linear_m     0.8640   34  0.7138   0.540    5.8e-3     0.41
+  joint_speclr10_m   0.8735   34  0.5276   4.620    5.0e-2     0.39
+- Pre-registered harmful-drift ordering (x0.1 >= x1 >= x10) is REVERSED on
+  best-val: peak rises monotonically with spectral LR (0.849 < 0.864 <
+  0.874). On final-5 it is non-monotone (x1 > x0.1 > x10): the x10 arm
+  (theta drift 4.6x its init norm) collapses hardest late. Reading: more
+  spectral movement raises the attainable peak but deepens the un-stopped
+  endpoint collapse. This is Astra's 'non-monotone / metric-dependent'
+  branch — report all three points under both metrics, no binary verdict.
+  n=1; seeds 1-2 overnight.
