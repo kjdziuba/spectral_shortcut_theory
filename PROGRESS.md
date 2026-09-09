@@ -1833,3 +1833,20 @@ ViT sweep:
   clip_coef mean 0.50, upd_theta 0, BN affine 128 in phi; best-val 0.837
   vs final-5 0.687). Run 2 joint_linear_m s0 started 19:47.
 - ALL AGENTS DONE. State fully logged -> compaction GREEN.
+
+## 2026-09-09 (21:30) — laneM48 seed-0 readout (matched hygiene, h48, n=1 each)
+
+  arm                  best    ep  final5  th_drift  clip
+  frozen_random_m     0.8371   20  0.6870   0.000    0.50
+  joint_linear_m      0.8640   34  0.7138   0.540    0.41
+  frozen_pretrained_m 0.8355   10  0.6531   0.000    0.58
+  finetune_real_m     0.8607   49  0.6505   0.025    0.33
+- Under matched protocol joint_linear > frozen_random on BOTH metrics
+  (+0.027 each) at seed 0 — consistent with the earlier final-5 "frozen
+  wins" being partly the clipping/BN-affine asymmetry (Astra M1).
+- Pre-registered P1 (finetune_real < frozen_pretrained): FAILS at seed 0
+  on best-val (+0.025 for fine-tuning), tie on final-5 (-0.003). Fine-tuned
+  encoder moved only 2.5% (wd=0, lr 1e-4). frozen_pretrained ~ frozen_random
+  at best-val (0.836 vs 0.837): pretrained informativeness adds nothing at
+  h48 under this protocol. All provisional until seeds 1-2 (lane ETA ~09:30).
+- Pace 30-41 min/run with the GPU alone.
