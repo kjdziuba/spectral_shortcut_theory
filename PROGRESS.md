@@ -1865,3 +1865,13 @@ ViT sweep:
   endpoint collapse. This is Astra's 'non-monotone / metric-dependent'
   branch — report all three points under both metrics, no binary verdict.
   n=1; seeds 1-2 overnight.
+
+## 2026-09-09 (23:30) — seed-0 set complete (7/7 arms); joint_cos_m readout appended below by hand
+  joint_cos_m (cosine lr->0 over 60 ep, matched): best 0.8572 @ep35,
+  final5 0.6686, theta drift 0.346 — vs joint_linear_m 0.8640 / 0.7138.
+  The schedule did NOT prevent the late decline (val by decade 0.47, 0.68,
+  0.63, 0.76, 0.71, 0.68 even as lr -> 0), so the endpoint collapse is not
+  simply a large-late-lr effect; candidates: BN running-stat drift (M1
+  variance mechanism) or genuine late overfitting. Seed 0 only.
+  Seed-0 set complete for all 7 matched arms at 23:30; seeds 1-2 running
+  (ETA ~09:30).
