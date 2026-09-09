@@ -19,9 +19,17 @@ Reads experiments_shortcut/e3c/breast_f0/*/ and reports, per run:
 Prints arm x width tables and the three pre-registered comparisons:
 joint vs frozen-random (Thm-2 functional read), joint vs frozen-PCA
 (falsifier), SGD pair. Writes results/e3c_analysis_runs.csv.
+
+v2 (reviewer round) additions, all backwards compatible: runs produced with
+the matched-hygiene flags carry extra steps.csv columns and extra config.json
+keys. Pre-existing runs have neither, and every new field is read with .get /
+an `in` guard, so their rows keep exactly the columns and values they had.
+New CSV columns: best_epoch, val_f1_best_saved (config.json, --save_best runs
+only), clip_coef, upd_theta_norm, upd_phi_norm (per-run means over steps.csv).
 """
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -49,19 +57,55 @@ def envelope_mu(r: np.ndarray, warmup: int = 10) -> tuple[float, float]:
     return float(max(mus.min(), 0.0)), C
 
 
+def hygiene_suffix(cfg: dict) -> str:
+    """'' for a default-hygiene run, else a tag describing the deviation.
+
+    A matched-hygiene run trains DIFFERENT parameters under a DIFFERENT clip
+    from the plain arm of the same name, so it must not be averaged into it.
+    Every pre-existing run lacks these keys and gets '' -> label unchanged.
+      train_all + phi_only  -> '_m'      (the lane's <arm>_m token)
+      anything else         -> explicit '_bnT'/'_bnF'/'_clipphi'/'_noclip'
+      cosine schedule       -> '_cosine' appended
+    """
+    bn = cfg.get("bn_affine_mode", "arm_default")
+    clip = cfg.get("clip_scope", "optimizer")
+    sched = cfg.get("lr_schedule", "none")
+    if (bn, clip, sched) == ("arm_default", "optimizer", "none"):
+        return ""
+    parts = []
+    if (bn, clip) == ("train_all", "phi_only"):
+        parts.append("m")
+    else:
+        if bn != "arm_default":
+            parts.append({"train_all": "bnT", "freeze_all": "bnF"}[bn])
+        if clip != "optimizer":
+            parts.append({"phi_only": "clipphi", "none": "noclip"}[clip])
+    if sched != "none":
+        parts.append(sched)
+    return "_" + "_".join(parts) if parts else ""
+
+
 def arm_label(cfg: dict) -> str:
     """cfg['arm'], suffixed '_speclr<M>' when the run recorded a non-unit
-    spectral lr multiplier (E3c-local speclr arms). Runs without the key
-    (every pre-existing run) keep the bare arm name, so grouping is unchanged.
+    spectral lr multiplier (E3c-local speclr arms), then a hygiene tag for a
+    matched-protocol run. Runs without either key (every pre-existing run)
+    keep the bare arm name, so grouping is unchanged.
     """
     arm = cfg["arm"]
     mult = cfg.get("spectral_lr_mult")
     if mult is not None and float(mult) != 1.0:
         arm = f"{arm}_speclr{float(mult):g}"
-    return arm
+    return arm + hygiene_suffix(cfg)
 
 
-def analyze_run(d: Path) -> dict | None:
+def col_mean(steps: pd.DataFrame, name: str) -> float:
+    """Mean of a steps.csv column, NaN when the column predates v2."""
+    if name not in steps.columns:
+        return float("nan")
+    return float(pd.to_numeric(steps[name], errors="coerce").mean())
+
+
+def analyze_run(d: Path, min_epochs: int = 60) -> dict | None:
     try:
         cfg = json.loads((d / "config.json").read_text())
         steps = pd.read_csv(d / "steps.csv").drop_duplicates(
@@ -71,7 +115,7 @@ def analyze_run(d: Path) -> dict | None:
     except Exception as e:
         print(f"[skip] {d.name}: {e}", file=sys.stderr)
         return None
-    if epochs.epoch.max() < 60:
+    if epochs.epoch.max() < min_epochs:
         print(f"[skip] {d.name}: incomplete ({epochs.epoch.max()} epochs)",
               file=sys.stderr)
         return None
@@ -117,14 +161,30 @@ def analyze_run(d: Path) -> dict | None:
         egr_e20=float(egr_ep.get(20, np.nan)), egr_e60=float(egr_ep.get(60, np.nan)),
         jac_first=float(jac.input_jac_op.iloc[0]) if len(jac) else np.nan,
         jac_last=float(jac.input_jac_op.iloc[-1]) if len(jac) else np.nan,
+        # ---- v2 columns; NaN for every pre-existing run ----------------
+        best_epoch=cfg.get("best_epoch", np.nan),
+        val_f1_best_saved=cfg.get("best_val_f1", np.nan),
+        clip_coef=col_mean(steps, "clip_coef"),
+        upd_theta_norm=col_mean(steps, "upd_theta_norm"),
+        upd_phi_norm=col_mean(steps, "upd_phi_norm"),
     )
 
 
 def main():
-    rows = [r for d in sorted(E3C.iterdir()) if d.is_dir()
-            if (r := analyze_run(d)) is not None]
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--e3c_dir", default=str(E3C),
+                    help="run tree to analyse (default: the breast_f0 matrix)")
+    ap.add_argument("--out", default=str(ROOT / "results" / "e3c_analysis_runs.csv"),
+                    help="output CSV (default: results/e3c_analysis_runs.csv)")
+    ap.add_argument("--min_epochs", type=int, default=60,
+                    help="skip runs shorter than this (default 60)")
+    args = ap.parse_args()
+
+    rows = [r for d in sorted(Path(args.e3c_dir).iterdir()) if d.is_dir()
+            if (r := analyze_run(d, args.min_epochs)) is not None]
     df = pd.DataFrame(rows)
-    out = ROOT / "results" / "e3c_analysis_runs.csv"
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out, index=False)
     print(f"[write] {out}  ({len(df)} runs)\n")
 

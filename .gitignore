@@ -43,5 +43,7 @@ Thumbs.db
 *.swp
 *~
 experiments_shortcut/**/final.pt
+experiments_shortcut/**/best.pt
 experiments_shortcut/e3c_pilot_slow/
 experiments_shortcut/e3c_smoke/
+experiments_shortcut/e3c_smoke_v2/

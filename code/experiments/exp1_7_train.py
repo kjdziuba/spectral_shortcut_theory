@@ -47,10 +47,65 @@ is never touched. With M == 1.0 the param groups are built exactly as before.
 --run_label overrides the arm token in the output dir name (lane driver uses
 it for e.g. joint_speclr0.1_h192_adamw_s0); default = arm, unchanged.
 
+MATCHED-HYGIENE OPTIONS (reviewer round, v2). All OPT-IN: with every flag at
+its default the optimisation is bit-identical to the pre-v2 script, and so are
+epochs.csv and the pre-existing eight columns of steps.csv. config.json is the
+one deliberate exception: it now always records the four new flags plus
+n_bn_affine_* / clip_max_norm / base_lrs, so a default run is self-describing.
+  --save_best         also write <run>/best.pt at the best val-macro-F1 epoch
+                      (atomic tmp + os.replace) and record best_epoch /
+                      best_val_f1 in config.json at the end. final.pt is
+                      still written, unchanged.
+  --bn_affine_mode    where the SPECTRAL REDUCTION's BatchNorm affine
+                      (gamma/beta) parameters go.
+                        arm_default : current per-arm behaviour (joint_linear
+                                      trains spectral_reduce.norm in phi;
+                                      frozen_random freezes it).
+                        train_all   : trainable in EVERY arm, in the phi
+                                      group -- frozen arms train them too.
+                        freeze_all  : frozen in EVERY arm (out of the
+                                      optimizer, grads zeroed like the other
+                                      frozen params).
+                      NOTE the reduction modules differ: LinearSpectralReduction
+                      carries BatchNorm2d(64) = 128 affine params (joint_linear /
+                      frozen_random); PCAReduction and MLPSpectralReduction
+                      carry NO BatchNorm at all, so for frozen_pca / joint_mlp /
+                      frozen_pretrained / finetune_real the count is 0 and the
+                      mode is a no-op. The realised counts per group are written
+                      to config.json (n_bn_affine_{total,theta,phi,frozen}).
+  --clip_scope        which parameters the grad-norm clip is computed over.
+                        optimizer : current -- all optimizer params jointly.
+                        phi_only  : norm over the phi params only, in EVERY
+                                    arm. theta is then left COMPLETELY
+                                    UNCLIPPED (it is deliberately NOT scaled
+                                    by phi's coefficient -- the point of the
+                                    matched protocol is that phi sees the same
+                                    clip in joint and frozen arms while theta's
+                                    step is governed by its own lr alone).
+                        none      : no clipping at all.
+  --lr_schedule       none (constant, current) | cosine (per-EPOCH decay of
+                      every param group's lr from its initial value to 0 over
+                      --epochs: lr_e = lr_0 * 0.5*(1+cos(pi*(e-1)/E)) ).
+
+steps.csv gained four columns (appended after the existing eight, which are
+unchanged): grad_total_norm_preclip, clip_coef, upd_theta_norm, upd_phi_norm.
+  grad_total_norm_preclip : the pre-clip total grad norm over the CLIP SCOPE's
+      parameters (for --clip_scope none, over the optimizer params, so the
+      column stays comparable across scopes).
+  clip_coef : the coefficient actually applied, torch's own
+      min(1, max_norm/(total_norm + 1e-6)); exactly 1.0 for --clip_scope none.
+  upd_theta_norm / upd_phi_norm : L2 norm of the ACTUAL parameter change across
+      optimizer.step(), from pre/post snapshots. Exactly 0 for a group that is
+      not in the optimizer (every frozen arm's theta).
+
 Usage:
   python code/experiments/exp1_7_train.py --arm joint_linear --width 192 --seed 0
   python code/experiments/exp1_7_train.py --arm joint_linear --width 192 --seed 0 \
       --spectral_lr_mult 0.1 --run_label joint_speclr0.1
+  # matched hygiene:
+  python code/experiments/exp1_7_train.py --arm frozen_random --width 48 --seed 0 \
+      --bn_affine_mode train_all --clip_scope phi_only --save_best \
+      --run_label frozen_random_m
   # smoke:
   python code/experiments/exp1_7_train.py --arm frozen_random --width 48 \
       --seed 0 --epochs 2 --max_train_cores 8
@@ -60,6 +115,8 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
+import os
 import random
 import sys
 import time
@@ -89,6 +146,7 @@ SCRATCH = Path("/tmp/claude-1008/spectral_shortcut_scratch")
 PRETRAINED_DIR = THEORY_ROOT / "experiments_shortcut" / "pretrained"
 PRETRAINED_ARMS = ("frozen_pretrained", "finetune_real")
 TRAINABLE_THETA_ARMS = ("joint_linear", "joint_mlp", "finetune_real")
+CLIP_MAX_NORM = 1.0        # unchanged from the pre-v2 hard-coded 1.0
 
 
 # ---------------------------------------------------------------------------
@@ -226,7 +284,31 @@ def resolve_pretrained(args) -> dict:
     return meta
 
 
-def split_param_groups(model: nn.Module, arm: str):
+_BN_TYPES = (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d, nn.SyncBatchNorm)
+
+
+def bn_affine_names(model: nn.Module) -> set:
+    """Fully-qualified names of the spectral reduction's BN affine params.
+
+    Only BatchNorm modules INSIDE model.spectral_reduce, and only when
+    affine=True. Returns e.g. {'spectral_reduce.norm.weight',
+    'spectral_reduce.norm.bias'} for LinearSpectralReduction, and the EMPTY
+    set for PCAReduction / MLPSpectralReduction (neither has a BatchNorm).
+    """
+    names = set()
+    sr = getattr(model, "spectral_reduce", None)
+    if sr is None:
+        return names
+    for mod_name, m in sr.named_modules():
+        if isinstance(m, _BN_TYPES) and getattr(m, "affine", False):
+            prefix = f"spectral_reduce.{mod_name}." if mod_name else "spectral_reduce."
+            for pn, _ in m.named_parameters(recurse=False):
+                names.add(prefix + pn)
+    return names
+
+
+def split_param_groups(model: nn.Module, arm: str,
+                       bn_affine_mode: str = "arm_default"):
     """Return (theta, phi, frozen_extra) parameter lists.
 
     theta  : the f_theta parameters the theory tracks.
@@ -234,9 +316,21 @@ def split_param_groups(model: nn.Module, arm: str):
     frozen_extra: params in NEITHER optimizer group (frozen arms only) whose
              grads must be zeroed manually every step — includes theta itself
              for frozen arms plus spectral_reduce.norm in frozen_random.
+
+    bn_affine_mode != 'arm_default' short-circuits the per-arm rule for the
+    spectral reduction's BN affine params ONLY (see module docstring); every
+    other parameter follows the untouched per-arm logic below. With
+    'arm_default' the routing set is empty, so the function is the pre-v2 one.
     """
+    bn_names = bn_affine_names(model) if bn_affine_mode != "arm_default" else set()
     theta, phi, frozen_extra = [], [], []
     for name, p in model.named_parameters():
+        if name in bn_names:
+            # BN affine never belongs to theta (it is normalisation, not the
+            # map f_theta); train_all -> optimizer's decayed group, freeze_all
+            # -> out of the optimizer with its grads zeroed each step.
+            (phi if bn_affine_mode == "train_all" else frozen_extra).append(p)
+            continue
         in_sr = name.startswith("spectral_reduce")
         if arm == "joint_linear":
             # theta = the linear map only; the post-projection BatchNorm2d
@@ -311,6 +405,40 @@ def group_l2_norm(params):
         for p in params:
             s += float(p.detach().pow(2).sum().item())
     return s ** 0.5
+
+
+def snapshot_into(bufs, params):
+    """bufs[i] <- params[i] (in place, no allocation). Pre-step snapshot."""
+    with torch.no_grad():
+        for b, p in zip(bufs, params):
+            b.copy_(p.detach())
+
+
+def update_norm(params, bufs) -> float:
+    """||p_after - p_before||_2 over a group, one host sync (float64 accum).
+
+    Exactly 0.0 for a group the optimizer does not own (frozen theta): the
+    snapshot and the parameter are then the same numbers bit for bit.
+    """
+    if not params:
+        return 0.0
+    with torch.no_grad():
+        acc = torch.zeros((), device=params[0].device, dtype=torch.float64)
+        for p, b in zip(params, bufs):
+            acc += (p.detach() - b).double().pow(2).sum()
+        return float(acc.sqrt().item())
+
+
+def grad_total_norm(params) -> torch.Tensor:
+    """Total L2 grad norm over params, matching clip_grad_norm_'s value.
+
+    Used only for --clip_scope none, where nothing is clipped but the column
+    must still be populated.
+    """
+    norms = [p.grad.detach().norm(2) for p in params if p.grad is not None]
+    if not norms:
+        return torch.zeros(())
+    return torch.norm(torch.stack(norms), 2)
 
 
 def probe_features(model, probe_x, device):
@@ -451,6 +579,23 @@ def main():
     ap.add_argument("--run_label", default=None,
                     help="output-dir token in place of the arm name "
                          "(e.g. joint_speclr0.1); default = arm")
+    # ---- matched-hygiene options (v2). Defaults == pre-v2 behaviour. -------
+    ap.add_argument("--save_best", action="store_true",
+                    help="also write <run>/best.pt at the best val macro-F1 "
+                         "epoch (atomic) and record best_epoch / best_val_f1 "
+                         "in config.json")
+    ap.add_argument("--bn_affine_mode", default="arm_default",
+                    choices=["arm_default", "train_all", "freeze_all"],
+                    help="routing of the spectral reduction's BatchNorm affine "
+                         "params: per-arm (default) / phi in every arm / "
+                         "frozen in every arm")
+    ap.add_argument("--clip_scope", default="optimizer",
+                    choices=["optimizer", "phi_only", "none"],
+                    help="grad-clip scope: all optimizer params (default) / "
+                         "phi only, theta left unclipped / no clipping")
+    ap.add_argument("--lr_schedule", default="none", choices=["none", "cosine"],
+                    help="none = constant lr (default); cosine = per-epoch "
+                         "cosine decay of every group's lr over --epochs")
     ap.add_argument("--data_dir", default="/mnt/hdd2/u37314kd/data_breast_v2_pca23")
     ap.add_argument("--dataset_name", default="breast")
     ap.add_argument("--fold", type=int, default=0)
@@ -528,10 +673,32 @@ def main():
         for p in model.spectral_reduce.proj.parameters():
             p.requires_grad_(True)
 
-    theta, phi, frozen_extra = split_param_groups(model, args.arm)
+    theta, phi, frozen_extra = split_param_groups(model, args.arm,
+                                                  args.bn_affine_mode)
     optimizer = build_optimizer(args, theta, phi, args.arm)
     opt_params = [p for g in optimizer.param_groups for p in g["params"]]
     egr = EGRLogger.from_param_groups(theta, phi, require_grad_only=False)
+
+    # BN-affine accounting (reported for EVERY run, including arm_default).
+    _named = dict(model.named_parameters())
+    bn_params = [_named[n] for n in sorted(bn_affine_names(model))]
+
+    def _bn_count(group):
+        ids = {id(p) for p in group}
+        return sum(p.numel() for p in bn_params if id(p) in ids)
+
+    bn_counts = dict(
+        n_bn_affine_total=sum(p.numel() for p in bn_params),
+        n_bn_affine_theta=_bn_count(theta),
+        n_bn_affine_phi=_bn_count(phi),
+        n_bn_affine_frozen=_bn_count(frozen_extra),
+    )
+
+    # Per-step update-norm snapshots: allocated once, refilled in place.
+    theta_snap = [torch.empty_like(p) for p in theta]
+    phi_snap = [torch.empty_like(p) for p in phi]
+    clip_params = phi if args.clip_scope == "phi_only" else opt_params
+    base_lrs = [g["lr"] for g in optimizer.param_groups]
 
     C_f = sum(p.numel() for p in theta)
     C_g = sum(p.numel() for p in phi)
@@ -566,6 +733,10 @@ def main():
                      if args.arm in TRAINABLE_THETA_ARMS else None),
         run_label=label,
         **pretrained_meta,
+        # matched-hygiene provenance (v2)
+        **bn_counts,
+        clip_max_norm=CLIP_MAX_NORM,
+        base_lrs=base_lrs,
         theta0_norm=theta0_norm, phi0_norm=phi0_norm, Z0_fro_norm=Z0_norm,
         torch_version=torch.__version__,
         device_name=(torch.cuda.get_device_name(0)
@@ -575,6 +746,16 @@ def main():
     (out_dir / "config.json").write_text(json.dumps(config, indent=2))
     print(f"[cfg] arm={args.arm} h={args.width} {args.optimizer} seed={args.seed} "
           f"| C_f={C_f:,} C_g={C_g:,} total={C_total:,} -> {out_dir}", flush=True)
+    if (args.bn_affine_mode != "arm_default" or args.clip_scope != "optimizer"
+            or args.lr_schedule != "none" or args.save_best):
+        print(f"[hyg] bn_affine_mode={args.bn_affine_mode} "
+              f"clip_scope={args.clip_scope} lr_schedule={args.lr_schedule} "
+              f"save_best={args.save_best} | bn_affine total="
+              f"{bn_counts['n_bn_affine_total']} theta="
+              f"{bn_counts['n_bn_affine_theta']} phi="
+              f"{bn_counts['n_bn_affine_phi']} frozen="
+              f"{bn_counts['n_bn_affine_frozen']} | base_lrs={base_lrs}",
+              flush=True)
     if args.spectral_lr_mult != 1.0 or pretrained_meta["pretrained_path"]:
         print(f"[cfg] spectral_lr_mult={args.spectral_lr_mult} "
               f"spectral_lr={config['spectral_lr']} "
@@ -583,7 +764,11 @@ def main():
               flush=True)
 
     step_fields = ["step", "epoch", "loss", "n_valid_px",
-                   "grad_theta_norm", "grad_phi_norm", "egr", "r_rms"]
+                   "grad_theta_norm", "grad_phi_norm", "egr", "r_rms",
+                   # v2 additions, appended so the existing columns keep
+                   # their names AND their positions
+                   "grad_total_norm_preclip", "clip_coef",
+                   "upd_theta_norm", "upd_phi_norm"]
     epoch_fields = ["epoch", "train_loss", "val_loss", "val_macro_f1",
                     "val_acc", "theta_disp", "theta_disp_rel", "phi_disp",
                     "phi_disp_rel", "feat_disp", "feat_disp_rel",
@@ -591,8 +776,15 @@ def main():
 
     # ---- training loop -----------------------------------------------------
     step = 0
+    best_val_f1, best_epoch = -float("inf"), None
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
+        if args.lr_schedule == "cosine":
+            # per-EPOCH cosine over the whole run; factor 1.0 at epoch 1.
+            f = 0.5 * (1.0 + math.cos(math.pi * (epoch - 1)
+                                      / max(args.epochs, 1)))
+            for g, b in zip(optimizer.param_groups, base_lrs):
+                g["lr"] = b * f
         model.train()
         step_rows = []
         tr_loss_sum, tr_px = 0.0, 0
@@ -607,8 +799,21 @@ def main():
             rrms, n_valid = residual_rms(logits, y)   # no_grad, pre-backward
             loss.backward()
             rec = egr.log_step(step)                  # AFTER backward, pre-zero
-            nn.utils.clip_grad_norm_(opt_params, 1.0)  # AFTER EGR logging
+            if args.clip_scope == "none":
+                total_norm = float(grad_total_norm(clip_params))
+                clip_coef = 1.0
+            else:
+                # 'optimizer' passes exactly the pre-v2 argument list; the
+                # return value was previously discarded, reading it changes
+                # nothing about the gradients.
+                total_norm = float(nn.utils.clip_grad_norm_(
+                    clip_params, CLIP_MAX_NORM))       # AFTER EGR logging
+                clip_coef = min(1.0, CLIP_MAX_NORM / (total_norm + 1e-6))
+            snapshot_into(theta_snap, theta)
+            snapshot_into(phi_snap, phi)
             optimizer.step()
+            upd_theta = update_norm(theta, theta_snap)
+            upd_phi = update_norm(phi, phi_snap)
             optimizer.zero_grad(set_to_none=False)
             # zero_grad only touches optimizer params; frozen arms must zero
             # the counterfactual theta (+ any other non-optimizer) grads too.
@@ -622,6 +827,8 @@ def main():
                 grad_theta_norm=rec["grad_theta_norm"],
                 grad_phi_norm=rec["grad_phi_norm"],
                 egr=rec["egr"], r_rms=rrms,
+                grad_total_norm_preclip=total_norm, clip_coef=clip_coef,
+                upd_theta_norm=upd_theta, upd_phi_norm=upd_phi,
             ))
             last_egr, last_rrms = rec["egr"], rrms
             tr_loss_sum += float(loss.item()) * n_valid
@@ -632,6 +839,18 @@ def main():
         train_loss = tr_loss_sum / max(tr_px, 1)
 
         val = evaluate(model, val_loader, device)
+        if args.save_best and val["macro_f1"] > best_val_f1:
+            best_val_f1, best_epoch = float(val["macro_f1"]), epoch
+            out_dir.mkdir(parents=True, exist_ok=True)
+            tmp = out_dir / "best.pt.tmp"
+            torch.save({
+                "epoch": epoch,
+                "val_macro_f1": best_val_f1,
+                "model_state_dict": model.state_dict(),
+                "theta0": [t.cpu() for t in theta0],
+                "config": config,
+            }, tmp)
+            os.replace(tmp, out_dir / "best.pt")   # atomic within the dir
         th_d = group_l2_disp(theta, theta0)
         ph_d = group_l2_disp(phi, phi0)
         Zt = probe_features(model, probe_x, device)
@@ -656,12 +875,30 @@ def main():
         )], epoch_fields)
 
         jac_str = f" jac_op={jac_op:.4g}" if jac_op != "" else ""
+        # log-only; epochs.csv keeps its pre-v2 columns exactly
+        lr_str = ("" if args.lr_schedule == "none" else
+                  "  lr=" + ",".join(f"{g['lr']:.4g}"
+                                     for g in optimizer.param_groups))
         print(f"epoch {epoch:3d}/{args.epochs}  train_loss={train_loss:.4f}  "
               f"val_f1={val['macro_f1']:.4f}  egr={last_egr:.4g}  "
               f"r_rms={last_rrms:.4f}  th_disp_rel={th_d / max(theta0_norm, 1e-30):.4g}"
-              f"{jac_str}  ({secs:.0f}s)", flush=True)
+              f"{jac_str}{lr_str}  ({secs:.0f}s)", flush=True)
 
     out_dir.mkdir(parents=True, exist_ok=True)   # tree may be cleaned externally
+    if args.save_best:
+        # best_epoch / best_val_f1 appear ONLY for --save_best runs, so a
+        # default run's config.json never advertises a checkpoint it does not
+        # have (analyze_e3c.py reads both with .get -> NaN).
+        # None (not -inf) if no epoch ever ran: -inf is not valid JSON.
+        config.update(best_epoch=best_epoch,
+                      best_val_f1=(best_val_f1 if best_epoch is not None
+                                   else None))
+        (out_dir / "config.json").write_text(json.dumps(config, indent=2))
+        if best_epoch is None:
+            print("[best] no epoch completed; best.pt not written", flush=True)
+        else:
+            print(f"[best] epoch {best_epoch} val_macro_f1={best_val_f1:.4f} "
+                  f"-> {out_dir / 'best.pt'}", flush=True)
     torch.save({
         "epoch": args.epochs,
         "model_state_dict": model.state_dict(),
