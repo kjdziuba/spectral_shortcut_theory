@@ -26,6 +26,12 @@ keys. Pre-existing runs have neither, and every new field is read with .get /
 an `in` guard, so their rows keep exactly the columns and values they had.
 New CSV columns: best_epoch, val_f1_best_saved (config.json, --save_best runs
 only), clip_coef, upd_theta_norm, upd_phi_norm (per-run means over steps.csv).
+
+Verifier-round fixes: '_speclr<M>' is appended only for the arms whose theta
+is actually in the optimizer (a stray multiplier on a frozen arm used to
+create a phantom arm identical to the plain one), and the spectral-lr
+sensitivity block now covers SGD runs too instead of silently dropping them.
+Neither changes any output for the pre-existing runs.
 """
 from __future__ import annotations
 
@@ -39,6 +45,10 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
 E3C = ROOT / "experiments_shortcut" / "e3c" / "breast_f0"
+
+# Mirrors exp1_7_train.TRAINABLE_THETA_ARMS: the only arms whose theta is in
+# the optimizer, hence the only arms where --spectral_lr_mult does anything.
+TRAINABLE_THETA_ARMS = ("joint_linear", "joint_mlp", "finetune_real")
 
 
 def envelope_mu(r: np.ndarray, warmup: int = 10) -> tuple[float, float]:
@@ -90,11 +100,21 @@ def arm_label(cfg: dict) -> str:
     spectral lr multiplier (E3c-local speclr arms), then a hygiene tag for a
     matched-protocol run. Runs without either key (every pre-existing run)
     keep the bare arm name, so grouping is unchanged.
+
+    Verifier fix: the suffix is applied ONLY for the trainable-theta arms.
+    The runner warns that the multiplier is a no-op when theta is not in the
+    optimizer, so a frozen-arm run launched with a stray --spectral_lr_mult
+    used to surface here as a distinct phantom arm that was behaviourally
+    identical to the plain one; it is now folded into the plain arm.
     """
     arm = cfg["arm"]
     mult = cfg.get("spectral_lr_mult")
     if mult is not None and float(mult) != 1.0:
-        arm = f"{arm}_speclr{float(mult):g}"
+        if arm in TRAINABLE_THETA_ARMS:
+            arm = f"{arm}_speclr{float(mult):g}"
+        else:
+            print(f"[note] {arm}: spectral_lr_mult={mult} is a runner no-op "
+                  f"for a frozen arm; folded into '{arm}'", file=sys.stderr)
     return arm + hygiene_suffix(cfg)
 
 
@@ -230,11 +250,16 @@ def main():
         if len(ft) and len(fpt):
             print(f"      finetune_real - frozen_pretrained = {ft.mean() - fpt.mean():+.4f}"
                   f"   (does theta flow add anything on top of pretraining?)")
-        spec = sub[sub.arm.str.contains("_speclr")]
+        # Verifier fix: this block used to read `sub` (AdamW only), so an SGD
+        # speclr run never appeared in it. Read the full frame at this width
+        # and label the optimizer. Prints nothing when no speclr run exists,
+        # so pre-existing output is unchanged.
+        spec = df[(df.width == w) & df.arm.str.contains("_speclr")]
         if len(spec):
             print("      spectral-lr sensitivity:")
-            for a, s in spec.groupby("arm").val_f1:
-                print(f"        {a:<28s} val_f1={s.mean():.4f}+/-{s.std():.4f} (n={len(s)})")
+            for (a, o), s in spec.groupby(["arm", "optimizer"]).val_f1:
+                print(f"        {a:<28s} [{o:<5s}] val_f1={s.mean():.4f}"
+                      f"+/-{s.std():.4f} (n={len(s)})")
 
     sgd = df[df.optimizer == "sgd"]
     if len(sgd):

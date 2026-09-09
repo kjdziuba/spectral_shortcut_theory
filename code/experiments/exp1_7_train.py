@@ -87,6 +87,24 @@ n_bn_affine_* / clip_max_norm / base_lrs, so a default run is self-describing.
                       every param group's lr from its initial value to 0 over
                       --epochs: lr_e = lr_0 * 0.5*(1+cos(pi*(e-1)/E)) ).
 
+VERIFIER-ROUND FIXES (v2, applied to the NEW arms/flags only — no existing
+arm's optimisation changes):
+  * --spectral_lr_mult now rejects NaN/inf as well as <= 0 (`nan <= 0` is
+    False, so `--spectral_lr_mult nan` used to poison theta's lr from step 1).
+  * an explicit --pretrained_path is validated on seed AND fold AND data_dir
+    (previously only seed, and only as a warning), so a fold-1 or
+    other-dataset encoder can no longer be loaded silently.
+    --allow_pretrained_mismatch downgrades all three to warnings.
+  * config.json now records the two KNOWN CONFOUNDS of the pretrained arms
+    (pretrained_selection_caveat, pretrained_augment_caveat) plus the
+    checkpoint's fold / data_dir / weight_decay, and the runner prints a
+    [bias] line. The pretrain script picks its epoch by macro-F1 on the SAME
+    fold val cores this runner scores, so frozen_pretrained / finetune_real
+    carry a val-selection advantage the other arms do not; and it pretrained
+    theta under AdamW weight_decay=0.01, which the runner's own protocol
+    forbids for theta. Both must be stated wherever those arms are compared.
+    These keys appear ONLY for the pretrained arms.
+
 steps.csv gained four columns (appended after the existing eight, which are
 unchanged): grad_total_norm_preclip, clip_coef, upd_theta_norm, upd_phi_norm.
   grad_total_norm_preclip : the pre-clip total grad norm over the CLIP SCOPE's
@@ -254,6 +272,14 @@ def resolve_pretrained(args) -> dict:
     Sets args.pretrained_path (default: PRETRAINED_DIR/spectral_mlp_f{fold}_s{seed}.pt)
     and returns the checkpoint's provenance for config.json. For all other
     arms returns empty provenance and leaves args.pretrained_path = None.
+
+    Verifier fix: the checkpoint is validated on seed AND fold AND data_dir,
+    on the explicit-path branch too (it used to check only the seed, and only
+    as a warning there, so a fold-1 / other-dataset encoder loaded silently).
+    A field the checkpoint does not carry is skipped with a warning rather
+    than failing; --allow_pretrained_mismatch downgrades every mismatch to a
+    warning for a deliberate cross-condition study. The default path encodes
+    fold+seed, so for a default-path run this can only fire on --data_dir.
     """
     meta = dict(pretrained_path=None, pretrained_pixel_val_f1=None,
                 pretrained_epoch=None, pretrained_seed=None)
@@ -271,16 +297,50 @@ def resolve_pretrained(args) -> dict:
         raise SystemExit(f"missing pretrained spectral MLP: {p} "
                          f"(run code/experiments/pretrain_spectral_mlp.py)")
     ck = load_pretrained_ckpt(p)
-    if int(ck.get("seed", -1)) != args.seed:
-        msg = (f"pretrained seed {ck.get('seed')} != run seed {args.seed} ({p})")
-        if explicit:
-            print(f"[warn] {msg}", flush=True)
+    mismatch = []
+    for key, want, cast in (("seed", args.seed, int), ("fold", args.fold, int),
+                            ("data_dir", args.data_dir, str)):
+        if key not in ck:
+            print(f"[warn] pretrained checkpoint carries no '{key}' field; "
+                  f"cannot validate it ({p})", flush=True)
+            continue
+        if cast(ck[key]) != cast(want):
+            mismatch.append(f"{key}: ckpt={ck[key]!r} run={want!r}")
+    if mismatch:
+        msg = (f"pretrained checkpoint does not match this run ({p}): "
+               + "; ".join(mismatch))
+        if args.allow_pretrained_mismatch:
+            print(f"[warn] {msg}  [--allow_pretrained_mismatch]", flush=True)
         else:
-            raise SystemExit(msg)
-    meta.update(pretrained_path=str(p),
-                pretrained_pixel_val_f1=float(ck["pixel_val_f1"]),
-                pretrained_epoch=int(ck["epoch"]),
-                pretrained_seed=int(ck["seed"]))
+            raise SystemExit(msg + "  [pass --allow_pretrained_mismatch to "
+                                   "override deliberately]")
+    meta.update(
+        pretrained_path=str(p),
+        pretrained_pixel_val_f1=float(ck["pixel_val_f1"]),
+        pretrained_epoch=int(ck["epoch"]),
+        pretrained_seed=int(ck["seed"]),
+        # ---- provenance + the two disclosed confounds (verifier round) ----
+        pretrained_fold=(int(ck["fold"]) if "fold" in ck else None),
+        pretrained_data_dir=(str(ck["data_dir"]) if "data_dir" in ck else None),
+        pretrained_weight_decay=(float(ck["weight_decay"])
+                                 if "weight_decay" in ck else None),
+        pretrained_selection_split=f"val_fold{args.fold}",
+        pretrained_selection_caveat=(
+            "pretrain_spectral_mlp.py picked this epoch by macro-F1 on the "
+            "SAME fold val cores this run scores, so frozen_pretrained / "
+            "finetune_real carry a val-selection advantage that joint_linear "
+            "/ joint_mlp / frozen_random / frozen_pca do not; state it "
+            "wherever those arms are compared"),
+        pretrained_augment_caveat=(
+            "pretraining flattened pixels with augment=False while the runner "
+            "trains with augment=True (spatial flip/rot90 before the 336 "
+            "center-crop), so for cores larger than 336 px the pretrainer "
+            "never saw the border pixels the runner trains on"),
+        pretrained_theta_weight_decay_caveat=(
+            "theta was pretrained under AdamW weight_decay="
+            f"{ck.get('weight_decay')}, which the runner's own protocol "
+            "forbids for theta (weight_decay_theta=0.0)"),
+    )
     return meta
 
 
@@ -576,6 +636,10 @@ def main():
     ap.add_argument("--pretrained_path", default=None,
                     help="pretrained arms: override the per-seed default "
                          "experiments_shortcut/pretrained/spectral_mlp_f{fold}_s{seed}.pt")
+    ap.add_argument("--allow_pretrained_mismatch", action="store_true",
+                    help="downgrade the pretrained-checkpoint seed/fold/"
+                         "data_dir checks to warnings (deliberate "
+                         "cross-condition study only)")
     ap.add_argument("--run_label", default=None,
                     help="output-dir token in place of the arm name "
                          "(e.g. joint_speclr0.1); default = arm")
@@ -614,8 +678,11 @@ def main():
     if args.width % NUM_HEADS != 0:
         raise SystemExit(f"width {args.width} not divisible by num_heads {NUM_HEADS}")
     device = torch.device(args.device)
-    if args.spectral_lr_mult <= 0:
-        raise SystemExit(f"--spectral_lr_mult must be > 0, got {args.spectral_lr_mult}")
+    # isfinite first: `float('nan') <= 0` is False, so a bare `<= 0` guard let
+    # --spectral_lr_mult nan through and NaN-poisoned theta from step 1.
+    if not math.isfinite(args.spectral_lr_mult) or args.spectral_lr_mult <= 0:
+        raise SystemExit("--spectral_lr_mult must be a finite number > 0, "
+                         f"got {args.spectral_lr_mult}")
     pretrained_meta = resolve_pretrained(args)
 
     label = args.run_label or args.arm
@@ -650,10 +717,17 @@ def main():
                            spatial_size=SPATIAL, augment=False)
     val_ds = CoreDataset(args.data_dir, str(split_file), "val",
                          spatial_size=SPATIAL, augment=False)
-    # PROTOCOL (2026-08-27): augmentation and pinning OFF -- the per-step
-    # GB-scale numpy churn plus page-locking caused a 98%-stime kernel
+    # PROTOCOL (2026-08-27): DataLoader workers and page-locking OFF -- the
+    # per-step GB-scale numpy churn plus pinning caused a 98%-stime kernel
     # stall at full heap (27min user vs 21.7h kernel). Identical setting
     # across all arms, so arm comparisons are unaffected.
+    # CORRECTION (verifier round): the two datasets are CONSTRUCTED with
+    # augment=False only so the fixed probe batch below is un-augmented;
+    # train_ds.augment is flipped back to True immediately after the probe
+    # (see "Fixed probe batch"). The TRAIN loop therefore DOES run with
+    # spatial augmentation (flip/rot90, applied before the 336 center-crop);
+    # val_ds stays un-augmented. Identical across all arms. The pre-v2
+    # comment claimed augmentation was off and was simply wrong.
     train_loader = torch.utils.data.DataLoader(
         train_ds, batch_size=args.batch_size, shuffle=True,
         num_workers=0, pin_memory=False, drop_last=True)
@@ -762,6 +836,15 @@ def main():
               f"pretrained={pretrained_meta['pretrained_path']} "
               f"(pixel_val_f1={pretrained_meta['pretrained_pixel_val_f1']})",
               flush=True)
+    if pretrained_meta["pretrained_path"]:
+        # Loud, per-run disclosure of the two confounds recorded in
+        # config.json (verifier round) — these arms are NOT a clean contrast.
+        print(f"[bias] theta was selected on the fold-{args.fold} VAL cores "
+              f"this run also scores (val-selection advantage vs the "
+              f"non-pretrained arms) and pretrained under weight_decay="
+              f"{pretrained_meta.get('pretrained_weight_decay')} on theta "
+              f"(runner protocol: 0.0); pretrain saw augment=False data, this "
+              f"run trains with augment=True", flush=True)
 
     step_fields = ["step", "epoch", "loss", "n_valid_px",
                    "grad_theta_norm", "grad_phi_norm", "egr", "r_rms",
