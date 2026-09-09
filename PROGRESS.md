@@ -1806,3 +1806,30 @@ ViT sweep:
   /tmp smoke process is its check). Lane run 1 (frozen_random_m s0) at
   epoch 11 by 18:44 — slowed by concurrent GPU jobs; reassess pace in the
   morning and trim seed-2 of low-priority arms if >24 h.
+
+## 2026-09-09 (late) — GPU audit landed; full-contrast ratio is 3.7x; BN-recal verdict
+
+- Full-contrast curvature (a3fb068, results/exp1_8b_directions.csv, 3 seeds x
+  4 batches, M=192): lambda(v1)/lambda(d_full) = 3.65 (2.55-4.79) vs the
+  orthogonalized 19.67 (11.68-28.01); lambda(v1)/lambda(mean) = 1.027 (v1 IS
+  the mean direction, |cos| 0.9965); |cos(d, v1)| = 0.449. => the 12-28x
+  figure was mostly an orthogonalization artifact; honest headline along the
+  actual class contrast is ~3.7x. Section 8.3 + fig caption updated (text);
+  Fig-8A panel (b) still shows d_perp only -> P5: add d_full points.
+  Other class contrasts impossible in the archived batches (train[:24]
+  cores hold 0 NormalStroma / 0 NormalEpi pixels).
+- BN recalibration (5e4940a, re-run bit-identical): recovery fraction of
+  joint's peak->final drop only 0.17 (h48) / 0.07 (h192); frozen arms
+  unaffected (|d| ~ 1e-4). It fixes the catastrophic troughs (two collapsed
+  joint ckpts +0.24 / +0.15) and shrinks seed sd ~3.7x. After recal the
+  joint-frozen_random gap is +0.035 (h48) / -0.058 (h192). Verdict: stale
+  BN stats explain the VARIANCE/instability of joint's final-epoch number,
+  not the degradation itself (M1 half right). Per-class recovery mostly
+  CancerEpi; NormalEpi stays weak.
+- Hygiene skeptic (d6bd43d, cbf9b18): NaN guard on --spectral_lr_mult;
+  pretrained ckpt validated on seed+fold+data_dir; caveat keys recorded;
+  run_lane.sh replaced via rename so the running lane kept its inode.
+- Lane: run 1 (frozen_random_m s0) DONE 19:47, outputs verified (best.pt,
+  clip_coef mean 0.50, upd_theta 0, BN affine 128 in phi; best-val 0.837
+  vs final-5 0.687). Run 2 joint_linear_m s0 started 19:47.
+- ALL AGENTS DONE. State fully logged -> compaction GREEN.
