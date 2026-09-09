@@ -1,0 +1,328 @@
+M,quantity,formula_value,solver_value,gd_value,rel_disc_solver,rel_disc_gd,bound_lower,bound_upper,within_bounds,note
+0,m = log((1-delta)/delta),2.9444389791664403,2.9444389791664403,,0.0,,,,,delta=0.05 => m = log 19
+0,r(T_m) = 1/(1+e^m) = delta,0.05,0.05000000000000001,,1.3877787807814457e-16,,,,,margin target expressed as residual
+0,"torch autograd vs analytic gradient (max rel, M=64, 8 pts)",0.0,1.1492412615029513e-15,,1.1492412615029513e-15,,,,,"validates (5.2): adot=r, vdot=br, betadot_j=vr"
+1,GD raw |q(T_m) - m| at N=1000 (h=6.023e-03),0.0,0.0008310275156810931,,0.0008310275156810931,,,,,explicit-Euler discretization error; must fall ~10x per row
+1,GD raw |q(T_m) - m| at N=10000 (h=6.023e-04),0.0,8.309351541146981e-05,,8.309351541146981e-05,,,,,explicit-Euler discretization error; must fall ~10x per row
+1,GD raw |q(T_m) - m| at N=100000 (h=6.023e-05),0.0,8.30925950490169e-06,,8.30925950490169e-06,,,,,explicit-Euler discretization error; must fall ~10x per row
+1,GD raw |q(T_m) - m| at N=1000000 (h=6.023e-06),0.0,8.309251207094803e-07,,8.309251207094803e-07,,,,,explicit-Euler discretization error; must fall ~10x per row
+1,GD observed convergence order (finest pair),1.0,1.0000004336961121,,4.3369611213428527e-07,,,,,log10 of the error ratio for a 10x step reduction; 1.0 = first order
+1,"GD: torch-autograd vs numpy analytic-grad (max rel over a,v,b,q)",0.0,0.0,,0.0,,,,,N=10000; independent gradient path through the literal 2-site model
+1,a(T_m),1.0269467087727866,1.0269467087728084,1.0269474847937885,2.1189387040985766e-14,7.556584925715411e-07,,1.4722194895832201,OK,(5.6) 0 < a_M <= m/(M+1)
+1,v(T_m),1.5753125404351649,1.5753125404351644,1.5753122442188299,2.8190546221855583e-16,1.8803654983560937e-07,,,,(5.3) v = cosh(sqrt(M) a)
+1,b(T_m),1.2172138678360072,1.2172138678359938,1.217214131569595,1.0945222238707534e-14,2.1666988425488875e-07,,,,(5.3) b = sqrt(M) sinh(sqrt(M) a)
+1,q(T_m),2.9444389791664403,2.9444389791664403,2.944439810091561,0.0,2.822015081951918e-07,,,,(5.4) q = Q_M(a); target margin m
+1,r(T_m),0.05,0.05000000000000001,0.04999996053107154,1.3877787807814457e-16,7.89378569315824e-07,,,,r = 1/(1+e^q) = delta at q = m
+1,T_m,6.023294415742646,6.023294415743045,,6.635576169420526e-14,,1.0829908738503142,10.472219489583217,OK,"(5.5); formula = quadrature int_0^a_M (1+e^Q_M) da, quad err=6.69e-14"
+1,(5.5) lower bound Psi(m)/(M+1+2m^2),1.0829908738503142,,,,,,,,(5.5)
+1,(5.5) upper bound Psi(m)/(M+1),10.472219489583217,,,,,,,,(5.5)
+1,GD Richardson-extrapolated a(T_m),1.0269467087727866,,1.0269467087683561,,4.3142024451917244e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+1,GD Richardson-extrapolated v(T_m),1.5753125404351649,,1.575312540439811,,2.9492949457305314e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+1,GD Richardson-extrapolated b(T_m),1.2172138678360072,,1.2172138678341489,,1.5266760819290558e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+1,GD Richardson-extrapolated q(T_m),2.9444389791664403,,2.9444389791655183,,3.131086112403405e-13,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+1,invariant (5.3) v = cosh(sqrt(M) a): max rel err,0.0,4.623502292784977e-12,,4.623502292784977e-12,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+1,invariant (5.3) b = sqrt(M) sinh(sqrt(M) a): max rel err,0.0,9.253019397732331e-12,,9.253019397732331e-12,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+1,invariant (5.4) q = Q_M(a): max rel err,0.0,3.4950419020715623e-12,,3.4950419020715623e-12,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+1,max spread of beta_j at T_m (should be 0),0.0,0.0,0.0,0.0,0.0,,,,all M contextual readouts stay identical
+1,qdot(T_m) = (1+b^2+M v^2) r  vs  (M+1+2b^2) r,0.24816096000522606,0.24816096000522767,,6.487013048597875e-15,,,,,(5.4) using b^2 = M(v^2-1)
+1,b(T_m) v(T_m),1.9174922703936534,1.917492270393632,1.9174923252977727,1.123254941377485e-14,2.8633293650643316e-08,1.4722194895832201,2.9444389791664403,OK,(5.6) b v = m - a_M >= M m/(M+1)
+1,m - a_M  (must equal b v),1.9174922703936537,1.917492270393632,,1.1348348892267372e-14,,,,,(5.6) identity q = a + bv = m
+1,v(T_m) - 1,0.5753125404351649,0.5753125404351644,0.5753122442188299,7.719094902992289e-16,5.148789817655287e-07,0.0,4.334860451017354,OK,(5.7) 0 <= v-1 <= m^2/(2M)
+1,||W(T_m) - W(0)||_2,1.1771168429010017,1.1771168429010206,1.1771173751467587,1.603391501230519e-14,4.521605142541812e-07,,4.578039466333057,OK,(5.7) <= sqrt(m^2/(M+1)^2 + m^4/(4M^2))
+1,M * a_M  (-> m as M -> inf),1.0269467087727866,1.0269467087728084,,2.1189387040985766e-14,,,1.4722194895832201,OK,(5.6) limit claim; m = 2.944439
+1,spectral-only comparator a needed for margin m,2.9444389791664403,,,,,,,,"(5.6) removing the contextual path gives q = a, so a = m exactly"
+1,suppression factor m / a_M,2.867177969424606,2.867177969424545,,2.12195484194754e-14,,2.0,,OK,(5.6) at least M+1
+1,shifted-margin Y F = 2 a_M - m,-0.8905455616208671,-0.8905455616208235,,4.886975404840013e-14,,,0.0,OK,"(e) negative for every M >= 1 => error 1 under S=Y, C=-Y"
+1,"(5.8) max_t [ r(t) - (1/2)/(1+(M+1)t/4) ] on [0,T_m]",0.0,0.0,,0.0,,,1e-11,OK,<= 0 required; positive value = envelope violation
+1,"(5.8) max_t [ r(t) - envelope ] on [0, 20 T_m]",0.0,0.0,,0.0,,,1e-11,OK,envelope is claimed for all t >= 0
+1,lambda_theta(0),0.25,0.25,0.25,0.0,0.0,,,,"(5.9) explicit-Jacobian GGN block, top eigenvalue via eigvalsh; 'gd_value' column = torch autograd Hessian block (equal here because F is multilinear, so the diagonal Hessian blocks have no residual term)"
+1,lambda_phi(0),0.25,0.25,0.25,0.0,0.0,,,,(5.9) explicit-Jacobian GGN block; 'gd_value' = torch autograd Hessian block
+1,D_curv(0) = lambda_phi(0)/lambda_theta(0),1.0,1.0,1.0,0.0,0.0,,,,(5.9)
+1,lambda_theta(0) closed form r(1-r)(1+b^2): |lam - 1/4|,0.0,0.0,,0.0,,,0.0,OK,"EXACT in IEEE double: r(1-r)=1/4, b=0"
+1,lambda_phi(0) closed form M r(1-r) v^2: |lam - M/4|,0.0,0.0,,0.0,,,0.0,OK,"EXACT in IEEE double: r(1-r)=1/4, v=1"
+1,lambda_theta(0) eigensolver deviation |lam - 1/4|,0.0,0.0,,0.0,,,1e-15,OK,eigvalsh roundoff only
+1,lambda_phi(0) eigensolver deviation |lam - M/4|,0.0,0.0,,0.0,,,1e-12,OK,eigvalsh roundoff only
+1,lambda_theta(T_m) = r(1-r)(1+b^2),0.11787645600248392,0.1178764560024824,,1.2950479770340417e-14,,,,,(c)
+1,lambda_phi(T_m) = M r(1-r) v^2,0.1178764560024839,0.11787645600248386,,3.5319490282746595e-16,,,,,(c)
+1,D_curv(T_m) = (M v^2)/(1+b^2),1.0,1.0000000000000124,,1.2434497875801753e-14,,,,,(c) curvature disparity at fit
+1,||grad_theta L(T_m)|| = r sqrt(1+b^2),0.07876562702175825,0.07876562702175774,,6.5190638138041034e-15,,,0.15548087424209697,OK,(5.10) <= r sqrt(1+m^2)
+1,"(5.10) max_t [ r sqrt(1+b^2) / (r sqrt(1+m^2)) ] on [0,T_m]",,0.5065936720880083,,,,,1.0,OK,ratio must stay <= 1
+1,"max_t b(t) on [0,T_m]",1.2172138678360072,1.2172138678359938,,1.0945222238707534e-14,,,2.9444389791664403,OK,proof step: b <= m since bv = q-a <= m and v >= 1
+1,frozen q_F(T_m),1.676497646814886,1.676497646814886,,0.0,,,,,(d) Psi(q_F(t)) = M t
+1,frozen q_F(t): max rel err solver vs Psi^{-1}(Mt),0.0,4.2593762043895275e-15,,4.2593762043895275e-15,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+1,(5.11) min_t [ q(t) - q_F(t) ],,0.0,,,,0.0,,OK,lower half of (5.11): q >= q_F
+1,(5.11) max_t [ q(t) - q_F(t) ],,1.2679413323515543,,,,,96.02732994432647,OK,(5.11) uniform bound (1+2m^2)Psi(m)/(2(M+1))
+1,(5.11) max_t [ (q - q_F) - (1+2m^2)t/2 ],0.0,0.0,,0.0,,,1e-11,OK,pointwise bound; must be <= 0
+1,(5.11) uniform bound value,96.02732994432647,,,,,,,,(1+2m^2)Psi(m)/(2(M+1)); RMS logit gap is O(1/M)
+1,(5.11) gap x (M+1)  [O(1/M) diagnostic],,2.5358826647031085,,,,,,,should stay bounded in M
+1,control (1/sqrt(M) readout): a(T_m),1.0269467087727866,1.0269467087728084,,2.1189387040985766e-14,,,,,(4) must equal the M=1 value for every M
+1,control: v(T_m),1.5753125404351649,1.5753125404351644,,2.8190546221855583e-16,,,,,(4) must equal the M=1 value
+1,control: b(T_m),1.2172138678360072,1.2172138678359938,,1.0945222238707534e-14,,,,,(4) must equal the M=1 value
+1,control: T_m,6.023294415742646,6.023294415743045,,6.635576169420526e-14,,,,,(4) must equal the M=1 fitting time
+1,control: ||W(T_m)-W(0)||,1.1771168429010017,1.1771168429010206,,1.603391501230519e-14,,,,,(4) no suppression: displacement is M-independent
+1,B_m = sqrt((1+m^2)/2),2.1988316104279915,,,,,,,,operator-norm cap on ||J_theta|| with symmetric logits
+1,max_t ||J_theta||_op = sqrt((1+b^2)/2),1.1139141798299124,1.113914179829905,,6.5781297116128746e-15,,,2.1988316104279915,OK,normalized (symmetric-logit) Jacobian norm <= B_m
+1,(5.12) bound  4 B_m/(M+1) log(1/(sqrt2 delta)),11.650107707645413,,,,,1.1771168429010017,,OK,must dominate the exact displacement
+1,(5.12) bound / displacement,9.897154881357189,9.89715488135703,,1.5973859215280135e-14,,,,,see note-table comparison rows
+16,GD raw |q(T_m) - m| at N=1000 (h=9.078e-04),0.0,0.0010532810366297163,,0.0010532810366297163,,,,,explicit-Euler discretization error; must fall ~10x per row
+16,GD raw |q(T_m) - m| at N=10000 (h=9.078e-05),0.0,0.00010530182974832769,,0.00010530182974832769,,,,,explicit-Euler discretization error; must fall ~10x per row
+16,GD raw |q(T_m) - m| at N=100000 (h=9.078e-06),0.0,1.0529920366320056e-05,,1.0529920366320056e-05,,,,,explicit-Euler discretization error; must fall ~10x per row
+16,GD raw |q(T_m) - m| at N=1000000 (h=9.078e-07),0.0,1.0529889409305326e-06,,1.0529889409305326e-06,,,,,explicit-Euler discretization error; must fall ~10x per row
+16,GD observed convergence order (finest pair),1.0,1.0000012767884245,,1.2767884245423744e-06,,,,,log10 of the error ratio for a 10x step reduction; 1.0 = first order
+16,"GD: torch-autograd vs numpy analytic-grad (max rel over a,v,b,q)",0.0,3.9000880132165364e-16,,3.9000880132165364e-16,,,,,N=10000; independent gradient path through the literal 2-site model
+16,a(T_m),0.14232454833452704,0.14232454833451744,0.1423246335754638,6.747556395144991e-14,5.989194257142155e-07,,0.17320229289214353,OK,(5.6) 0 < a_M <= m/(M+1)
+16,v(T_m),1.1664744863610423,1.166474486361085,1.1664744039145138,3.6548218280027224e-14,7.068009584196677e-08,,,,(5.3) v = cosh(sqrt(M) a)
+16,b(T_m),2.402208075354864,2.4022080753547845,2.4022090747781832,3.3091208617063e-14,4.160436098221442e-07,,,,(5.3) b = sqrt(M) sinh(sqrt(M) a)
+16,q(T_m),2.9444389791664403,2.94443897916644,2.944440032155381,1.5082303046259176e-16,3.5761954938819277e-07,,,,(5.4) q = Q_M(a); target margin m
+16,r(T_m),0.05,0.050000000000000024,0.04999994998304901,4.163336342344337e-16,1.0003390198132234e-06,,,,r = 1/(1+e^q) = delta at q = m
+16,T_m,0.907839679048124,0.9078396790480172,,1.1764572251449088e-13,,0.6099236877136541,1.232025822303908,OK,"(5.5); formula = quadrature int_0^a_M (1+e^Q_M) da, quad err=1.01e-14"
+16,(5.5) lower bound Psi(m)/(M+1+2m^2),0.6099236877136541,,,,,,,,(5.5)
+16,(5.5) upper bound Psi(m)/(M+1),1.232025822303908,,,,,,,,(5.5)
+16,GD Richardson-extrapolated a(T_m),0.14232454833452704,,0.14232454833384212,,4.812411825520028e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+16,GD Richardson-extrapolated v(T_m),1.1664744863610423,,1.1664744863634073,,2.0274743380238017e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+16,GD Richardson-extrapolated b(T_m),2.402208075354864,,2.402208075346925,,3.3048689186996387e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+16,GD Richardson-extrapolated q(T_m),2.9444389791664403,,2.944438979163001,,1.1681243709327733e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+16,invariant (5.3) v = cosh(sqrt(M) a): max rel err,0.0,1.875406538460767e-12,,1.875406538460767e-12,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+16,invariant (5.3) b = sqrt(M) sinh(sqrt(M) a): max rel err,0.0,2.3478988507813597e-11,,2.3478988507813597e-11,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+16,invariant (5.4) q = Q_M(a): max rel err,0.0,2.037075563293591e-11,,2.037075563293591e-11,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+16,max spread of beta_j at T_m (should be 0),0.0,0.0,0.0,0.0,0.0,,,,all M contextual readouts stay identical
+16,qdot(T_m) = (1+b^2+M v^2) r  vs  (M+1+2b^2) r,1.4270603637299744,1.427060363730073,,6.908453706122869e-14,,,,,(5.4) using b^2 = M(v^2-1)
+16,b(T_m) v(T_m),2.8021144308319132,2.8021144308319226,2.802115398579917,3.328155804144864e-15,3.45363484555349e-07,2.7712366862742965,2.9444389791664403,OK,(5.6) b v = m - a_M >= M m/(M+1)
+16,m - a_M  (must equal b v),2.8021144308319132,2.8021144308319226,,3.328155804144864e-15,,,,,(5.6) identity q = a + bv = m
+16,v(T_m) - 1,0.16647448636104234,0.16647448636108497,0.16647440391451385,2.560906783826708e-13,4.952502350083912e-07,0.0,0.27092877818858463,OK,(5.7) 0 <= v-1 <= m^2/(2M)
+16,||W(T_m) - W(0)||_2,0.2190206192754463,0.21902061927547245,0.21902061200052095,1.193757570242317e-13,3.3215709920998625e-08,,0.32156093841425326,OK,(5.7) <= sqrt(m^2/(M+1)^2 + m^4/(4M^2))
+16,M * a_M  (-> m as M -> inf),2.2771927733524326,2.277192773352279,,6.747556395144991e-14,,,2.7712366862742965,OK,(5.6) limit claim; m = 2.944439
+16,spectral-only comparator a needed for margin m,2.9444389791664403,,,,,,,,"(5.6) removing the contextual path gives q = a, so a = m exactly"
+16,suppression factor m / a_M,20.688201814950975,20.68820181495237,,6.74885371023197e-14,,17.0,,OK,(5.6) at least M+1
+16,shifted-margin Y F = 2 a_M - m,-2.6597898824973862,-2.6597898824974053,,7.179452839193006e-15,,,0.0,OK,"(e) negative for every M >= 1 => error 1 under S=Y, C=-Y"
+16,"(5.8) max_t [ r(t) - (1/2)/(1+(M+1)t/4) ] on [0,T_m]",0.0,0.0,,0.0,,,1e-11,OK,<= 0 required; positive value = envelope violation
+16,"(5.8) max_t [ r(t) - envelope ] on [0, 20 T_m]",0.0,0.0,,0.0,,,1e-11,OK,envelope is claimed for all t >= 0
+16,lambda_theta(0),0.25,0.25,0.25,0.0,0.0,,,,"(5.9) explicit-Jacobian GGN block, top eigenvalue via eigvalsh; 'gd_value' column = torch autograd Hessian block (equal here because F is multilinear, so the diagonal Hessian blocks have no residual term)"
+16,lambda_phi(0),4.0,4.0,4.0,0.0,0.0,,,,(5.9) explicit-Jacobian GGN block; 'gd_value' = torch autograd Hessian block
+16,D_curv(0) = lambda_phi(0)/lambda_theta(0),16.0,16.0,16.0,0.0,0.0,,,,(5.9)
+16,lambda_theta(0) closed form r(1-r)(1+b^2): |lam - 1/4|,0.0,0.0,,0.0,,,0.0,OK,"EXACT in IEEE double: r(1-r)=1/4, b=0"
+16,lambda_phi(0) closed form M r(1-r) v^2: |lam - M/4|,0.0,0.0,,0.0,,,0.0,OK,"EXACT in IEEE double: r(1-r)=1/4, v=1"
+16,lambda_theta(0) eigensolver deviation |lam - 1/4|,0.0,0.0,,0.0,,,1e-15,OK,eigvalsh roundoff only
+16,lambda_phi(0) eigensolver deviation |lam - M/4|,0.0,0.0,,0.0,,,1.6e-11,OK,eigvalsh roundoff only
+16,lambda_theta(T_m) = r(1-r)(1+b^2),0.32160367277175567,0.32160367277173774,,5.575216754574005e-14,,,,,(c)
+16,lambda_phi(T_m) = M r(1-r) v^2,1.0341036727717556,1.0341036727718314,,7.322013476316872e-14,,,,,(c)
+16,D_curv(T_m) = (M v^2)/(1+b^2),3.2154597733890498,3.2154597733894645,,1.2899533853063472e-13,,,,,(c) curvature disparity at fit
+16,||grad_theta L(T_m)|| = r sqrt(1+b^2),0.13010191809981242,0.1301019180998088,,2.773383269617576e-14,,,0.15548087424209697,OK,(5.10) <= r sqrt(1+m^2)
+16,"(5.10) max_t [ r sqrt(1+b^2) / (r sqrt(1+m^2)) ] on [0,T_m]",,0.836771202464613,,,,,1.0,OK,ratio must stay <= 1
+16,"max_t b(t) on [0,T_m]",2.402208075354864,2.4022080753547845,,3.3091208617063e-14,,,2.9444389791664403,OK,proof step: b <= m since bv = q-a <= m and v >= 1
+16,frozen q_F(T_m),2.562123188832368,2.562123188832369,,3.46657187902387e-16,,,,,(d) Psi(q_F(t)) = M t
+16,frozen q_F(t): max rel err solver vs Psi^{-1}(Mt),0.0,3.8135205940199117e-13,,3.8135205940199117e-13,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+16,(5.11) min_t [ q(t) - q_F(t) ],,0.0,,,,0.0,,OK,lower half of (5.11): q >= q_F
+16,(5.11) max_t [ q(t) - q_F(t) ],,0.3823157903340717,,,,,11.297332934626644,OK,(5.11) uniform bound (1+2m^2)Psi(m)/(2(M+1))
+16,(5.11) max_t [ (q - q_F) - (1+2m^2)t/2 ],0.0,0.0,,0.0,,,1e-11,OK,pointwise bound; must be <= 0
+16,(5.11) uniform bound value,11.297332934626644,,,,,,,,(1+2m^2)Psi(m)/(2(M+1)); RMS logit gap is O(1/M)
+16,(5.11) gap x (M+1)  [O(1/M) diagnostic],,6.499368435679219,,,,,,,should stay bounded in M
+16,control (1/sqrt(M) readout): a(T_m),1.0269467087727866,1.0269467087728026,,1.5567712928071175e-14,,,,,(4) must equal the M=1 value for every M
+16,control: v(T_m),1.5753125404351649,1.5753125404351653,,2.8190546221855583e-16,,,,,(4) must equal the M=1 value
+16,control: b(T_m),1.2172138678360072,1.2172138678359965,,8.756177790966027e-15,,,,,(4) must equal the M=1 value
+16,control: T_m,6.023294415742646,6.023294415742967,,5.3379523851782905e-14,,,,,(4) must equal the M=1 fitting time
+16,control: ||W(T_m)-W(0)||,1.1771168429010017,1.177116842901016,,1.2072594832794496e-14,,,,,(4) no suppression: displacement is M-independent
+16,B_m = sqrt((1+m^2)/2),2.1988316104279915,,,,,,,,operator-norm cap on ||J_theta|| with symmetric logits
+16,max_t ||J_theta||_op = sqrt((1+b^2)/2),1.8399189706750838,1.8399189706750319,,2.8239524881573063e-14,,,2.1988316104279915,OK,normalized (symmetric-logit) Jacobian norm <= B_m
+16,(5.12) bound  4 B_m/(M+1) log(1/(sqrt2 delta)),1.3706009067818132,,,,,0.2190206192754463,,OK,must dominate the exact displacement
+16,(5.12) bound / displacement,6.257862439235039,6.257862439234292,,1.1936313049717875e-13,,,,,see note-table comparison rows
+64,GD raw |q(T_m) - m| at N=1000 (h=2.868e-04),0.0,0.0011355725667914207,,0.0011355725667914207,,,,,explicit-Euler discretization error; must fall ~10x per row
+64,GD raw |q(T_m) - m| at N=10000 (h=2.868e-05),0.0,0.00011350505595641991,,0.00011350505595641991,,,,,explicit-Euler discretization error; must fall ~10x per row
+64,GD raw |q(T_m) - m| at N=100000 (h=2.868e-06),0.0,1.1349984281761039e-05,,1.1349984281761039e-05,,,,,explicit-Euler discretization error; must fall ~10x per row
+64,GD raw |q(T_m) - m| at N=1000000 (h=2.868e-07),0.0,1.134993560913955e-06,,1.134993560913955e-06,,,,,explicit-Euler discretization error; must fall ~10x per row
+64,GD observed convergence order (finest pair),1.0,1.0000018624075357,,1.862407535746513e-06,,,,,log10 of the error ratio for a 10x step reduction; 1.0 = first order
+64,"GD: torch-autograd vs numpy analytic-grad (max rel over a,v,b,q)",0.0,3.0163443323194057e-16,,3.0163443323194057e-16,,,,,N=10000; independent gradient path through the literal 2-site model
+64,a(T_m),0.042093855104203395,0.04209385510420281,0.0420938755999248,1.3846845020141751e-14,4.869053061080132e-07,,0.04529906121794523,OK,(5.6) 0 < a_M <= m/(M+1)
+64,v(T_m),1.057238419616226,1.057238419616233,1.0572383836939896,6.510719460208999e-15,3.397742254935714e-08,,,,(5.3) v = cosh(sqrt(M) a)
+64,b(T_m),2.745213444963321,2.7452134449633023,2.745214592398057,6.794279274685629e-15,4.1797651043139455e-07,,,,(5.3) b = sqrt(M) sinh(sqrt(M) a)
+64,q(T_m),2.9444389791664403,2.9444389791664394,2.944440114160001,3.016460609251835e-16,3.8547022673747765e-07,,,,(5.4) q = Q_M(a); target margin m
+64,r(T_m),0.05,0.05000000000000005,0.049999946087833404,9.71445146547012e-16,1.0782433319811435e-06,,,,r = 1/(1+e^q) = delta at q = m
+64,T_m,0.28679651512691984,0.28679651512690557,,4.974386059091331e-14,,0.2543670265460958,0.3222221381410221,OK,"(5.5); formula = quadrature int_0^a_M (1+e^Q_M) da, quad err=3.18e-15"
+64,(5.5) lower bound Psi(m)/(M+1+2m^2),0.2543670265460958,,,,,,,,(5.5)
+64,(5.5) upper bound Psi(m)/(M+1),0.3222221381410221,,,,,,,,(5.5)
+64,GD Richardson-extrapolated a(T_m),0.042093855104203395,,0.04209385510403662,,3.962010953084607e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+64,GD Richardson-extrapolated v(T_m),1.057238419616226,,1.0572384196175402,,1.2429173472747372e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+64,GD Richardson-extrapolated b(T_m),2.745213444963321,,2.7452134449545604,,3.1912082678981765e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+64,GD Richardson-extrapolated q(T_m),2.9444389791664403,,2.944438979161032,,1.8367228649734424e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+64,invariant (5.3) v = cosh(sqrt(M) a): max rel err,0.0,3.268982180507253e-13,,3.268982180507253e-13,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+64,invariant (5.3) b = sqrt(M) sinh(sqrt(M) a): max rel err,0.0,7.541263809368641e-13,,7.541263809368641e-13,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+64,invariant (5.4) q = Q_M(a): max rel err,0.0,6.729979855521207e-13,,6.729979855521207e-13,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+64,max spread of beta_j at T_m (should be 0),0.0,1.3877787807814457e-17,0.0,1.3877787807814457e-17,0.0,,,,all M contextual readouts stay identical
+64,qdot(T_m) = (1+b^2+M v^2) r  vs  (M+1+2b^2) r,4.003619685840732,4.003619685840784,,1.2866943512340535e-14,,,,,(5.4) using b^2 = M(v^2-1)
+64,b(T_m) v(T_m),2.9023451240622373,2.9023451240622364,2.9023462385600762,3.060209526208914e-16,3.8399907359935106e-07,2.899139917948495,2.9444389791664403,OK,(5.6) b v = m - a_M >= M m/(M+1)
+64,m - a_M  (must equal b v),2.902345124062237,2.9023451240622364,,1.5301047631044574e-16,,,,,(5.6) identity q = a + bv = m
+64,v(T_m) - 1,0.05723841961622611,0.057238419616232994,0.05723838369398959,1.2025808537041873e-13,6.275895938351822e-07,0.0,0.06773219454714616,OK,(5.7) 0 <= v-1 <= m^2/(2M)
+64,||W(T_m) - W(0)||_2,0.07105018872386511,0.07105018872387031,0.07105017192746488,7.324639837560893e-14,2.364019087166821e-07,,0.08148407896883664,OK,(5.7) <= sqrt(m^2/(M+1)^2 + m^4/(4M^2))
+64,M * a_M  (-> m as M -> inf),2.6940067266690173,2.69400672666898,,1.3846845020141751e-14,,,2.899139917948495,OK,(5.6) limit claim; m = 2.944439
+64,spectral-only comparator a needed for margin m,2.9444389791664403,,,,,,,,"(5.6) removing the contextual path gives q = a, so a = m exactly"
+64,suppression factor m / a_M,69.94937792885631,69.94937792885727,,1.3814820792496162e-14,,65.0,,OK,(5.6) at least M+1
+64,shifted-margin Y F = 2 a_M - m,-2.8602512689580335,-2.860251268958035,,4.657869201944353e-16,,,0.0,OK,"(e) negative for every M >= 1 => error 1 under S=Y, C=-Y"
+64,"(5.8) max_t [ r(t) - (1/2)/(1+(M+1)t/4) ] on [0,T_m]",0.0,0.0,,0.0,,,1e-11,OK,<= 0 required; positive value = envelope violation
+64,"(5.8) max_t [ r(t) - envelope ] on [0, 20 T_m]",0.0,0.0,,0.0,,,1e-11,OK,envelope is claimed for all t >= 0
+64,lambda_theta(0),0.25,0.25,0.25,0.0,0.0,,,,"(5.9) explicit-Jacobian GGN block, top eigenvalue via eigvalsh; 'gd_value' column = torch autograd Hessian block (equal here because F is multilinear, so the diagonal Hessian blocks have no residual term)"
+64,lambda_phi(0),16.0,16.000000000000004,16.000000000000004,2.220446049250313e-16,2.220446049250313e-16,,,,(5.9) explicit-Jacobian GGN block; 'gd_value' = torch autograd Hessian block
+64,D_curv(0) = lambda_phi(0)/lambda_theta(0),64.0,64.00000000000001,64.00000000000001,2.220446049250313e-16,2.220446049250313e-16,,,,(5.9)
+64,lambda_theta(0) closed form r(1-r)(1+b^2): |lam - 1/4|,0.0,0.0,,0.0,,,0.0,OK,"EXACT in IEEE double: r(1-r)=1/4, b=0"
+64,lambda_phi(0) closed form M r(1-r) v^2: |lam - M/4|,0.0,0.0,,0.0,,,0.0,OK,"EXACT in IEEE double: r(1-r)=1/4, v=1"
+64,lambda_theta(0) eigensolver deviation |lam - 1/4|,0.0,0.0,,0.0,,,1e-15,OK,eigvalsh roundoff only
+64,lambda_phi(0) eigensolver deviation |lam - M/4|,0.0,3.552713678800501e-15,,3.552713678800501e-15,,,6.4e-11,OK,eigvalsh roundoff only
+64,lambda_theta(T_m) = r(1-r)(1+b^2),0.40546935077435076,0.4054693507743463,,1.0952472955155723e-14,,,,,(c)
+64,lambda_phi(T_m) = M r(1-r) v^2,3.3979693507743507,3.3979693507743955,,1.3199945486452059e-14,,,,,(c)
+64,D_curv(T_m) = (M v^2)/(1+b^2),8.380335885523852,8.380335885524056,,2.437623495305275e-14,,,,,(c) curvature disparity at fit
+64,||grad_theta L(T_m)|| = r sqrt(1+b^2),0.14608385313243372,0.146083853132433,,4.9399365537828304e-15,,,0.15548087424209697,OK,(5.10) <= r sqrt(1+m^2)
+64,"(5.10) max_t [ r sqrt(1+b^2) / (r sqrt(1+m^2)) ] on [0,T_m]",,0.9395615624399426,,,,,1.0,OK,ratio must stay <= 1
+64,"max_t b(t) on [0,T_m]",2.745213444963321,2.7452134449633023,,6.794279274685629e-15,,,2.9444389791664403,OK,proof step: b <= m since bv = q-a <= m and v >= 1
+64,frozen q_F(T_m),2.8063058062645685,2.80630580626457,,4.747407166304336e-16,,,,,(d) Psi(q_F(t)) = M t
+64,frozen q_F(t): max rel err solver vs Psi^{-1}(Mt),0.0,3.1921306286819085e-12,,3.1921306286819085e-12,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+64,(5.11) min_t [ q(t) - q_F(t) ],,0.0,,,,0.0,,OK,lower half of (5.11): q >= q_F
+64,(5.11) max_t [ q(t) - q_F(t) ],,0.13813317290187088,,,,,2.954687075210045,OK,(5.11) uniform bound (1+2m^2)Psi(m)/(2(M+1))
+64,(5.11) max_t [ (q - q_F) - (1+2m^2)t/2 ],0.0,0.0,,0.0,,,1e-11,OK,pointwise bound; must be <= 0
+64,(5.11) uniform bound value,2.954687075210045,,,,,,,,(1+2m^2)Psi(m)/(2(M+1)); RMS logit gap is O(1/M)
+64,(5.11) gap x (M+1)  [O(1/M) diagnostic],,8.978656238621607,,,,,,,should stay bounded in M
+64,control (1/sqrt(M) readout): a(T_m),1.0269467087727866,1.026946708772803,,1.6000149398295375e-14,,,,,(4) must equal the M=1 value for every M
+64,control: v(T_m),1.5753125404351649,1.5753125404351656,,4.228581933278338e-16,,,,,(4) must equal the M=1 value
+64,control: b(T_m),1.2172138678360072,1.217213867835997,,8.391337049675777e-15,,,,,(4) must equal the M=1 value
+64,control: T_m,6.023294415742646,6.023294415742965,,5.3084609355364214e-14,,,,,(4) must equal the M=1 fitting time
+64,control: ||W(T_m)-W(0)||,1.1771168429010017,1.1771168429010166,,1.2638497715581738e-14,,,,,(4) no suppression: displacement is M-independent
+64,B_m = sqrt((1+m^2)/2),2.1988316104279915,,,,,,,,operator-norm cap on ||J_theta|| with symmetric logits
+64,max_t ||J_theta||_op = sqrt((1+b^2)/2),2.065937663436071,2.065937663436059,,5.803857917963131e-15,,,2.1988316104279915,OK,normalized (symmetric-logit) Jacobian norm <= B_m
+64,(5.12) bound  4 B_m/(M+1) log(1/(sqrt2 delta)),0.3584648525429358,,,,,0.07105018872386511,,OK,must dominate the exact displacement
+64,(5.12) bound / displacement,5.045234347456852,5.045234347456483,,7.323390692079481e-14,,,,,see note-table comparison rows
+256,GD raw |q(T_m) - m| at N=1000 (h=7.876e-05),0.0,0.0011835120140228916,,0.0011835120140228916,,,,,explicit-Euler discretization error; must fall ~10x per row
+256,GD raw |q(T_m) - m| at N=10000 (h=7.876e-06),0.0,0.0001182811521696081,,0.0001182811521696081,,,,,explicit-Euler discretization error; must fall ~10x per row
+256,GD raw |q(T_m) - m| at N=100000 (h=7.876e-07),0.0,1.1827415954179799e-05,,1.1827415954179799e-05,,,,,explicit-Euler discretization error; must fall ~10x per row
+256,GD raw |q(T_m) - m| at N=1000000 (h=7.876e-08),0.0,1.1827343953108027e-06,,1.1827343953108027e-06,,,,,explicit-Euler discretization error; must fall ~10x per row
+256,GD observed convergence order (finest pair),1.0,1.0000026438372898,,2.643837289761919e-06,,,,,log10 of the error ratio for a 10x step reduction; 1.0 = first order
+256,"GD: torch-autograd vs numpy analytic-grad (max rel over a,v,b,q)",0.0,0.0,,0.0,,,,,N=10000; independent gradient path through the literal 2-site model
+256,a(T_m),0.011215572552996857,0.01121557255299681,0.011215577408686337,4.176116166165638e-15,4.3294173861941885e-07,,0.011456961008429729,OK,(5.6) 0 < a_M <= m/(M+1)
+256,v(T_m),1.0161442541066974,1.0161442541066994,1.016144242817102,1.966651325585752e-15,1.1110229118615635e-08,,,,(5.3) v = cosh(sqrt(M) a)
+256,b(T_m),2.8866210626679867,2.886621062667982,2.8866222539038753,1.6922835392310548e-15,4.126748411850495e-07,,,,(5.3) b = sqrt(M) sinh(sqrt(M) a)
+256,q(T_m),2.9444389791664403,2.944438979166441,2.9444401619008356,3.016460609251835e-16,4.016841251183376e-07,,,,(5.4) q = Q_M(a); target margin m
+256,r(T_m),0.05,0.04999999999999996,0.04999994382014613,8.326672684688674e-16,1.123597077462568e-06,,,,r = 1/(1+e^q) = delta at q = m
+256,T_m,0.07876269997301792,0.07876269997301505,,3.6472874561203544e-14,,0.07634497920326291,0.08149587151426628,OK,"(5.5); formula = quadrature int_0^a_M (1+e^Q_M) da, quad err=8.74e-16"
+256,(5.5) lower bound Psi(m)/(M+1+2m^2),0.07634497920326291,,,,,,,,(5.5)
+256,(5.5) upper bound Psi(m)/(M+1),0.08149587151426628,,,,,,,,(5.5)
+256,GD Richardson-extrapolated a(T_m),0.011215572552996857,,0.01121557255296221,,3.0890885952096344e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+256,GD Richardson-extrapolated v(T_m),1.0161442541066974,,1.0161442541070058,,3.0351985458206776e-13,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+256,GD Richardson-extrapolated b(T_m),2.8866210626679867,,2.8866210626591395,,3.064879333505552e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+256,GD Richardson-extrapolated q(T_m),2.9444389791664403,,2.94443897915844,,2.7170768937835905e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+256,invariant (5.3) v = cosh(sqrt(M) a): max rel err,0.0,6.964607410689123e-14,,6.964607410689123e-14,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+256,invariant (5.3) b = sqrt(M) sinh(sqrt(M) a): max rel err,0.0,1.6965969142806164e-13,,1.6965969142806164e-13,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+256,invariant (5.4) q = Q_M(a): max rel err,0.0,1.5371335323459484e-13,,1.5371335323459484e-13,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+256,max spread of beta_j at T_m (should be 0),0.0,0.0,0.0,0.0,0.0,,,,all M contextual readouts stay identical
+256,qdot(T_m) = (1+b^2+M v^2) r  vs  (M+1+2b^2) r,13.683258115943833,13.683258115943884,,3.764772096389994e-15,,,,,(5.4) using b^2 = M(v^2-1)
+256,b(T_m) v(T_m),2.9332234066134437,2.933223406613444,2.9332245844921494,1.513997225198698e-16,4.0156460739639526e-07,2.9329820181580106,2.9444389791664403,OK,(5.6) b v = m - a_M >= M m/(M+1)
+256,m - a_M  (must equal b v),2.9332234066134433,2.933223406613444,,3.0279944503973967e-16,,,,,(5.6) identity q = a + bv = m
+256,v(T_m) - 1,0.016144254106697398,0.016144254106699396,0.016144242817101917,1.237840677629232e-13,6.992949569597482e-07,0.0,0.01693304863678654,OK,(5.7) 0 <= v-1 <= m^2/(2M)
+256,||W(T_m) - W(0)||_2,0.019657721341832888,0.019657721341834505,0.01965771484043306,8.22456606997379e-14,3.307300838771575e-07,,0.02044480598304757,OK,(5.7) <= sqrt(m^2/(M+1)^2 + m^4/(4M^2))
+256,M * a_M  (-> m as M -> inf),2.8711865735671953,2.8711865735671833,,4.176116166165638e-15,,,2.9329820181580106,OK,(5.6) limit claim; m = 2.944439
+256,spectral-only comparator a needed for margin m,2.9444389791664403,,,,,,,,"(5.6) removing the contextual path gives q = a, so a = m exactly"
+256,suppression factor m / a_M,262.53131217805475,262.5313121780558,,4.113890070464641e-15,,257.0,,OK,(5.6) at least M+1
+256,shifted-margin Y F = 2 a_M - m,-2.9220078340604467,-2.9220078340604467,,0.0,,,0.0,OK,"(e) negative for every M >= 1 => error 1 under S=Y, C=-Y"
+256,"(5.8) max_t [ r(t) - (1/2)/(1+(M+1)t/4) ] on [0,T_m]",0.0,0.0,,0.0,,,1e-11,OK,<= 0 required; positive value = envelope violation
+256,"(5.8) max_t [ r(t) - envelope ] on [0, 20 T_m]",0.0,0.0,,0.0,,,1e-11,OK,envelope is claimed for all t >= 0
+256,lambda_theta(0),0.25,0.25,0.25,0.0,0.0,,,,"(5.9) explicit-Jacobian GGN block, top eigenvalue via eigvalsh; 'gd_value' column = torch autograd Hessian block (equal here because F is multilinear, so the diagonal Hessian blocks have no residual term)"
+256,lambda_phi(0),64.0,64.00000000000003,64.00000000000003,4.440892098500626e-16,4.440892098500626e-16,,,,(5.9) explicit-Jacobian GGN block; 'gd_value' = torch autograd Hessian block
+256,D_curv(0) = lambda_phi(0)/lambda_theta(0),256.0,256.0000000000001,256.0000000000001,4.440892098500626e-16,4.440892098500626e-16,,,,(5.9)
+256,lambda_theta(0) closed form r(1-r)(1+b^2): |lam - 1/4|,0.0,0.0,,0.0,,,0.0,OK,"EXACT in IEEE double: r(1-r)=1/4, b=0"
+256,lambda_phi(0) closed form M r(1-r) v^2: |lam - M/4|,0.0,0.0,,0.0,,,0.0,OK,"EXACT in IEEE double: r(1-r)=1/4, v=1"
+256,lambda_theta(0) eigensolver deviation |lam - 1/4|,0.0,0.0,,0.0,,,1e-15,OK,eigvalsh roundoff only
+256,lambda_phi(0) eigensolver deviation |lam - M/4|,0.0,2.842170943040401e-14,,2.842170943040401e-14,,,2.56e-10,OK,eigvalsh roundoff only
+256,lambda_theta(T_m) = r(1-r)(1+b^2),0.44329760507332666,0.44329760507332505,,3.631473229908817e-15,,,,,(c)
+256,lambda_phi(T_m) = M r(1-r) v^2,12.555797605073325,12.555797605073348,,1.8392012708832128e-15,,,,,(c)
+256,D_curv(T_m) = (M v^2)/(1+b^2),28.32363058446131,28.323630584461462,,5.393612507862294e-15,,,,,(c) curvature disparity at fit
+256,||grad_theta L(T_m)|| = r sqrt(1+b^2),0.1527463678736622,0.15274636787366183,,2.36223281788026e-15,,,0.15548087424209697,OK,(5.10) <= r sqrt(1+m^2)
+256,"(5.10) max_t [ r sqrt(1+b^2) / (r sqrt(1+m^2)) ] on [0,T_m]",,0.9824125868743371,,,,,1.0,OK,ratio must stay <= 1
+256,"max_t b(t) on [0,T_m]",2.8866210626679867,2.886621062667982,,1.6922835392310548e-15,,,2.9444389791664403,OK,proof step: b <= m since bv = q-a <= m and v >= 1
+256,frozen q_F(T_m),2.904636980324523,2.9046369803245256,,9.173384753927763e-16,,,,,(d) Psi(q_F(t)) = M t
+256,frozen q_F(t): max rel err solver vs Psi^{-1}(Mt),0.0,3.2747366915660583e-12,,3.2747366915660583e-12,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+256,(5.11) min_t [ q(t) - q_F(t) ],,0.0,,,,0.0,,OK,lower half of (5.11): q >= q_F
+256,(5.11) max_t [ q(t) - q_F(t) ],,0.03980199884191826,,,,,0.7472943964539025,OK,(5.11) uniform bound (1+2m^2)Psi(m)/(2(M+1))
+256,(5.11) max_t [ (q - q_F) - (1+2m^2)t/2 ],0.0,0.0,,0.0,,,1e-11,OK,pointwise bound; must be <= 0
+256,(5.11) uniform bound value,0.7472943964539025,,,,,,,,(1+2m^2)Psi(m)/(2(M+1)); RMS logit gap is O(1/M)
+256,(5.11) gap x (M+1)  [O(1/M) diagnostic],,10.229113702372993,,,,,,,should stay bounded in M
+256,control (1/sqrt(M) readout): a(T_m),1.0269467087727866,1.0269467087728028,,1.5783931163183274e-14,,,,,(4) must equal the M=1 value for every M
+256,control: v(T_m),1.5753125404351649,1.575312540435165,,1.4095273110927792e-16,,,,,(4) must equal the M=1 value
+256,control: b(T_m),1.2172138678360072,1.2172138678359965,,8.756177790966027e-15,,,,,(4) must equal the M=1 value
+256,control: T_m,6.023294415742646,6.023294415742962,,5.249478036252684e-14,,,,,(4) must equal the M=1 fitting time
+256,control: ||W(T_m)-W(0)||,1.1771168429010017,1.1771168429010161,,1.226122912705691e-14,,,,,(4) no suppression: displacement is M-independent
+256,B_m = sqrt((1+m^2)/2),2.1988316104279915,,,,,,,,operator-norm cap on ||J_theta|| with symmetric logits
+256,max_t ||J_theta||_op = sqrt((1+b^2)/2),2.160159850501631,2.1601598505016275,,1.6446531389681611e-15,,,2.1988316104279915,OK,normalized (symmetric-logit) Jacobian norm <= B_m
+256,(5.12) bound  4 B_m/(M+1) log(1/(sqrt2 delta)),0.0906623167910149,,,,,0.019657721341832888,,OK,must dominate the exact displacement
+256,(5.12) bound / displacement,4.612046086851363,4.612046086850984,,8.223078825972192e-14,,,,,see note-table comparison rows
+1024,GD raw |q(T_m) - m| at N=1000 (h=2.025e-05),0.0,0.0012003065485641784,,0.0012003065485641784,,,,,explicit-Euler discretization error; must fall ~10x per row
+1024,GD raw |q(T_m) - m| at N=10000 (h=2.025e-06),0.0,0.00011995411404797096,,0.00011995411404797096,,,,,explicit-Euler discretization error; must fall ~10x per row
+1024,GD raw |q(T_m) - m| at N=100000 (h=2.025e-07),0.0,1.199464738510514e-05,,1.199464738510514e-05,,,,,explicit-Euler discretization error; must fall ~10x per row
+1024,GD raw |q(T_m) - m| at N=1000000 (h=2.025e-08),0.0,1.1994569213413797e-06,,1.1994569213413797e-06,,,,,explicit-Euler discretization error; must fall ~10x per row
+1024,GD observed convergence order (finest pair),1.0,1.0000028303995716,,2.830399571607245e-06,,,,,log10 of the error ratio for a 10x step reduction; 1.0 = first order
+1024,"GD: torch-autograd vs numpy analytic-grad (max rel over a,v,b,q)",0.0,0.0,,0.0,,,,,N=10000; independent gradient path through the literal 2-site model
+1024,a(T_m),0.002856697516663094,0.0028566975166630943,0.0028566987041447516,1.5181196695293944e-16,4.156833724198621e-07,,0.0028726233943087223,OK,(5.6) 0 < a_M <= m/(M+1)
+1024,v(T_m),1.004181199493056,1.0041811994930563,1.0041811964698777,2.2112005785123918e-16,3.010590494855324e-09,,,,(5.3) v = cosh(sqrt(M) a)
+1024,b(T_m),2.9293341511818634,2.9293341511818634,2.9293353532809903,0.0,4.103659961161597e-07,,,,(5.3) b = sqrt(M) sinh(sqrt(M) a)
+1024,q(T_m),2.9444389791664403,2.9444389791664407,2.9444401786233616,1.5082303046259176e-16,4.073634841231933e-07,,,,(5.4) q = Q_M(a); target margin m
+1024,r(T_m),0.05,0.04999999999999999,0.049999943025827,2.7755575615628914e-16,1.1394834600886306e-06,,,,r = 1/(1+e^q) = delta at q = m
+1024,T_m,0.020251900450276483,0.020251900450275615,,4.2828658975388266e-14,,0.020093683630464983,0.020433599004064815,OK,"(5.5); formula = quadrature int_0^a_M (1+e^Q_M) da, quad err=2.25e-16"
+1024,(5.5) lower bound Psi(m)/(M+1+2m^2),0.020093683630464983,,,,,,,,(5.5)
+1024,(5.5) upper bound Psi(m)/(M+1),0.020433599004064815,,,,,,,,(5.5)
+1024,GD Richardson-extrapolated a(T_m),0.002856697516663094,,0.0028566975166544597,,3.022424450066071e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+1024,GD Richardson-extrapolated v(T_m),1.004181199493056,,1.0041811994931074,,5.107873336363625e-14,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+1024,GD Richardson-extrapolated b(T_m),2.9293341511818634,,2.9293341511730366,,3.01321620526584e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+1024,GD Richardson-extrapolated q(T_m),2.9444389791664403,,2.9444389791577543,,2.949947652817832e-12,,,,first-order Richardson from the two finest step sizes; removes the leading O(h) Euler error and should match the closed form
+1024,invariant (5.3) v = cosh(sqrt(M) a): max rel err,0.0,2.9304461935956817e-14,,2.9304461935956817e-14,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+1024,invariant (5.3) b = sqrt(M) sinh(sqrt(M) a): max rel err,0.0,7.676054605197053e-14,,7.676054605197053e-14,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+1024,invariant (5.4) q = Q_M(a): max rel err,0.0,6.823341782080418e-14,,6.823341782080418e-14,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+1024,max spread of beta_j at T_m (should be 0),0.0,0.0,0.0,0.0,0.0,,,,all M contextual readouts stay identical
+1024,qdot(T_m) = (1+b^2+M v^2) r  vs  (M+1+2b^2) r,52.10809985692803,52.10809985692805,,4.09078092107189e-16,,,,,(5.4) using b^2 = M(v^2-1)
+1024,b(T_m) v(T_m),2.9415822816497768,2.9415822816497776,2.941583479919217,3.01939002434429e-16,4.0735540446785375e-07,2.9415663557721317,2.9444389791664403,OK,(5.6) b v = m - a_M >= M m/(M+1)
+1024,m - a_M  (must equal b v),2.941582281649777,2.9415822816497776,,1.5096950121721448e-16,,,,,(5.6) identity q = a + bv = m
+1024,v(T_m) - 1,0.004181199493056065,0.004181199493056287,0.0041811964698776904,5.310547972986994e-14,7.230409310359293e-07,0.0,0.004233262159196635,OK,(5.7) 0 <= v-1 <= m^2/(2M)
+1024,||W(T_m) - W(0)||_2,0.005063906585082448,0.005063906585082632,0.005063904758778542,3.631202222316423e-14,3.606511840538977e-07,,0.005115903993823176,OK,(5.7) <= sqrt(m^2/(M+1)^2 + m^4/(4M^2))
+1024,M * a_M  (-> m as M -> inf),2.925258257063008,2.9252582570630086,,1.5181196695293944e-16,,,2.9415663557721317,OK,(5.6) limit claim; m = 2.944439
+1024,spectral-only comparator a needed for margin m,2.9444389791664403,,,,,,,,"(5.6) removing the contextual path gives q = a, so a = m exactly"
+1024,suppression factor m / a_M,1030.7142992884444,1030.7142992884444,,0.0,,1025.0,,OK,(5.6) at least M+1
+1024,shifted-margin Y F = 2 a_M - m,-2.938725584133114,-2.938725584133114,,0.0,,,0.0,OK,"(e) negative for every M >= 1 => error 1 under S=Y, C=-Y"
+1024,"(5.8) max_t [ r(t) - (1/2)/(1+(M+1)t/4) ] on [0,T_m]",0.0,0.0,,0.0,,,1e-11,OK,<= 0 required; positive value = envelope violation
+1024,"(5.8) max_t [ r(t) - envelope ] on [0, 20 T_m]",0.0,0.0,,0.0,,,1e-11,OK,envelope is claimed for all t >= 0
+1024,lambda_theta(0),0.25,0.25,0.25,0.0,0.0,,,,"(5.9) explicit-Jacobian GGN block, top eigenvalue via eigvalsh; 'gd_value' column = torch autograd Hessian block (equal here because F is multilinear, so the diagonal Hessian blocks have no residual term)"
+1024,lambda_phi(0),256.0,256.0000000000001,256.0000000000001,4.440892098500626e-16,4.440892098500626e-16,,,,(5.9) explicit-Jacobian GGN block; 'gd_value' = torch autograd Hessian block
+1024,D_curv(0) = lambda_phi(0)/lambda_theta(0),1024.0,1024.0000000000005,1024.0000000000005,4.440892098500626e-16,4.440892098500626e-16,,,,(5.9)
+1024,lambda_theta(0) closed form r(1-r)(1+b^2): |lam - 1/4|,0.0,0.0,,0.0,,,0.0,OK,"EXACT in IEEE double: r(1-r)=1/4, b=0"
+1024,lambda_phi(0) closed form M r(1-r) v^2: |lam - M/4|,0.0,0.0,,0.0,,,0.0,OK,"EXACT in IEEE double: r(1-r)=1/4, v=1"
+1024,lambda_theta(0) eigensolver deviation |lam - 1/4|,0.0,0.0,,0.0,,,1e-15,OK,eigvalsh roundoff only
+1024,lambda_phi(0) eigensolver deviation |lam - M/4|,0.0,1.1368683772161603e-13,,1.1368683772161603e-13,,,1.024e-09,OK,eigvalsh roundoff only
+1024,lambda_theta(T_m) = r(1-r)(1+b^2),0.4550974320408175,0.4550974320408174,,2.4395282118963507e-16,,,,,(c)
+1024,lambda_phi(T_m) = M r(1-r) v^2,49.04759743204082,49.04759743204089,,1.448680002612995e-15,,,,,(c)
+1024,D_curv(T_m) = (M v^2)/(1+b^2),107.77383913614736,107.77383913614754,,1.7141554274989529e-15,,,,,(c) curvature disparity at fit
+1024,||grad_theta L(T_m)|| = r sqrt(1+b^2),0.15476594077251274,0.1547659407725127,,1.7933904240873165e-16,,,0.15548087424209697,OK,(5.10) <= r sqrt(1+m^2)
+1024,"(5.10) max_t [ r sqrt(1+b^2) / (r sqrt(1+m^2)) ] on [0,T_m]",,0.9954017915510882,,,,,1.0,OK,ratio must stay <= 1
+1024,"max_t b(t) on [0,T_m]",2.9293341511818634,2.9293341511818634,,0.0,,,2.9444389791664403,OK,proof step: b <= m since bv = q-a <= m and v >= 1
+1024,frozen q_F(T_m),2.934063374399735,2.9340633743997353,,1.5135637959453298e-16,,,,,(d) Psi(q_F(t)) = M t
+1024,frozen q_F(t): max rel err solver vs Psi^{-1}(Mt),0.0,6.8443675164777294e-12,,6.8443675164777294e-12,,,1e-08,OK,"checked at 4001 points on [0,T_m]"
+1024,(5.11) min_t [ q(t) - q_F(t) ],,0.0,,,,0.0,,OK,lower half of (5.11): q >= q_F
+1024,(5.11) max_t [ q(t) - q_F(t) ],,0.010375604766705848,,,,,0.18737039989136872,OK,(5.11) uniform bound (1+2m^2)Psi(m)/(2(M+1))
+1024,(5.11) max_t [ (q - q_F) - (1+2m^2)t/2 ],0.0,0.0,,0.0,,,1e-11,OK,pointwise bound; must be <= 0
+1024,(5.11) uniform bound value,0.18737039989136872,,,,,,,,(1+2m^2)Psi(m)/(2(M+1)); RMS logit gap is O(1/M)
+1024,(5.11) gap x (M+1)  [O(1/M) diagnostic],,10.634994885873494,,,,,,,should stay bounded in M
+1024,control (1/sqrt(M) readout): a(T_m),1.0269467087727866,1.0269467087728037,,1.6648804103631674e-14,,,,,(4) must equal the M=1 value for every M
+1024,control: v(T_m),1.5753125404351649,1.5753125404351649,,0.0,,,,,(4) must equal the M=1 value
+1024,control: b(T_m),1.2172138678360072,1.2172138678359965,,8.756177790966027e-15,,,,,(4) must equal the M=1 value
+1024,control: T_m,6.023294415742646,6.02329441574297,,5.382189559641094e-14,,,,,(4) must equal the M=1 fitting time
+1024,control: ||W(T_m)-W(0)||,1.1771168429010017,1.1771168429010168,,1.2827132009844152e-14,,,,,(4) no suppression: displacement is M-independent
+1024,B_m = sqrt((1+m^2)/2),2.1988316104279915,,,,,,,,operator-norm cap on ||J_theta|| with symmetric logits
+1024,max_t ||J_theta||_op = sqrt((1+b^2)/2),2.1887209243391865,2.1887209243391865,,0.0,,,2.1988316104279915,OK,normalized (symmetric-logit) Jacobian norm <= B_m
+1024,(5.12) bound  4 B_m/(M+1) log(1/(sqrt2 delta)),0.022731917478332513,,,,,0.005063906585082448,,OK,must dominate the exact displacement
+1024,(5.12) bound / displacement,4.489008060554973,4.489008060554809,,3.6405554862073235e-14,,,,,see note-table comparison rows
+0,a_M strictly decreasing in M,1.0,1.0,,0.0,,,,,"(b) claim: a_M decreases strictly with M; M=1:1.026947e+00, M=16:1.423245e-01, M=64:4.209386e-02, M=256:1.121557e-02, M=1024:2.856698e-03"
+16,note-table: exact displacement,0.2190206192754463,0.219021,,1.73830461692871e-06,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 6 decimals; round(computed,6) == printed: True"
+16,note-table: bound (5.12),1.3706009067818132,1.370601,,6.80126404878352e-08,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 6 decimals; round(computed,6) == printed: True"
+16,note-table: bound/displacement,6.257862439235039,6.258,,2.1982069164499236e-05,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 3 decimals; round(computed,3) == printed: True"
+64,note-table: exact displacement,0.07105018872386511,0.07105,,2.6562049798122953e-06,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 6 decimals; round(computed,6) == printed: True"
+64,note-table: bound (5.12),0.3584648525429358,0.358465,,4.1135710551294487e-07,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 6 decimals; round(computed,6) == printed: True"
+64,note-table: bound/displacement,5.045234347456852,5.045,,4.644927087888311e-05,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 3 decimals; round(computed,3) == printed: True"
+256,note-table: exact displacement,0.019657721341832888,0.019658,,1.4175507031808255e-05,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 6 decimals; round(computed,6) == printed: True"
+256,note-table: bound (5.12),0.0906623167910149,0.090662,,3.4941861856774956e-06,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 6 decimals; round(computed,6) == printed: True"
+256,note-table: bound/displacement,4.612046086851363,4.612,,9.992712669144691e-06,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 3 decimals; round(computed,3) == printed: True"
+1024,note-table: exact displacement,0.005063906585082448,0.005064,,1.8447203948702583e-05,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 6 decimals; round(computed,6) == printed: True"
+1024,note-table: bound (5.12),0.022731917478332513,0.022732,,3.630211466503669e-06,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 6 decimals; round(computed,6) == printed: True"
+1024,note-table: bound/displacement,4.489008060554973,4.489,,1.7956205166237452e-06,,,,,"'solver_value' column holds the value printed in math_01.md's table; printed to 3 decimals; round(computed,3) == printed: True"
+0,"loss normalization required for lambda_theta(0)=1/4, lambda_phi(0)=M/4",,,,,,,,,"lambda_theta(0)=1/4 and lambda_phi(0)=M/4 hold EXACTLY for the MEAN-over-examples (averaged, not summed) binary cross-entropy L = E_Y[log(1+exp(-Y F))] with a single scalar logit F whose per-example margin is q = Y F with unit scaling. Equivalently, the symmetric two-logit softmax convention (F/2,-F/2): its softmax Hessian p(1-p)[[1,-1],[-1,1]] contracted with the logit Jacobian direction (1/2,-1/2) gives the same scalar curvature r(1-r), because only the logit DIFFERENCE (=F) enters. The two normalizations that break the constants: (i) SUMMING instead of averaging over the n training examples / broadcast sites multiplies both blocks by n (e.g. broadcasting to the 2 sites and summing gives 1/2 and M/2); (ii) rescaling the logit (e.g. F/tau) multiplies both blocks by 1/tau^2. D_curv(0)=lambda_phi/lambda_theta=M is invariant under both, since they scale the two blocks identically."
