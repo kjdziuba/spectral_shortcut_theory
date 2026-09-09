@@ -49,6 +49,18 @@ def envelope_mu(r: np.ndarray, warmup: int = 10) -> tuple[float, float]:
     return float(max(mus.min(), 0.0)), C
 
 
+def arm_label(cfg: dict) -> str:
+    """cfg['arm'], suffixed '_speclr<M>' when the run recorded a non-unit
+    spectral lr multiplier (E3c-local speclr arms). Runs without the key
+    (every pre-existing run) keep the bare arm name, so grouping is unchanged.
+    """
+    arm = cfg["arm"]
+    mult = cfg.get("spectral_lr_mult")
+    if mult is not None and float(mult) != 1.0:
+        arm = f"{arm}_speclr{float(mult):g}"
+    return arm
+
+
 def analyze_run(d: Path) -> dict | None:
     try:
         cfg = json.loads((d / "config.json").read_text())
@@ -94,7 +106,7 @@ def analyze_run(d: Path) -> dict | None:
 
     f1_final = float(epochs.val_macro_f1.tail(5).mean())
     return dict(
-        arm=cfg["arm"], width=cfg["width"], seed=cfg["seed"],
+        arm=arm_label(cfg), width=cfg["width"], seed=cfg["seed"],
         optimizer=cfg.get("optimizer", "adamw"),
         val_f1=f1_final, val_f1_best=float(epochs.val_macro_f1.max()),
         theta_disp_abs=th_abs, theta_disp_rel=float(th_rel),
@@ -133,7 +145,8 @@ def main():
     for w in sorted(adamw.width.unique()):
         sub = adamw[adamw.width == w]
         line = [f"h={w}:"]
-        for arm in ("joint_linear", "frozen_random", "frozen_pca"):
+        for arm in ("joint_linear", "frozen_random", "frozen_pca",
+                    "frozen_pretrained", "finetune_real"):
             s = sub[sub.arm == arm].val_f1
             if len(s):
                 line.append(f"{arm}={s.mean():.4f}+/-{s.std():.4f}")
@@ -141,12 +154,27 @@ def main():
         jj = sub[sub.arm == "joint_linear"].val_f1
         fr = sub[sub.arm == "frozen_random"].val_f1
         fp = sub[sub.arm == "frozen_pca"].val_f1
+        jm = sub[sub.arm == "joint_mlp"].val_f1
+        fpt = sub[sub.arm == "frozen_pretrained"].val_f1
+        ft = sub[sub.arm == "finetune_real"].val_f1
         if len(jj) and len(fr):
             print(f"      joint - frozen_random = {jj.mean() - fr.mean():+.4f}"
                   f"   (Thm-2 functional read: ~0 predicted)")
         if len(jj) and len(fp):
             print(f"      joint - frozen_pca    = {jj.mean() - fp.mean():+.4f}"
                   f"   (falsifier: strongly positive would refute)")
+        # E3c-local arms (pretrained per-pixel MLP); silent unless present.
+        if len(jm) and len(fpt):
+            print(f"      joint_mlp - frozen_pretrained = {jm.mean() - fpt.mean():+.4f}"
+                  f"   (does a GOOD frozen encoder match joint training?)")
+        if len(ft) and len(fpt):
+            print(f"      finetune_real - frozen_pretrained = {ft.mean() - fpt.mean():+.4f}"
+                  f"   (does theta flow add anything on top of pretraining?)")
+        spec = sub[sub.arm.str.contains("_speclr")]
+        if len(spec):
+            print("      spectral-lr sensitivity:")
+            for a, s in spec.groupby("arm").val_f1:
+                print(f"        {a:<28s} val_f1={s.mean():.4f}+/-{s.std():.4f} (n={len(s)})")
 
     sgd = df[df.optimizer == "sgd"]
     if len(sgd):
@@ -157,9 +185,11 @@ def main():
                   float_format=lambda v: f"{v:.4g}"))
 
     print("\n=== Thm-2 bound vs measured displacement (joint arms) ===")
-    for _, r in df[df.arm.isin(["joint_linear"])].iterrows():
+    trainable = df[df.arm.str.startswith(("joint_linear", "finetune_real"))]
+    for _, r in trainable.iterrows():
         ratio = r.thm2_bound / max(r.theta_disp_abs, 1e-30)
-        print(f"  {r.optimizer} h={r.width} s={r.seed}: measured ||dtheta||="
+        tag = "" if r.arm == "joint_linear" else f" [{r.arm}]"
+        print(f"  {r.optimizer} h={r.width} s={r.seed}{tag}: measured ||dtheta||="
               f"{r.theta_disp_abs:.3f}  bound={r.thm2_bound:.3f}  "
               f"bound/measured={ratio:.2f}")
 

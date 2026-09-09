@@ -24,14 +24,33 @@ Arms (--arm):
                       counterfactual grads logged (forward re-implemented
                       without @torch.no_grad so autograd can reach theta).
   joint_mlp     (B) : per-pixel MLP 942->512->GELU->64, jointly trained.
+  frozen_pretrained : E3c-local. Same MLPSpectralReduction class/dims as
+                      joint_mlp, weights loaded from the per-seed pixel-level
+                      pretrain (code/experiments/pretrain_spectral_mlp.py ->
+                      experiments_shortcut/pretrained/spectral_mlp_f{fold}_s{seed}.pt),
+                      then FROZEN exactly like frozen_random: excluded from the
+                      optimizer, requires_grad kept True so counterfactual
+                      theta grads are logged, grads zeroed manually each step.
+                      (No BN inside the MLP, so train/eval forward is the same
+                      deterministic map; frozen_random's BN2d bookkeeping has
+                      no analogue here.)
+  finetune_real     : E3c-local. Same pretrained init, theta TRAINABLE in the
+                      zero-weight-decay group (joint_mlp's group treatment).
 
 Optimizer (non-negotiable, review round): theta params sit in their OWN param
 group with weight_decay=0.0 — a decay term on theta breaks the Theorem-2 flow.
 phi gets weight_decay=0.01. AdamW lr=1e-4 (default) or SGD momentum=0.9 lr=1e-2.
 Constant LR, fixed --epochs, NO early stopping.
+--spectral_lr_mult M (default 1.0) multiplies the THETA group's lr only, for
+the trainable-theta arms (joint_linear / joint_mlp / finetune_real); phi's lr
+is never touched. With M == 1.0 the param groups are built exactly as before.
+--run_label overrides the arm token in the output dir name (lane driver uses
+it for e.g. joint_speclr0.1_h192_adamw_s0); default = arm, unchanged.
 
 Usage:
   python code/experiments/exp1_7_train.py --arm joint_linear --width 192 --seed 0
+  python code/experiments/exp1_7_train.py --arm joint_linear --width 192 --seed 0 \
+      --spectral_lr_mult 0.1 --run_label joint_speclr0.1
   # smoke:
   python code/experiments/exp1_7_train.py --arm frozen_random --width 48 \
       --seed 0 --epochs 2 --max_train_cores 8
@@ -67,6 +86,9 @@ NUM_SPECTRAL = 314
 IN_CHANNELS = 3
 SPATIAL = 336
 SCRATCH = Path("/tmp/claude-1008/spectral_shortcut_scratch")
+PRETRAINED_DIR = THEORY_ROOT / "experiments_shortcut" / "pretrained"
+PRETRAINED_ARMS = ("frozen_pretrained", "finetune_real")
+TRAINABLE_THETA_ARMS = ("joint_linear", "joint_mlp", "finetune_real")
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +142,17 @@ class GradPCAReduction(PCAReduction):
 # Model / param-group construction
 # ---------------------------------------------------------------------------
 
+def load_pretrained_ckpt(path):
+    """torch.load a pretrain_spectral_mlp.py checkpoint (weights_only=True).
+
+    Explicit rather than relying on the torch>=2.6 default: the file must stay
+    plain tensors/containers/primitives. (pretrain_spectral_mlp.py stores
+    str(torch.__version__) for exactly this reason -- a bare TorchVersion is
+    rejected by the weights_only unpickler.)
+    """
+    return torch.load(path, map_location="cpu", weights_only=True)
+
+
 def build_model(args) -> nn.Module:
     """Seed, build BlockViTv2(spectral_norm=False), swap the reduction per arm.
 
@@ -146,7 +179,51 @@ def build_model(args) -> nn.Module:
         model.spectral_reduce = MLPSpectralReduction(
             in_channels=IN_CHANNELS, num_spectral=NUM_SPECTRAL,
             hidden=512, reduce_dim=64)
+    elif args.arm in PRETRAINED_ARMS:
+        # Same construction as joint_mlp (identical RNG draw -> identical phi
+        # init at equal seed), then the random init is overwritten in place.
+        model.spectral_reduce = MLPSpectralReduction(
+            in_channels=IN_CHANNELS, num_spectral=NUM_SPECTRAL,
+            hidden=512, reduce_dim=64)
+        ck = load_pretrained_ckpt(args.pretrained_path)
+        model.spectral_reduce.load_state_dict(ck["state_dict"], strict=True)
     return model
+
+
+def resolve_pretrained(args) -> dict:
+    """Locate the per-seed pretrained spectral MLP (pretrained arms only).
+
+    Sets args.pretrained_path (default: PRETRAINED_DIR/spectral_mlp_f{fold}_s{seed}.pt)
+    and returns the checkpoint's provenance for config.json. For all other
+    arms returns empty provenance and leaves args.pretrained_path = None.
+    """
+    meta = dict(pretrained_path=None, pretrained_pixel_val_f1=None,
+                pretrained_epoch=None, pretrained_seed=None)
+    if args.arm not in PRETRAINED_ARMS:
+        if args.pretrained_path is not None:
+            print(f"[warn] --pretrained_path ignored for arm {args.arm}", flush=True)
+            args.pretrained_path = None
+        return meta
+    explicit = args.pretrained_path is not None
+    if not explicit:
+        args.pretrained_path = str(
+            PRETRAINED_DIR / f"spectral_mlp_f{args.fold}_s{args.seed}.pt")
+    p = Path(args.pretrained_path)
+    if not p.exists():
+        raise SystemExit(f"missing pretrained spectral MLP: {p} "
+                         f"(run code/experiments/pretrain_spectral_mlp.py)")
+    ck = load_pretrained_ckpt(p)
+    if int(ck.get("seed", -1)) != args.seed:
+        msg = (f"pretrained seed {ck.get('seed')} != run seed {args.seed} ({p})")
+        if explicit:
+            print(f"[warn] {msg}", flush=True)
+        else:
+            raise SystemExit(msg)
+    meta.update(pretrained_path=str(p),
+                pretrained_pixel_val_f1=float(ck["pixel_val_f1"]),
+                pretrained_epoch=int(ck["epoch"]),
+                pretrained_seed=int(ck["seed"]))
+    return meta
 
 
 def split_param_groups(model: nn.Module, arm: str):
@@ -165,7 +242,7 @@ def split_param_groups(model: nn.Module, arm: str):
             # theta = the linear map only; the post-projection BatchNorm2d
             # (spectral_reduce.norm) is normalization, not the map -> phi.
             (theta if name.startswith("spectral_reduce.proj") else phi).append(p)
-        elif arm == "joint_mlp":
+        elif arm in ("joint_mlp", "finetune_real"):
             (theta if in_sr else phi).append(p)
         elif arm in ("frozen_random", "frozen_pca"):
             if name.startswith("spectral_reduce.proj"):
@@ -175,15 +252,38 @@ def split_param_groups(model: nn.Module, arm: str):
                 frozen_extra.append(p)   # e.g. spectral_reduce.norm (BN2d)
             else:
                 phi.append(p)
+        elif arm == "frozen_pretrained":
+            # theta = the whole MLP (as in joint_mlp); frozen (as in
+            # frozen_random): out of the optimizer, counterfactual grads
+            # logged, zeroed manually. The MLP has no BN, so nothing else
+            # lands in frozen_extra.
+            if in_sr:
+                theta.append(p)
+                frozen_extra.append(p)
+            else:
+                phi.append(p)
         else:
             raise ValueError(f"unknown arm {arm}")
     return theta, phi, frozen_extra
 
 
+def base_lr(args) -> float:
+    return 1e-4 if args.optimizer == "adamw" else 1e-2
+
+
 def build_optimizer(args, theta, phi, arm):
     groups = []
-    if arm in ("joint_linear", "joint_mlp"):
-        groups.append({"params": theta, "weight_decay": 0.0})   # non-negotiable
+    if arm in TRAINABLE_THETA_ARMS:
+        g = {"params": theta, "weight_decay": 0.0}   # non-negotiable
+        if args.spectral_lr_mult != 1.0:
+            # theta-only lr; phi's group keeps the optimizer default. The key
+            # is added ONLY for a non-unit multiplier so the mult=1.0 groups
+            # are exactly the pre-E3c-local dicts.
+            g["lr"] = base_lr(args) * args.spectral_lr_mult
+        groups.append(g)
+    elif args.spectral_lr_mult != 1.0:
+        print(f"[warn] --spectral_lr_mult={args.spectral_lr_mult} has no effect "
+              f"for frozen arm {arm} (theta is not in the optimizer)", flush=True)
     groups.append({"params": phi, "weight_decay": 0.01})
     if args.optimizer == "adamw":
         return torch.optim.AdamW(groups, lr=1e-4)
@@ -339,9 +439,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", required=True,
                     choices=["joint_linear", "frozen_random", "frozen_pca",
-                             "joint_mlp"])
+                             "joint_mlp", "frozen_pretrained", "finetune_real"])
     ap.add_argument("--width", type=int, default=192)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--spectral_lr_mult", type=float, default=1.0,
+                    help="multiplies the THETA group's lr (joint_linear / "
+                         "joint_mlp / finetune_real only); phi lr untouched")
+    ap.add_argument("--pretrained_path", default=None,
+                    help="pretrained arms: override the per-seed default "
+                         "experiments_shortcut/pretrained/spectral_mlp_f{fold}_s{seed}.pt")
+    ap.add_argument("--run_label", default=None,
+                    help="output-dir token in place of the arm name "
+                         "(e.g. joint_speclr0.1); default = arm")
     ap.add_argument("--data_dir", default="/mnt/hdd2/u37314kd/data_breast_v2_pca23")
     ap.add_argument("--dataset_name", default="breast")
     ap.add_argument("--fold", type=int, default=0)
@@ -360,9 +469,13 @@ def main():
     if args.width % NUM_HEADS != 0:
         raise SystemExit(f"width {args.width} not divisible by num_heads {NUM_HEADS}")
     device = torch.device(args.device)
+    if args.spectral_lr_mult <= 0:
+        raise SystemExit(f"--spectral_lr_mult must be > 0, got {args.spectral_lr_mult}")
+    pretrained_meta = resolve_pretrained(args)
 
+    label = args.run_label or args.arm
     out_dir = (Path(args.out_root) / f"{args.dataset_name}_f{args.fold}"
-               / f"{args.arm}_h{args.width}_{args.optimizer}_s{args.seed}")
+               / f"{label}_h{args.width}_{args.optimizer}_s{args.seed}")
     out_dir.mkdir(parents=True, exist_ok=True)
     steps_csv = out_dir / "steps.csv"
     epochs_csv = out_dir / "epochs.csv"
@@ -446,6 +559,13 @@ def main():
         num_spectral=NUM_SPECTRAL, spatial_size=SPATIAL,
         lr=1e-4 if args.optimizer == "adamw" else 1e-2,
         weight_decay_phi=0.01, weight_decay_theta=0.0,
+        # E3c-local provenance: theta lr actually used (None when theta is
+        # frozen), the multiplier, and the pretrained encoder (if any).
+        spectral_lr_mult=args.spectral_lr_mult,
+        spectral_lr=(base_lr(args) * args.spectral_lr_mult
+                     if args.arm in TRAINABLE_THETA_ARMS else None),
+        run_label=label,
+        **pretrained_meta,
         theta0_norm=theta0_norm, phi0_norm=phi0_norm, Z0_fro_norm=Z0_norm,
         torch_version=torch.__version__,
         device_name=(torch.cuda.get_device_name(0)
@@ -455,6 +575,12 @@ def main():
     (out_dir / "config.json").write_text(json.dumps(config, indent=2))
     print(f"[cfg] arm={args.arm} h={args.width} {args.optimizer} seed={args.seed} "
           f"| C_f={C_f:,} C_g={C_g:,} total={C_total:,} -> {out_dir}", flush=True)
+    if args.spectral_lr_mult != 1.0 or pretrained_meta["pretrained_path"]:
+        print(f"[cfg] spectral_lr_mult={args.spectral_lr_mult} "
+              f"spectral_lr={config['spectral_lr']} "
+              f"pretrained={pretrained_meta['pretrained_path']} "
+              f"(pixel_val_f1={pretrained_meta['pretrained_pixel_val_f1']})",
+              flush=True)
 
     step_fields = ["step", "epoch", "loss", "n_valid_px",
                    "grad_theta_norm", "grad_phi_norm", "egr", "r_rms"]
