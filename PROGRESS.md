@@ -1681,3 +1681,36 @@ ViT sweep:
 - Astra (senior-reviewer model, Codex, has workspace access) briefing
   dossier being assembled by workflow wf_29fa56cd with fact-check; will add
   a workspace directory map since Astra can read files directly.
+
+## 2026-09-09 (Astra round 1 verified) — five blockers checked against code
+
+- Astra (GPT-6 Astra via Codex, workspace access) review_01: weak-reject
+  assessment, 5 blockers + 6 majors. Five Opus verifiers (wf_4af2be2b):
+  B1 CONFIRMED: BlockViT-v2 seg_head = Conv(M+K->96)-BN-ReLU-Conv(96->48)
+     -BN-ReLU-Conv(48->4); final classifier input 432 at EVERY width ->
+     Thm 1 / lem:phi_scaling / prop:ntk_classprior head hypothesis is
+     structurally unmet by the production model (same head in exp1_8 and
+     E3c). Four Section-8 sentences unsupported. Not a contradiction of
+     the theorem (lower bound simply does not apply); measured lam_phi
+     slope 0.38 breast / 0.45 prostate.
+  B2 PARTIAL: contrast direction orthogonalized against v1 (15-24% of
+     squared norm stripped, undisclosed); 0.954 is a subspace-projection
+     norm; eff rank 1.21 post-BN vs 1.07 raw. REFUTED part: v1 IS the mean
+     direction (|cos| 0.9956-0.9986 post-BN, >0.99998 raw).
+  B3/M1 CONFIRMED: 'SGD' = momentum 0.9 + phi wd 0.01 + clip 1.0 over
+     optimizer params only (theta+phi joint vs phi-only frozen) — binds
+     73-89% of steps; logged norms pre-clip; reduction BN affine (128 p)
+     trained in joint, frozen in frozen arms. final.pt exists 38/39.
+  B5 CONFIRMED: thm2_bound proxy (step-index mu, p99 gain, smoothed
+     residual, no 1/eta); corrected ratios AdamW 17-47x, SGD 450-1900x
+     (still uninformative; still not a certified instantiation).
+  B4/M3 CONFIRMED + worse: E3c has NO test set and never saved best
+     checkpoints; val_f1_best = post-hoc max over 60 evals on the 28-core
+     val split. Paired 90% CIs reproduce Astra's table exactly.
+- Dossier fact-check (Opus): 10 wrong values + ~8 overclaims fixed in
+  ASTRA_BRIEF (incl. my own 'metric-robust' and 'positive control passes').
+- Launched: Section 8 correction edit + claude_reply_01.md (Opus, checked).
+  Math thread brief (P1-P5 target theorems) sent to Astra.
+- GPU queue after arms workflow: full-contrast curvature rerun; BN
+  recalibration on final.pt; matched-hygiene runs (BN-affine identical,
+  save best ckpt, log clip coef + applied update norms) per Astra P2.
