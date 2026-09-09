@@ -143,6 +143,23 @@ def main():
     ap.add_argument("--n_probes", type=int, default=20)
     ap.add_argument("--restricted_seeds", type=int, nargs="+", default=[0, 1],
                     help="seeds on which to run the 64-matvec restricted blocks")
+    # ---- reviewer B2: full-contrast directional curvature (default OFF) ----
+    # With --full_contrast_directions absent, every line below is inert and the
+    # _spectra.csv / _summary.csv outputs are bit-identical to the original.
+    ap.add_argument("--full_contrast_directions", action="store_true",
+                    help="ALSO measure restricted curvature along the "
+                         "un-orthogonalized unit contrast d and the post-BN "
+                         "empirical mean-spectrum direction (v1 and d_perp are "
+                         "measured already), plus the pairwise |cos| overlap "
+                         "matrix among {d, d_perp, mean, v1}; one row per "
+                         "(seed, batch, class pair) -> --directions_csv.")
+    ap.add_argument("--directions_only", action="store_true",
+                    help="with --full_contrast_directions: skip the theta/phi "
+                         "Lanczos spectra and Hutchinson traces and write ONLY "
+                         "the directions CSV (the spectra are already archived; "
+                         "this cuts ~255 s/row of redundant work).")
+    ap.add_argument("--directions_csv", default=str(
+        THEORY_ROOT / "results" / "exp1_8b_directions.csv"))
     ap.add_argument("--spatial_size", type=int, default=336)
     ap.add_argument("--reduce_dim", type=int, default=64)
     ap.add_argument("--num_spectral", type=int, default=314)
@@ -155,9 +172,12 @@ def main():
     ap.add_argument("--out_prefix", default=str(THEORY_ROOT / "results" / "exp1_8b"))
     args = ap.parse_args()
 
+    if args.directions_only and not args.full_contrast_directions:
+        raise SystemExit("--directions_only requires --full_contrast_directions")
+
     batches, sigma_stats = load_real_batches(args)
 
-    spec_rows, sum_rows = [], []
+    spec_rows, sum_rows, dir_rows = [], [], []
     prefix = Path(args.out_prefix)
     prefix.parent.mkdir(parents=True, exist_ok=True)
     PAIRS = [(0, 2), (0, 1), (1, 2), (3, 2)]
@@ -177,35 +197,37 @@ def main():
 
             # ---- theta block: top-k spectrum + vectors + trace ----
             op_t = GGNBlockOperator(model, X, Y, theta)
-            vals_t, vecs_t, info_t = lanczos_topk(
-                op_t, m=args.m_theta, k=args.k_theta, seed=seed, n_vectors=3)
-            tr_t, tr_t_se = op_t.hutchinson_trace(args.n_probes, seed=seed)
-
-            # alignment of top eigenvectors with data directions
             aligns = {}
-            ofs = 0
-            sl = None
-            for p in op_t.params:
-                if p is proj_weight:
-                    sl = (ofs, ofs + p.numel())
-                ofs += p.numel()
-            for i in range(vecs_t.shape[0]):
-                Vfull = vecs_t[i]
-                Vp = Vfull[sl[0]: sl[1]].reshape(K, -1)      # (K, C*S)
-                frac_proj = float((Vp.norm() / Vfull.norm()).item()) ** 2
-                for j in range(dvecs.shape[0]):
-                    a = float((Vp @ dvecs[j]).norm().item() / max(Vp.norm().item(), 1e-30))
-                    aligns[f"align_v{i+1}_data{j+1}"] = a
-                aligns[f"projfrac_v{i+1}"] = frac_proj
+            if not args.directions_only:
+                vals_t, vecs_t, info_t = lanczos_topk(
+                    op_t, m=args.m_theta, k=args.k_theta, seed=seed, n_vectors=3)
+                tr_t, tr_t_se = op_t.hutchinson_trace(args.n_probes, seed=seed)
 
-            # ---- phi block: top-k spectrum ----
-            op_p = GGNBlockOperator(model, X, Y, phi)
-            vals_p, _, info_p = lanczos_topk(
-                op_p, m=args.m_phi, k=args.k_phi, seed=seed, n_vectors=0)
-            tr_p, tr_p_se = op_p.hutchinson_trace(args.n_probes, seed=seed)
+                # alignment of top eigenvectors with data directions
+                ofs = 0
+                sl = None
+                for p in op_t.params:
+                    if p is proj_weight:
+                        sl = (ofs, ofs + p.numel())
+                    ofs += p.numel()
+                for i in range(vecs_t.shape[0]):
+                    Vfull = vecs_t[i]
+                    Vp = Vfull[sl[0]: sl[1]].reshape(K, -1)      # (K, C*S)
+                    frac_proj = float((Vp.norm() / Vfull.norm()).item()) ** 2
+                    for j in range(dvecs.shape[0]):
+                        a = float((Vp @ dvecs[j]).norm().item() / max(Vp.norm().item(), 1e-30))
+                        aligns[f"align_v{i+1}_data{j+1}"] = a
+                    aligns[f"projfrac_v{i+1}"] = frac_proj
+
+                # ---- phi block: top-k spectrum ----
+                op_p = GGNBlockOperator(model, X, Y, phi)
+                vals_p, _, info_p = lanczos_topk(
+                    op_p, m=args.m_phi, k=args.k_phi, seed=seed, n_vectors=0)
+                tr_p, tr_p_se = op_p.hutchinson_trace(args.n_probes, seed=seed)
 
             # ---- restricted blocks: curvature along chosen input directions
             restricted = {}
+            perp_cache = {}
             if seed in args.restricted_seeds:
                 restricted["lam_along_vdata"] = restricted_block_lambda_max(
                     op_t, proj_weight, dvecs[0], K)
@@ -217,6 +239,73 @@ def main():
                     key = f"{CLASS_NAMES[a]}-{CLASS_NAMES[b]}"
                     restricted[f"lam_contrast_{key}"] = lam
                     restricted[f"overlap_{key}_vdata"] = overlap
+                    perp_cache[(a, b)] = (d_perp, lam)
+
+            # ---- reviewer B2: full-contrast directional curvature ----------
+            # v1 (= lam_along_vdata) and d_perp (= lam_contrast_*) are already
+            # measured above; the two NEW blocks are the un-orthogonalized
+            # contrast d and the post-BN empirical mean-spectrum direction.
+            if args.full_contrast_directions and seed in args.restricted_seeds:
+                v1 = dvecs[0]
+                m_raw = xv.mean(0)                     # post-BN mean spectrum
+                m_norm = float(m_raw.norm().item())
+                mean_dir = m_raw / m_raw.norm()
+                lam_mean = restricted_block_lambda_max(
+                    op_t, proj_weight, mean_dir, K)
+                lam_v1 = restricted["lam_along_vdata"]
+                base = dict(
+                    dataset=args.dataset_name, fold=args.fold, width=args.width,
+                    seed=seed, batch=bi, n_valid_px=n_valid,
+                    lam_v1=lam_v1, lam_mean=lam_mean,
+                    ratio_v1_over_mean=lam_v1 / lam_mean if lam_mean > 0 else float("nan"),
+                    cos_mean_v1=float((mean_dir @ v1).abs().item()),
+                    mean_spec_norm=m_norm,
+                    lam1_data=float(dvals[0]), conc_data=float(dvals[0]) / dtr,
+                    class_counts=json.dumps(
+                        {CLASS_NAMES[c]: n for c, n in counts.items()}),
+                )
+                if not contrasts:
+                    # No class pair in this batch clears the 100-px floor, so
+                    # d / d_perp do not exist here; v1 and mean still do.
+                    dir_rows.append(dict(
+                        base, pair="none", n_a="", n_b="",
+                        lam_d_full=float("nan"), lam_d_perp=float("nan"),
+                        ratio_v1_over_dfull=float("nan"),
+                        ratio_v1_over_dperp=float("nan"),
+                        cos_d_v1=float("nan"), cos_d_mean=float("nan"),
+                        cos_d_dperp=float("nan"), cos_dperp_v1=float("nan"),
+                        cos_dperp_mean=float("nan"),
+                        secs=time.time() - t0))
+                for (a, b), d in contrasts.items():
+                    d_perp, lam_perp = perp_cache[(a, b)]
+                    lam_full = restricted_block_lambda_max(
+                        op_t, proj_weight, d, K)
+                    dir_rows.append(dict(
+                        base, pair=f"{CLASS_NAMES[a]}-{CLASS_NAMES[b]}",
+                        n_a=counts.get(a, 0), n_b=counts.get(b, 0),
+                        lam_d_full=lam_full, lam_d_perp=lam_perp,
+                        ratio_v1_over_dfull=lam_v1 / lam_full if lam_full > 0 else float("nan"),
+                        ratio_v1_over_dperp=lam_v1 / lam_perp if lam_perp > 0 else float("nan"),
+                        cos_d_v1=float((d @ v1).abs().item()),
+                        cos_d_mean=float((d @ mean_dir).abs().item()),
+                        cos_d_dperp=float((d @ d_perp).abs().item()),
+                        cos_dperp_v1=float((d_perp @ v1).abs().item()),
+                        cos_dperp_mean=float((d_perp @ mean_dir).abs().item()),
+                        secs=time.time() - t0))
+                pd.DataFrame(dir_rows).to_csv(args.directions_csv, index=False)
+                for r in dir_rows[-max(1, len(contrasts)):]:
+                    print(f"[dir] seed={seed} b={bi} pair={r['pair']} | "
+                          f"lam_v1={r['lam_v1']:.4e} d_full={r['lam_d_full']:.4e} "
+                          f"d_perp={r['lam_d_perp']:.4e} mean={r['lam_mean']:.4e} | "
+                          f"v1/d_full={r['ratio_v1_over_dfull']:.1f} "
+                          f"v1/d_perp={r['ratio_v1_over_dperp']:.1f} "
+                          f"v1/mean={r['ratio_v1_over_mean']:.3f} | "
+                          f"cos(d,v1)={r['cos_d_v1']:.3f} "
+                          f"cos(mean,v1)={r['cos_mean_v1']:.3f} "
+                          f"cos(dperp,v1)={r['cos_dperp_v1']:.1e}", flush=True)
+
+            if args.directions_only:
+                continue
 
             for r, v in enumerate(vals_t.tolist()):
                 spec_rows.append(dict(dataset=args.dataset_name, block="theta",
@@ -258,6 +347,33 @@ def main():
 
         del model
         torch.cuda.empty_cache()
+
+    # ---------------- directional summary (reviewer B2) ----------------
+    if args.full_contrast_directions:
+        dd = pd.DataFrame(dir_rows)
+        dd.to_csv(args.directions_csv, index=False)
+        show = ["seed", "batch", "pair", "lam_v1", "lam_d_full", "lam_d_perp",
+                "lam_mean", "ratio_v1_over_dfull", "ratio_v1_over_dperp",
+                "ratio_v1_over_mean"]
+        print("\n" + "=" * 100)
+        print("RESTRICTED CURVATURE max_u R(u (x) w) BY INPUT DIRECTION w")
+        print("=" * 100)
+        print(dd[show].to_string(index=False,
+                                 float_format=lambda v: f"{v:.4g}"))
+        print("\n|cos| overlap matrix among {d, d_perp, mean, v1} (per row)")
+        print(dd[["seed", "batch", "pair", "cos_d_v1", "cos_d_mean",
+                  "cos_d_dperp", "cos_dperp_v1", "cos_dperp_mean",
+                  "cos_mean_v1"]].to_string(
+                      index=False, float_format=lambda v: f"{v:.4g}"))
+        fin = dd.dropna(subset=["lam_d_full"])
+        if len(fin):
+            print("\nmean ratios over rows with a contrast: "
+                  f"v1/d_full={fin['ratio_v1_over_dfull'].mean():.1f}  "
+                  f"v1/d_perp={fin['ratio_v1_over_dperp'].mean():.1f}  "
+                  f"v1/mean={dd['ratio_v1_over_mean'].mean():.4f}")
+        print(f"[write] {args.directions_csv}")
+        if args.directions_only:
+            return
 
     # ---------------- aggregate summary ----------------
     df = pd.DataFrame(sum_rows)
