@@ -1714,3 +1714,26 @@ ViT sweep:
 - GPU queue after arms workflow: full-contrast curvature rerun; BN
   recalibration on final.pt; matched-hygiene runs (BN-affine identical,
   save best ckpt, log clip coef + applied update norms) per Astra P2.
+
+## 2026-09-09 (local arms landed) — commit e3f029d, verified; three ops findings
+
+- New arms in exp1_7_train.py: frozen_pretrained, finetune_real (theta wd=0),
+  --spectral_lr_mult; lane tokens joint_speclr<M>, finetune_speclr<M>,
+  mlp_speclr<M>. Pretrained E3c MLP encoders (fold-0 train pixels, val-
+  selected): pixel val macro-F1 0.662 / 0.709 / 0.689 (seeds 0/1/2).
+- Smoke (2 ep, h48, full split): frozen_pretrained theta disp = 0 exactly
+  (counterfactual grads still logged, EGR 0.069); finetune_real disp 0.618
+  > 0; speclr0.1 = 0.122x of joint_linear, speclr10 = 6.49x (clip 1.0 over
+  theta+phi caps the 10x — expected, not a bug). analyze_e3c byte-identical
+  on the 39 existing runs.
+- OPS FINDINGS: (1) run_lane.sh's `rm -rf "$DIR"` deleted
+  experiments_shortcut/e3c/breast_f0/joint_linear_h192_adamw_s0/final.pt
+  (+ its log) during a dry-run; tracked CSVs restored byte-identical; the
+  checkpoint is gone (gitignored). ADD A GUARD before any further use.
+  (2) Torch 2.9.1 weights_only default rejected the stored TorchVersion
+  object — fixed (str + explicit weights_only=True). (3) exp1_7_train.py
+  sets train_ds.augment=True (flip/rot90) after the probe batch, despite
+  the protocol comment — shared by ALL arms; document in methods.
+  (4) nohup-from-wrapper orphans: a previous launch left a 57 GB orphan
+  process; killed. Never launch training via nohup from an agent shell.
+- Each process: ~56 GB RSS, ~12 min data load, 27-47 s/epoch at h48.
