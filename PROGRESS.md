@@ -1737,3 +1737,36 @@ ViT sweep:
   (4) nohup-from-wrapper orphans: a previous launch left a 57 GB orphan
   process; killed. Never launch training via nohup from an agent shell.
 - Each process: ~56 GB RSS, ~12 min data load, 27-47 s/epoch at h48.
+
+## 2026-09-09 (evening) — lane launched; Astra math_01 received; audits running
+
+- Matched-hygiene runner v2 committed (8d5b9b1): --save_best, per-step
+  clip_coef + applied upd_theta/phi norms, --bn_affine_mode, --clip_scope,
+  --lr_schedule cosine; '_m' lane tokens. run_lane.sh: speclr _m tokens +
+  delete-guard (3900471). Default path behaviorally unchanged (residual
+  1e-4 diffs = pre-existing GPU nondeterminism, shown by HEAD control).
+- LANE laneM48 launched 18:1x: 21 runs, seed-major, h48 AdamW:
+  {frozen_random_m, joint_linear_m, finetune_real_m, frozen_pretrained_m,
+  joint_speclr0.1_m, joint_speclr10_m, joint_cos_m} x seeds {0,1,2}.
+  ~16-18 h. Answers Astra P2 + pre-registered P1 under a matched protocol
+  (identical BN-affine, phi-only clipping, saved best-val checkpoints).
+- Astra math_01.md received: P4 discrete lemmas PROVED (eta factor,
+  momentum 1/(1-beta), clipping via a_k, Adam 1/zeta constant); P1
+  corrected (PL insufficient — counterexample; alpha-monotone Thm 1.1;
+  fixed-kernel Thm 1.3 O(a/kappa) bridge; Cor 1.5 fully proved shallow
+  instance kappa ~ M); P3 Lemma 3.1 + Thm 3.2 (positive-probability
+  width-linear floor through fixed-size ReLU bottleneck) + Counterexample
+  3.4 (train-mode BN after the Theta(M) layer KILLS the witness — the
+  production decoder's exact layout); P2 refuted as proposed (needs
+  residual-excitation; my one-sided GGN inequality was false for CE);
+  P5 Theorem 5.1: exactly solvable serial CE model with D_curv(0)=M,
+  mu=(M+1)/4, O(1/M) spectral suppression at matched fit, O(1/M)
+  joint-vs-frozen logit gap, and Thm 27's bound analytically informative
+  (bound/displacement 4.5-6.3). Caveat: mechanism = replication-induced
+  effective LR (1/sqrt(M) readout control kills it); novelty vs Yun/
+  Moroshko/Berthier unestablished.
+- Workflow wf_632183cf: 3 Fable proof audits + 3 Opus numerics (toy
+  serial CE; interior witness + BN counterexample; PRODUCTION seg_head[0]
+  block train- vs eval-mode BN) -> claude_math_reply_01.md draft.
+- Workflow wf_e996f8be resumed: BN-recal on 17 ckpts + full-contrast
+  directions + hygiene skeptic.
