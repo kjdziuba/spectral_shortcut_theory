@@ -42,6 +42,10 @@ for cfg in "$@"; do
   case "$TOKEN" in
     # joint_cos_m must precede the generic *_m branch (it also ends in _m).
     joint_cos_m)      ARM=joint_linear;   EXTRA=("${MATCHED[@]}" --lr_schedule cosine --run_label "$TOKEN") ;;
+    joint_speclr*_m)  ARM=joint_linear;   MULT=${TOKEN#joint_speclr}; MULT=${MULT%_m}
+                      EXTRA=("${MATCHED[@]}" --spectral_lr_mult "$MULT" --run_label "$TOKEN") ;;
+    finetune_speclr*_m) ARM=finetune_real; MULT=${TOKEN#finetune_speclr}; MULT=${MULT%_m}
+                      EXTRA=("${MATCHED[@]}" --spectral_lr_mult "$MULT" --run_label "$TOKEN") ;;
     *_m)              ARM=${TOKEN%_m};    EXTRA=("${MATCHED[@]}" --run_label "$TOKEN") ;;
     joint_speclr*)    ARM=joint_linear;  EXTRA=(--spectral_lr_mult "${TOKEN#joint_speclr}"    --run_label "$TOKEN") ;;
     finetune_speclr*) ARM=finetune_real; EXTRA=(--spectral_lr_mult "${TOKEN#finetune_speclr}" --run_label "$TOKEN") ;;
@@ -49,6 +53,10 @@ for cfg in "$@"; do
     *)                ARM=$TOKEN ;;
   esac
   DIR=$BASE/breast_f0/${TOKEN}_h${W}_${OPT}_s${SEED}
+  # Guard (2026-09-09): never delete a finished run unless FORCE=1.
+  if [[ -s "$DIR/epochs.csv" && "${FORCE:-0}" != "1" ]]; then
+    echo "[$LANE] SKIP  $cfg (run dir exists with epochs.csv; set FORCE=1 to overwrite) $(date +%H:%M:%S)"; continue
+  fi
   rm -rf "$DIR"
   echo "[$LANE] START $cfg $(date +%H:%M:%S)"
   python code/experiments/exp1_7_train.py --arm "$ARM" --width "$W" --seed "$SEED" \
