@@ -1,0 +1,67 @@
+\section{Model, task, and what counts as failure}
+\label{sec:model}
+
+\paragraph{Serial spectral--spatial model.}
+An input is an image whose pixel $p$ carries a spectrum $x_p\in\R^S$ and a
+label $y_p\in\{-1,+1\}$. A spectral encoder $f_\thetap:\R^S\to\R^K$ acts on
+each pixel separately, and a spatial model $g_\phip$ of width $M$ reads the
+encoded neighbourhood of $p$ to produce a logit $F_p$. The encoder is
+linear, $f_\thetap(x)=Wx$ with $W\in\R^{K\times S}$, in the theorem and in
+the experiments; the spatial model is a replicated readout in the theorem
+and a ReLU convolutional head in the experiments. Training minimizes the
+mean margin loss $\loss=\frac1N\sum_p\log(1+e^{-y_pF_p})$ by gradient flow
+or plain gradient descent with one learning rate for every parameter, so
+that any difference in training speed between the two modules comes from
+the model, not from the optimizer.
+
+\paragraph{Two cues.}
+The training distribution carries the label in two places. The
+\emph{spectral cue} lies in the pixel's own spectrum along a direction the
+encoder must discover: a randomly initialized encoder attenuates it. The
+\emph{contextual cue} lies in the neighbourhood along directions of large
+amplitude: a randomly initialized encoder passes it, so a trained readout
+can use it at once. Both cues are calibrated to carry the same information
+about the label (equal oracle accuracy), so the model's preference cannot
+be attributed to one cue being more predictive. In the theorem this is the
+pair $(a_0,v_0)$: the initial spectral coefficient is small relative to
+the margin, the contextual coefficient is of order one. In the experiments
+it is a measured readiness asymmetry (Section~\ref{sec:synthetic}).
+
+\paragraph{Matched fit, spectral learning, reliance, failure.}
+We compare models at their first attainment of a prespecified
+training-fit threshold: a common margin in the solvable model and mean
+training loss in the experiments. Spectral learning means adaptation of
+the designated spectral coefficient in the theorem and increased
+independently measured linear accessibility of the centre's spectral cue
+in the experiments. We measure contextual reliance by changing the
+assigned neighbourhood signal while preserving the centre and its label,
+and recording the resulting change in predictions or risk. We call that
+reliance a failure when the shifted risk exceeds that of a separately
+trained spectral-only comparator at the same fitting threshold. The
+theorem supplies an exact reversal failure; the noisy experiments measure
+the corresponding risk difference without assuming a zero-error reference.
+This definition separates a model's use of context from harm caused by
+that use, and separates information available in an encoder from
+information used by its trained head.
+
+\paragraph{Three test conditions.}
+Every evaluation set is generated three ways from the same centre pixels,
+labels and noise: \emph{iid} (context agrees with the label as in
+training), \emph{reversed} (the neighbourhood carries the opposite label),
+and \emph{context-random} (the neighbourhood carries an independent label,
+so context is present but uninformative). Accuracy under reversal
+measures reliance; accuracy under context-random measures what the model
+can do from the spectrum alone in the presence of context.
+
+\begin{figure}[t]
+\centering
+\IfFileExists{figures/fig1_model.pdf}{\includegraphics[width=0.92\linewidth]{figures/fig1_model.pdf}}{\fbox{\rule{0pt}{1.6in}\rule{0.97\linewidth}{0pt}}}
+\caption{The serial model and the two cues. Each pixel's spectrum passes
+through the shared encoder; the spatial model reads the encoded $3\times3$
+neighbourhood. The spectral cue (own pixel, small amplitude along an
+unknown direction) requires encoder alignment; the contextual cue
+(neighbours, large amplitude along directions the random encoder already
+passes) does not. Evaluation under iid, reversed and context-random
+neighbourhoods measures reliance and failure.}
+\label{fig:model}
+\end{figure}

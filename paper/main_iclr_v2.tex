@@ -1,0 +1,92 @@
+\documentclass{article}
+\usepackage{iclr2027_conference,times}
+% v2 (refocused paper, 2026-09-10): one theorem, three experiments.
+% v1 = main_iclr.tex (frozen at git tag iclr-v1-2026-09-10).
+% NOTE: math_commands.tex from the template is NOT loaded (its \E and \R
+% clash with the paper's macros).
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsthm, mathtools}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{url}
+
+% --- Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{proposition}{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+% --- Custom macros (identical to main.tex / main_iclr.tex)
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\inner}[2]{\left\langle#1,#2\right\rangle}
+\newcommand{\loss}{\mathcal{L}}
+\newcommand{\thetap}{{\boldsymbol{\theta}}}
+\newcommand{\phip}{{\boldsymbol{\phi}}}
+\newcommand{\EGR}{\mathrm{EGR}}
+\newcommand{\Cg}{C_g}
+\newcommand{\Cf}{C_f}
+\newcommand{\Dcurv}{\mathcal{D}_{\mathrm{curv}}}
+
+\title{The Spectral Shortcut: How a Fast Contextual Pathway Suppresses
+Spectral Learning in Serial Spectral--Spatial Models}
+
+% Anonymous submission: authors hidden while \iclrfinalcopy is commented out.
+\author{Anonymous authors\\
+Paper under double-blind review}
+
+%\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\IfFileExists{sections_iclr_v2/00_abstract.tex}{\input{sections_iclr_v2/00_abstract}}{\emph{[Abstract: written after Experiments 2 and 3 report.]}}
+\end{abstract}
+
+\IfFileExists{sections_iclr_v2/01_intro.tex}{\input{sections_iclr_v2/01_intro}}{\section{Introduction}\label{sec:intro}\emph{[Pending.]}}
+\input{sections_iclr_v2/02_model}
+\input{sections_iclr_v2/03_theorem}
+\IfFileExists{sections_iclr_v2/04_synthetic.tex}{\input{sections_iclr_v2/04_synthetic}}{\section{Exact-model check and synthetic intervention}\label{sec:synthetic}\emph{[Pending: Experiment 2.]}}
+\IfFileExists{sections_iclr_v2/05_real.tex}{\input{sections_iclr_v2/05_real}}{\section{Real centre spectra with constructed context}\label{sec:real}\emph{[Pending: Experiment 3.]}}
+\IfFileExists{sections_iclr_v2/06_limitations.tex}{\input{sections_iclr_v2/06_limitations}}{\section{Limitations and conclusion}\label{sec:limitations}\emph{[Pending.]}}
+
+\subsubsection*{AI use statement}
+\IfFileExists{sections_iclr_v2/statement_ai.tex}{\input{sections_iclr_v2/statement_ai}}{\emph{[AI use statement: to be inserted.]}}
+
+\subsubsection*{Reproducibility statement}
+\IfFileExists{sections_iclr_v2/statement_repro.tex}{\input{sections_iclr_v2/statement_repro}}{\emph{[Reproducibility statement: to be inserted.]}}
+
+\bibliography{references}
+\bibliographystyle{iclr2027_conference}
+
+\appendix
+\makeatletter
+\setcounter{theorem}{0}\renewcommand{\thetheorem}{\Alph{section}.\arabic{theorem}}\@addtoreset{theorem}{section}
+\setcounter{lemma}{0}\renewcommand{\thelemma}{\Alph{section}.\arabic{lemma}}\@addtoreset{lemma}{section}
+\setcounter{corollary}{0}\renewcommand{\thecorollary}{\Alph{section}.\arabic{corollary}}\@addtoreset{corollary}{section}
+\setcounter{proposition}{0}\renewcommand{\theproposition}{\Alph{section}.\arabic{proposition}}\@addtoreset{proposition}{section}
+\setcounter{definition}{0}\renewcommand{\thedefinition}{\Alph{section}.\arabic{definition}}\@addtoreset{definition}{section}
+\setcounter{assumption}{0}\renewcommand{\theassumption}{\Alph{section}.\arabic{assumption}}\@addtoreset{assumption}{section}
+\setcounter{remark}{0}\renewcommand{\theremark}{\Alph{section}.\arabic{remark}}\@addtoreset{remark}{section}
+\makeatother
+\IfFileExists{sections_iclr_v2/appendix.tex}{\input{sections_iclr_v2/appendix}}{%
+\section{Proofs}\label{app:proofs}\emph{[Appendix A: proofs of Theorem~\ref{thm:serial}, pending.]}
+\section{Exact-model verification}\label{app:verification}\emph{[Pending.]}
+\section{Experiment 2 details}\label{app:exp2}\emph{[Pending.]}
+\section{Experiment 3 details}\label{app:exp3}\emph{[Pending.]}
+\section{Scope limitations from the production model}\label{app:scope}\emph{[Pending.]}}
+
+\end{document}
