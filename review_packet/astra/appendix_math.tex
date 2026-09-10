@@ -1,0 +1,1785 @@
+% Mathematics appendix, Astra, 2026-09-10.
+% Integration: input AFTER \appendix. Requires the macros/environments and
+% amsmath,amssymb,amsthm,mathtools,natbib of paper/main.tex.
+% All local labels use astra_ to avoid collisions. Main-text cor:attribution
+% should state the sharp result proved in Corollary cor:astra_attribution.
+% Do not input the old and new proofs as duplicate theorem statements.
+% BibTeX records for every citation used here are in the final comment block.
+% Review-note numbers (1.1, 3.2, N, etc.) are mnemonic names, not hard-coded
+% manuscript counters. The existing main-text labels remain unchanged.
+
+\section{Mathematical scope and normalization}
+\label{sec:astra_math}
+We use the parameter blocks $\thetap,\phip$ of the main text and
+$z=N^{-1/2}\operatorname{stack}(\hat y_n)$, $r=\nabla_z\ell(z)$,
+$J_b=\partial z/\partial b$, $\loss=\ell\circ z$. Write
+\[
+ K_b=J_bJ_b^\top,\qquad G_{bb}=J_b^\top H_\tau J_b,
+ \qquad \nabla_b\loss=J_b^\top r.
+\]
+Thus $K_b$ is an output-space logit kernel; it is not the parameter-space
+GGN block $G_{bb}$. For averaged softmax CE,
+$r=N^{-1/2}\operatorname{stack}(p_n-y_n)$ and $H_\tau$ is the block-diagonal
+softmax Hessian. For normalized squared loss, $r=z-y$ and $H_\tau=I$.
+All parameter norms are Euclidean (Frobenius for matrix parameters);
+matrix-map bounds are operator norms unless explicitly marked otherwise.
+Here $C=N_{\mathrm{cls}}$ denotes output dimension; envelope amplitudes
+are written $C_r$ to avoid a collision. A normalized convention removes
+extraneous powers of $N$, but does not make data-dependent constants
+such as kernel minimum eigenvalues independent of $N$.
+
+Theorem~\ref{thm:hessian} and Lemma~\ref{lem:phi_scaling} are geometric
+statements. Theorem~\ref{thm:twoscale} additionally requires a trajectory
+Jacobian cap and a residual envelope. Neither a large
+$\lambda_{\max}(G_{\phip\phip})$ nor parameter count alone supplies
+residual-subspace coercivity or a comparison with a separately trained
+frozen model. For unit gradient flow, $\dot z=-(K_\thetap+K_\phip)r$;
+under CE, $\dot r=-H_\tau(K_\thetap+K_\phip)r$, not the squared-loss
+constant-kernel residual equation.
+
+\section{Discrete displacement, clipping, and optimizer conventions}
+\label{sec:astra_discrete}
+The following seven statements collect the bounds numbered (4.1)--(4.7)
+in the review notes and distinguish the two clipping algorithms. They are
+pathwise: no convergence, stochastic independence, or smoothness assumption
+is needed beyond the stated gradient bound at every iterate. There is no
+encoder weight decay unless explicitly included. A uniform bound
+$\|g_k\|\le B_kR_k\le BR_k$ derived from the main theorem requires its
+containment/Jacobian hypothesis at \emph{each discrete iterate}. A full-data
+or smoothed residual envelope does not establish a sampled-gradient envelope.
+An observed residual floor limits a fitted envelope; a positive floor is
+not a universal property of mini-batch training.
+
+\begin{lemma}[Pathwise GD and clipping before a GD update]
+\label{lem:astra_gd}
+Let $K\ge0$, $\eta_k\ge0$, $a_k\in[0,1]$, and
+$\|g_k\|\le B_kR_k$, where $B_k,R_k\ge0$. If
+$\thetap_{k+1}=\thetap_k-\eta_ka_kg_k$, then
+\begin{equation}\label{eq:astra_gd}
+ \|\thetap_K-\thetap_0\|
+ \le\sum_{k=0}^{K-1}\eta_ka_kB_kR_k
+ \le\sum_{k=0}^{K-1}\eta_kB_kR_k.
+\end{equation}
+The clipping scalar may depend on all parameter groups and the history.
+\end{lemma}
+\begin{proof}
+Telescope the updates and apply the triangle inequality.
+\end{proof}
+
+\begin{corollary}[Polynomial envelope in step units]
+\label{cor:astra_steps}
+In Lemma~\ref{lem:astra_gd}, suppose $\eta_k=\eta\ge0$, $B_k\le B$,
+and $R_k\le C_r/(1+\mu_s k)$, with $C_r,\mu_s>0$.
+For $K\ge1$,
+\begin{equation}\label{eq:astra_steps}
+ \|\thetap_K-\thetap_0\|
+ \le\eta BC_r\left[1+\frac{\log(1+\mu_s(K-1))}{\mu_s}\right].
+\end{equation}
+For $0<\delta<C_r$, suppose the envelope holds through
+$K_* =\lceil(C_r/\delta-1)/\mu_s\rceil$. Then the first index
+$K_\delta=\min\{k:R_k\le\delta\}$ satisfies $K_\delta\le K_*$ and
+\begin{equation}\label{eq:astra_hit}
+ \|\thetap_{K_\delta}-\thetap_0\|
+ \le\eta BC_r[1+\mu_s^{-1}\log(C_r/\delta)].
+\end{equation}
+The displacement is zero if $K_\delta=0$.
+\end{corollary}
+\begin{proof}
+For decreasing $f(x)=(1+\mu_sx)^{-1}$,
+$\sum_{k=1}^{K-1}f(k)\le\int_0^{K-1}f(x)\,dx$.
+The envelope gives $R_{K_*}\le\delta$. If $K_\delta\ge1$,
+$K_\delta-1\le K_*-1<(C_r/\delta-1)/\mu_s$; substitute in
+\eqref{eq:astra_steps}.
+\end{proof}
+\begin{remark}[Flow-to-step dictionary]
+For constant positive $\eta$, $t_k=\eta k$ and $\mu_s=\eta\mu_f$.
+Consequently $\eta BC_r/\mu_s=BC_r/\mu_f$. Omitting the leading
+$\eta$ in \eqref{eq:astra_steps} is a units error. The extra
+$\eta BC_r$ is a left-sum allowance, not an additional mechanism.
+\end{remark}
+
+\begin{lemma}[Variable-step envelope]
+\label{lem:astra_variable}
+Under Lemma~\ref{lem:astra_gd}, let $t_k=\sum_{i<k}\eta_i$,
+$B_k\le B$, $R_k\le C_r/(1+\mu_ft_k)$ with $C_r,\mu_f>0$.
+For $K\ge1$ and $\eta_{\max}=\max_{k<K}\eta_k$,
+\begin{equation}\label{eq:astra_variable}
+ \|\thetap_K-\thetap_0\|\le BC_r\left[
+ \frac{\log(1+\mu_ft_K)}{\mu_f}
+ +\eta_{\max}\left(1-\frac1{1+\mu_ft_K}\right)\right].
+\end{equation}
+\end{lemma}
+\begin{proof}
+The excess of the left sum for $f(t)=(1+\mu_ft)^{-1}$ over its
+integral on $[t_k,t_{k+1}]$ is at most
+$\eta_k(f(t_k)-f(t_{k+1}))$. Bound $\eta_k$ by $\eta_{\max}$ and
+telescope. Zero step sizes cause no difficulty.
+\end{proof}
+
+\begin{lemma}[Momentum, including gradient clipping before accumulation]
+\label{lem:astra_momentum}
+Let $0\le\beta<1$, $\eta_k\ge0$, $a_k\in[0,1]$, and
+$\|g_k\|\le B_kR_k$. For
+$v_{k+1}=\beta v_k+a_kg_k$ and
+$\thetap_{k+1}=\thetap_k-\eta_kv_{k+1}$,
+\begin{align}
+ \thetap_K-\thetap_0
+ &=-v_0\sum_{k<K}\eta_k\beta^{k+1}
+   -\sum_{i<K}a_ig_i\sum_{k=i}^{K-1}\eta_k\beta^{k-i}.
+ \label{eq:astra_momentum_exact}
+\end{align}
+For constant $\eta$ this implies
+\begin{equation}\label{eq:astra_momentum}
+ \|\thetap_K-\thetap_0\|\le
+ \frac{\eta\beta(1-\beta^K)}{1-\beta}\|v_0\|
+ +\eta\sum_{i<K}\frac{1-\beta^{K-i}}{1-\beta}a_iB_iR_i.
+\end{equation}
+For $v_0=0$, \eqref{eq:astra_steps}--\eqref{eq:astra_hit} therefore
+remain valid with an additional factor $1/(1-\beta)$.
+\end{lemma}
+\begin{proof}
+Induction gives $v_{k+1}=\beta^{k+1}v_0+
+\sum_{i=0}^k\beta^{k-i}a_ig_i$. Substitute into the parameter update,
+interchange the finite sums, and sum the geometric series. For variable
+steps the inner coefficient is at most $\eta_{\max}/(1-\beta)$.
+\end{proof}
+\begin{remark}
+This is zero-dampening, non-Nesterov momentum. It includes global
+\emph{gradient} clipping through its actual $a_k$; the gradients and
+later iterates belong to the clipped run itself. It does not compare
+a clipped run's displacement with a separately evolved unclipped run.
+The factor $1/(1-\beta)$ is approached by long sequences of aligned gradients.
+\end{remark}
+
+\begin{lemma}[Velocity clipping: sharper norm induction]
+\label{lem:astra_velocity}
+Let $c_k\ge0$, $0\le\beta<1$, and let
+$\operatorname{clip}_{c}(u)=u\min\{1,c/\|u\|\}$, with
+$\operatorname{clip}_{c}(0)=0$. Suppose
+\[
+ v_{k+1}=\operatorname{clip}_{c_k}(\beta v_k+g_k),\qquad
+ \thetap_{k+1}=\thetap_k-\eta_kv_{k+1},\quad \eta_k\ge0.
+\]
+Define the \emph{comparison} coefficient
+$a_k=\min\{1,c_k/\|g_k\|\}$ for $g_k\ne0$ and $a_k=1$ otherwise.
+Then
+\[
+ \|v_{k+1}\|\le\beta^{k+1}\|v_0\|
+       +\sum_{i=0}^k\beta^{k-i}a_i\|g_i\|.
+\]
+Consequently \eqref{eq:astra_momentum} holds when
+$\|g_i\|\le B_iR_i$. For variable steps the corresponding norm bound
+uses the same finite weights as \eqref{eq:astra_momentum_exact}.
+The vector identity \eqref{eq:astra_momentum_exact} is not asserted.
+\end{lemma}
+\begin{proof}
+Write $x=\beta\|v_k\|$, $y=\|g_k\|$. Then
+\[
+ \|v_{k+1}\|\le\min(c_k,x+y)\le x+\min(c_k,y)
+ =\beta\|v_k\|+a_k\|g_k\|.
+\]
+If $y\le c_k$ use the second argument of the minimum; if $y>c_k$ use
+its first. Induct and sum the parameter-step norms.
+\end{proof}
+\begin{remark}[Two valid coefficient conventions]
+The comparison $a_k$ above differs from the actual multiplier
+$t_k=\min\{1,c_k/\|\beta v_k+g_k\|\}$, defined as one at a zero
+argument. The same norm bound is also valid with $t_i$ in place of
+$a_i$, by the separate induction
+$\|v_{k+1}\|\le\beta\|v_k\|+t_k\|g_k\|$.
+In fact the exact unrolling is
+\[
+ v_{k+1}=\beta^{k+1}\left(\prod_{j=0}^kt_j\right)v_0
+ +\sum_{i=0}^k\beta^{k-i}\left(\prod_{j=i}^kt_j\right)g_i.
+\]
+Dropping subsequent multipliers gives the claimed $t_i$ bound.
+The two coefficient conventions need not be ordered, owing to gradient
+cancellation. State which one is used. For radial implementations with
+$c/(\|u\|+\varepsilon_{\rm clip})$ and clipping multiplier in $[0,1]$,
+this actual-multiplier argument still applies; the ideal-clipping
+comparison $a_i$ is not obtained by silently equating the two formulas.
+\end{remark}
+
+\begin{lemma}[Positive-stabilizer Adam]
+\label{lem:astra_adam}
+Suppose the first moment is initialized at zero, $0\le\beta_1<1$,
+$0\le\eta_k\le\eta_{\max}$, and
+\[
+ \widehat m_k=\sum_{i=0}^k
+ \frac{(1-\beta_1)\beta_1^{k-i}}{1-\beta_1^{k+1}}g_i,
+ \qquad \thetap_{k+1}-\thetap_k=-\eta_kD_k\widehat m_k,
+ \qquad \|D_k\|\le\zeta^{-1},\quad\zeta>0.
+\]
+Then
+\begin{equation}\label{eq:astra_adam}
+ \|\thetap_K-\thetap_0\|
+ \le\frac{\eta_{\max}}{\zeta(1-\beta_1)}\sum_{i<K}\|g_i\|.
+\end{equation}
+Standard Adam denominators $\sqrt{\widehat v_k}+\zeta$ satisfy the
+preconditioner bound when $\widehat v_k\ge0$ coordinatewise. If
+clipping occurs before moment accumulation, $g_i$ here is the gradient
+\emph{after} that clipping.
+\end{lemma}
+\begin{proof}
+Bound the update by $\eta_{\max}\zeta^{-1}\|\widehat m_k\|$ and
+interchange sums. For each $i$, the sum of its nonnegative weights is
+at most $\sum_{k\ge i}\beta_1^{k-i}\le(1-\beta_1)^{-1}$, since
+$(1-\beta_1)/(1-\beta_1^{k+1})\le1$.
+\end{proof}
+\begin{remark}[Numerically weak optimizer constant]
+The factor $1/\zeta$ makes this certificate numerically vacuous at
+standard small stabilizers unless a much smaller preconditioner bound
+is independently certified. At $\zeta=0$, the first scalar Adam step
+has magnitude $\eta$ for every nonzero $g_0$, so no constant uniform
+in residual scale bounds it by a multiple of $\eta\|g_0\|$.
+\end{remark}
+
+\begin{lemma}[Decoupled encoder decay must be included]
+\label{lem:astra_decay}
+If an update is $\thetap_{k+1}-\thetap_k=-u_k-\eta_k\lambda_k\thetap_k$
+with $\eta_k,\lambda_k\ge0$, then
+$\|\thetap_K-\thetap_0\|\le\sum_{k<K}\|u_k\|+
+\sum_{k<K}\eta_k\lambda_k\|\thetap_k\|$.
+Even with $u_k=0$, constant decay $\lambda$ gives
+$\thetap_K=\prod_{k<K}(1-\eta_k\lambda)\thetap_0$.
+\end{lemma}
+\begin{proof}
+Telescope for the bound and iterate the scalar multiplication for the
+identity. A nonzero decay displacement can occur at identically zero
+residual, so a residual-only bound cannot omit this term.
+\end{proof}
+
+\section{Joint and frozen trajectory comparisons}
+\label{sec:astra_bridges}
+\begin{theorem}[Monotone frozen flow; review Theorem 1.1]
+\label{thm:astra_monotone}
+On $[0,T]$ let the joint and frozen paths be absolutely continuous,
+with common spatial initialization and
+$\dot\phip_J=-\nabla_\phip\loss(\thetap_J,\phip_J)$,
+$\dot\phip_F=-\nabla_\phip\loss(\thetap_0,\phip_F)$ a.e.
+Let $d\ge0$ be locally integrable with
+$\|\thetap_J(t)-\thetap_0\|\le d(t)$.
+Assume the differentiable frozen objective has an $\alpha$-monotone
+gradient on a region containing both spatial paths, $\alpha\ge0$:
+\[
+ \langle v-w,\nabla_\phip\loss(\thetap_0,v)
+ -\nabla_\phip\loss(\thetap_0,w)\rangle\ge\alpha\|v-w\|^2.
+\]
+Assume finite nonnegative constants $K_{\theta\phi},L_\theta,L_\phi$
+satisfy, on the parameter pairs used below,
+\begin{align*}
+ \|\nabla_\phip\loss(\thetap_J,\phip_J)
+       -\nabla_\phip\loss(\thetap_0,\phip_J)\|&\le K_{\theta\phi}d(t),\\
+ \|z(\thetap_J,\phip_J)-z(\thetap_0,\phip_J)\|&\le L_\theta d(t),\\
+ \|z(\thetap_0,\phip_J)-z(\thetap_0,\phip_F)\|&\le L_\phi\|\phip_J-\phip_F\|.
+\end{align*}
+Then
+\begin{align}
+ \|\phip_J(t)-\phip_F(t)\|&\le K_{\theta\phi}\int_0^t e^{-\alpha(t-s)}d(s)\,ds,
+ \label{eq:astra_monotone}\\
+ \|z_J(t)-z_F(t)\|&\le L_\theta d(t)+
+ L_\phi K_{\theta\phi}\int_0^t e^{-\alpha(t-s)}d(s)\,ds.
+\end{align}
+If $d$ is nondecreasing, the last bound is
+$[L_\theta+L_\phi K_{\theta\phi}\psi_\alpha(t)]d(t)$, where
+$\psi_\alpha(t)=(1-e^{-\alpha t})/\alpha$ for $\alpha>0$ and
+$\psi_0(t)=t$.
+\end{theorem}
+\begin{proof}
+For $\Delta=\phip_J-\phip_F$, split the derivative into a frozen-gradient
+difference and an encoder-induced forcing. Then
+$\frac12(d/dt)\|\Delta\|^2\le-\alpha\|\Delta\|^2+
+K_{\theta\phi}d\|\Delta\|$. The scalar norm comparison (or the
+regularization $\sqrt{\|\Delta\|^2+\epsilon^2}$ followed by
+$\epsilon\downarrow0$) proves \eqref{eq:astra_monotone}. Add and subtract
+$z(\thetap_0,\phip_J)$ for the output bound; monotonicity of $d$ gives
+the final expression.
+\end{proof}
+\begin{remark}
+Under Theorem~\ref{thm:twoscale}, one may use
+$d(t)=BC_r\log(1+\mu t)/\mu$ on its valid horizon. If the first fitting
+time lies in that horizon, replace this logarithm by $\log(C_r/\delta)$
+only up to that fitting time. The constants $L_\theta,L_\phi,K_{\theta\phi}$
+and $\alpha$ are additional path-dependent hypotheses; all must be
+controlled across widths before inferring a width rate. A PL inequality
+alone supplies none of this monotonicity.
+\end{remark}
+
+\begin{proposition}[Counterexample 1.2: PL does not imply contraction]
+\label{prop:astra_pl_counter}
+For $a,b>0$, $f(x,y)=\frac12(x+ay^2)^2$ satisfies
+$\frac12\|\nabla f\|^2\ge f-\inf f$ globally, but nearby gradient-flow
+trajectories can expand by an arbitrarily large factor at time one.
+\end{proposition}
+\begin{proof}
+$\inf f=0$ and $\|\nabla f\|^2=(x+ay^2)^2(1+4a^2y^2)\ge2f$.
+Along $(x(t),y(t))=(-be^{-t},0)$, transverse linearized variation satisfies
+$\dot\xi=2abe^{-t}\xi$, hence
+$\xi(t)=\xi(0)\exp(2ab(1-e^{-t}))$. Vary $a$ with the PL constant fixed.
+This uses the PL convention of \citet{astra_karimi2016}.
+\end{proof}
+
+\begin{theorem}[Affine squared-loss bridge; review Theorem 1.3]
+\label{thm:astra_affine}
+Let $z=z_0+A(\thetap-\thetap_0)+B(\phip-\phip_0)$ and
+$\loss=\frac12\|z-y\|^2$. Train the joint model and the model with
+$\thetap=\thetap_0$ by unit Euclidean gradient flow from the same
+initialization. Let $K_\thetap=AA^\top$, $K_\phip=BB^\top$.
+Suppose a common invariant linear subspace $\mathcal V$ contains
+$e_0=z_0-y$ and, on $\mathcal V$,
+$K_\phip\succeq\kappa I$, $0\preceq K_\thetap\preceq aI$ with
+$\kappa>0$, $a\ge0$. For $t\ge0$,
+\begin{align}
+ \|z_J(t)-z_F(t)\|&\le at e^{-\kappa t}\|e_0\|,
+ &\sup_{t\ge0}\|z_J(t)-z_F(t)\|&\le\frac{a\|e_0\|}{e\kappa},
+ \label{eq:astra_affine_gap}\\
+ \|\thetap_J(t)-\thetap_0\|&\le
+ \frac{\sqrt a}{\kappa}(1-e^{-\kappa t})\|e_0\|,
+ &\int_0^\infty\|\nabla_\thetap\loss\|^2dt&\le
+ \frac{a\|e_0\|^2}{2\kappa}.\label{eq:astra_affine_disp}
+\end{align}
+At every finite horizon with positive loss decrease the encoder share
+is at most $a/(a+\kappa)$, by Corollary~\ref{cor:astra_attribution}.
+\end{theorem}
+\begin{proof}
+On $\mathcal V$, both semigroups have norm at most $e^{-\kappa t}$.
+Their difference obeys the noncommutative Duhamel identity
+\[
+ e_J(t)-e_F(t)=-\int_0^t e^{-K_\phip(t-s)}K_\thetap
+                e^{-(K_\phip+K_\thetap)s}e_0\,ds.
+\]
+This gives $at e^{-\kappa t}\|e_0\|$, maximized at $t=1/\kappa$.
+Since $\|A^\top v\|\le\sqrt a\|v\|$ for $v\in\mathcal V$,
+integrate $\dot\thetap=-A^\top e_J$ and its squared norm to get
+\eqref{eq:astra_affine_disp}. Both residuals converge to zero.
+\end{proof}
+
+\begin{corollary}[Sharp finite-horizon attribution; main Corollary~\ref{cor:attribution}]
+\label{cor:astra_attribution}
+Explicitly: $\loss=\ell\circ z$ is differentiable, the parameter path
+is absolutely continuous, the residual is $r=\nabla_z\ell$ with
+$K_\thetap=J_\thetap J_\thetap^\top$,
+$K_\phip=J_\phip J_\phip^\top$, both blocks follow unit Euclidean
+gradient flow, and the chain rule holds a.e. Suppose for constants
+$a\ge0$, $\kappa>0$ that the Rayleigh inequalities
+\[
+ r^\top K_\thetap r\le a\|r\|^2,\qquad
+ r^\top K_\phip r\ge\kappa\|r\|^2
+\]
+hold at almost every time along the realized trajectory on $[0,T]$,
+and $\loss(0)-\loss(T)>0$. Then
+\begin{equation}\label{eq:astra_attribution}
+ \frac{\int_0^T\|\nabla_\thetap\loss\|^2dt}{\loss(0)-\loss(T)}
+ \le\frac{a}{a+\kappa}.
+\end{equation}
+No common invariant subspace is required: that hypothesis of
+Theorem~\ref{thm:astra_affine} is a device for guaranteeing the
+Rayleigh bounds along the path, and here they are assumed directly.
+\end{corollary}
+\begin{proof}
+Put $q_b=r^\top K_b r=\|\nabla_b\loss\|^2$.
+Pointwise $\kappa q_\thetap\le a q_\phip$. Integrate and use
+$\loss(0)-\loss(T)=\int_0^T(q_\thetap+q_\phip)dt$.
+Scalar kernels $K_\thetap=a$, $K_\phip=\kappa$ attain equality.
+\end{proof}
+\begin{remark}
+The same result holds for the nonsmooth flow convention defined below
+whenever its a.e. energy identity and Rayleigh inequalities hold.
+The unit rate is not cosmetic: with per-block rates $\eta_\theta\ne
+\eta_\phi$, the numerator $\int\|\nabla_\thetap\loss\|^2dt$ is no
+longer the encoder share. For positive constant rates, the actual share
+uses $\eta_\theta$ in the numerator and is bounded by
+$\eta_\theta a/(\eta_\theta a+\eta_\phi\kappa)$.
+\end{remark}
+
+\begin{proposition}[Counterexample 1.4: top eigenvalues are insufficient]
+\label{prop:astra_top_counter}
+Let $K_\phip=\operatorname{diag}(M,0)$,
+$K_\thetap=\operatorname{diag}(0,1)$, $e_0=(0,1)^\top$, $M>0$.
+In the affine squared-loss model, the joint/frozen logit gap is
+$1-e^{-t}$ although $\lambda_{\max}(K_\phip)=M$.
+\end{proposition}
+\begin{proof}
+$e_F(t)=(0,1)^\top$ and $e_J(t)=(0,e^{-t})^\top$. Each kernel is
+realized by its PSD square root as an affine Jacobian. The fast spatial
+direction contains none of the residual.
+\end{proof}
+
+\begin{proposition}[Robustness of the affine comparison]
+\label{prop:astra_robust}
+Under the kernel/subspace assumptions of Theorem~\ref{thm:astra_affine},
+suppose instead the residuals solve
+$\dot e_J=-(K_\phip+K_\thetap)e_J+\xi_J$ and
+$\dot e_F=-K_\phip e_F+\xi_F$, with common $e_0$ and locally
+integrable $\xi_J,\xi_F\in\mathcal V$. Then add
+\[
+ \int_0^t e^{-\kappa(t-s)}(\|\xi_J(s)\|+\|\xi_F(s)\|)\,ds
+\]
+to the first bound in \eqref{eq:astra_affine_gap}. If
+$\|\xi_J\|\le\nu_J$ and $\|\xi_F\|\le\nu_F$, the additional
+uniform term is at most $(\nu_J+\nu_F)/\kappa$.
+\end{proposition}
+\begin{proof}
+Compare each perturbed solution with its own constant-kernel unperturbed
+solution by variation of constants, then use the triangle inequality.
+\end{proof}
+
+\begin{proposition}[Logit margins imply a disagreement bound]
+\label{prop:astra_margins}
+If normalized logits satisfy $\|z_J-z_F\|\le h$ and at most a fraction
+$b_\gamma$ of the N samples have frozen top-two unnormalized logit
+margin at most $\gamma>0$, the disagreement fraction is at most
+$b_\gamma+2h^2/\gamma^2$ (and at most one).
+\end{proposition}
+\begin{proof}
+On a remaining disagreement, for the frozen winner $c_*$ and the joint
+winner $c$, the logit perturbation $d_n$ satisfies
+$d_{n,c}-d_{n,c_*}>\gamma$. Thus
+$\|d_n\|^2\ge(d_{n,c}-d_{n,c_*})^2/2>\gamma^2/2$.
+Average and apply Markov. Macro-F1 needs further class-specific
+confusion and denominator control.
+\end{proof}
+\subsection{A finite-data initialization certificate}
+\begin{corollary}[Biased-ReLU initialization; review Corollary 1.5]
+\label{cor:astra_init}
+Fix $N<\infty$, $x_n\in\R^S$, and a deterministic encoder matrix
+$\Theta_0$ for which $u_n=\Theta_0x_n\in\R^K$ are pairwise distinct
+and $\|u_n\|\le R$. Let
+\[
+ h_i(u)=\operatorname{ReLU}(w_i^\top u+b_i),\qquad \hat y=Vh+b_2,
+\]
+with independent $w_i\sim\mathcal N(0,s_w^2I_K/K)$,
+$b_i\sim\mathcal N(0,s_b^2)$, $V_{ci}\sim\mathcal N(0,s_w^2/M)$,
+$b_{2,c}\sim\mathcal N(0,s_b^2)$, and $s_w,s_b>0$, $1\le c\le C$.
+Let $A,B$ be the normalized encoder/spatial logit Jacobians at this
+initialization, including all hidden and readout parameters in the
+spatial block. Train the resulting \emph{exactly affine} model with
+squared loss as in Theorem~\ref{thm:astra_affine}.
+Define
+\[
+ \psi=(h_1(u_n))_{n=1}^N,\quad K_*=N^{-1}\E\psi\psi^\top,
+ \quad\kappa_*=\lambda_{\min}(K_*),\quad
+ s_{\max}^2=s_w^2R^2/K+s_b^2.
+\]
+Then $\kappa_*>0$. For $0<\rho<1$, put
+\begin{align*}
+ M_0&=\left\lceil\frac{18s_{\max}^4}{\rho\kappa_*^2}\right\rceil,
+ & A_\rho&=\frac{3C_G}{\rho},
+ & R_\rho&=\sqrt{3C_r/\rho},\\
+ C_G&=Cs_w^4\operatorname{tr}(\Sigma_X),
+ & C_r&=2C(s_w^2s_{\max}^2/2+s_b^2)+2\|y\|^2,
+ &\Sigma_X&=N^{-1}\sum_nx_nx_n^\top.
+\end{align*}
+For each $M\ge M_0$, with probability at least $1-\rho$,
+\[
+ K_\phip\succeq\kappa_*M I/2,\qquad \|K_\thetap\|\le A_\rho,
+ \qquad\|e_0\|\le R_\rho.
+\]
+Consequently
+\[
+ \sup_t\|z_J-z_F\|\le\frac{2A_\rho R_\rho}{e\kappa_*M},
+ \qquad\sup_t\|\thetap_J-\thetap_0\|
+ \le\frac{2\sqrt{A_\rho}R_\rho}{\kappa_*M}.
+\]
+The displayed sufficient threshold necessarily satisfies
+$M_0\ge72N^2/\rho$; it is an existence certificate, not a practical
+onset width or a lower bound on widths at which coercivity actually holds.
+\end{corollary}
+\begin{proof}
+If $c^\top K_*c=0$, the continuous function
+$\sum_nc_n\operatorname{ReLU}(w^\top u_n+b)$ vanishes almost surely
+under a Gaussian with full support, hence everywhere. The hyperplanes
+$w^\top u_n+b=0$ have pairwise nonproportional normals $(u_n,1)$.
+At a point of the nth hyperplane on none of the others, crossing the
+hyperplane produces the gradient jump $c_n(u_n,1)$; all other terms
+are affine locally. The jump must vanish, so each $c_n=0$.
+
+Let $\mathsf H_{ni}=h_i(u_n)$ be the unnormalized feature matrix.
+The readout kernel is $(\mathsf H\mathsf H^\top/N)\otimes I_C$.
+Gaussian ReLU fourth moments and Cauchy--Schwarz give
+$\E\|\psi\|^4\le3N^2s_{\max}^4/2$. Independence of columns yields
+\[
+ \E\left\|\frac{\mathsf H\mathsf H^\top}{NM}-K_*\right\|_F^2
+ \le\frac{3s_{\max}^4}{2M},\qquad
+ \Pr\left(\left\|\frac{\mathsf H\mathsf H^\top}{NM}-K_*\right\|>
+                  \kappa_*/2\right)
+ \le\frac{6s_{\max}^4}{M\kappa_*^2}.
+\]
+For the encoder Jacobian, conditioning on the hidden weights kills the
+cross terms in the independent centered readouts. Bounding each gate by
+one gives $\E\|J_\thetap\|_F^2\le C_G$. Also
+$\E\|e_0\|^2\le C_r$ by the activation second moment and
+$\|z_0-y\|^2\le2\|z_0\|^2+2\|y\|^2$.
+Markov and a three-event union bound prove the asserted event.
+Apply Theorem~\ref{thm:astra_affine} on the full output space.
+Finally $\operatorname{tr}(K_*)\le s_{\max}^2/2$ implies
+$\kappa_*\le s_{\max}^2/(2N)$ and the threshold inequality.
+\end{proof}
+\begin{remark}
+This proves a frozen-linearization instance only. Constants depend on
+the fixed dataset and encoder; nearly duplicate bottleneck inputs can
+make $\kappa_*$ arbitrarily small. Exact duplicates require a compatible
+restricted-space formulation. The displayed constants are numerically
+vacuous for the reported large datasets and are not empirical width thresholds.
+\end{remark}
+
+\begin{proposition}[Truncated-Chernoff alternative]
+\label{prop:astra_chernoff}
+For the same Gaussian/ReLU feature law, let $X_i=\psi_i\psi_i^\top/N$.
+Choose $R_c>0$ such that
+\[
+ 2N(R_c+2s_{\max}^2)e^{-R_c/(2s_{\max}^2)}\le\kappa_*/2.
+\]
+Then
+\begin{equation}\label{eq:astra_chernoff}
+ \Pr\left\{\lambda_{\min}\left(\sum_{i=1}^M X_i\right)
+               <M\kappa_*/4\right\}
+ \le N\exp[-M\kappa_*/(16R_c)].
+\end{equation}
+In particular $M\ge(16R_c/\kappa_*)\log(N/\eta)$ suffices for failure
+probability $\eta\in(0,1)$. If used in the previous corollary or the
+nonlinear theorem below, replace the head floor $\kappa_*M/2$ by
+$\kappa_*M/4$ and propagate this changed constant.
+\end{proposition}
+\begin{proof}
+Let $Z$ be the maximum of the N squared Gaussian preactivations.
+Then $\|X_i\|\le Z$ and $\Pr(Z>u)\le2N e^{-u/(2s_{\max}^2)}$.
+Integrating the tail gives
+$\E[\|X_i\|1_{\{\|X_i\|>R_c\}}]
+\le2N(R_c+2s_{\max}^2)e^{-R_c/(2s_{\max}^2)}$.
+Thus $Y_i=X_i1_{\{\|X_i\|\le R_c\}}$ satisfies
+$0\preceq Y_i\preceq R_cI$ and $\E Y_i\succeq\kappa_*I/2$.
+Since each $X_i$ is positive semidefinite,
+$\sum_iX_i\succeq\sum_iX_i1_{\{\|X_i\|\le R_c\}}$ and therefore
+$\lambda_{\min}(\sum_iX_i)\ge\lambda_{\min}(\sum_iY_i)$; the
+lower-tail bound for the truncated sum applies verbatim to the
+untruncated sum. Apply matrix Chernoff \citep{astra_tropp2012} with
+$\delta=1/2$ and $\mu_{\min}\ge M\kappa_*/2$.
+\end{proof}
+\begin{remark}
+The constant is Tropp's $\delta=1/2$ lower tail after the standard
+simplification
+$[e^{-\delta}(1-\delta)^{-(1-\delta)}]^{\mu_{\min}/R_c}
+\le e^{-\delta^2\mu_{\min}/(2R_c)}$.
+Keeping the exact constant $-\log(e^{-1/2}\sqrt2)=0.15343\ldots$
+replaces $1/16$ by approximately $1/13.04$; the difference is immaterial
+at the widths involved. The one-sided ReLU tail also permits $N$ in
+place of $2N$ in the truncation estimate. This certificate removes a
+power of $\kappa_*^{-1}$ at the cost of logarithmic truncation factors;
+it can still be numerically vacuous. Neither its threshold nor the
+Frobenius threshold is a necessity theorem.
+\end{remark}
+
+\section{Interior curvature witnesses and normalization}
+\label{sec:astra_interior}
+\begin{lemma}[Pointwise interior witness; review Lemma 3.1]
+\label{lem:astra_interior}
+At N sites let $h_n\in\R^d$, $a_n=Wh_n+b\in\R^q$, and
+$\hat y_n=\Phi_n(a_n)\in\R^C$, $C\ge2$.
+Perturbing $a_n$ must not change logits at other sites in this lemma.
+Fix a parameter point with finite logits and existing downstream
+Jacobians $D_n=\partial\Phi_n/\partial a_n$. Let
+$\Pi=I-\boldsymbol1\boldsymbol1^\top/C$,
+$p_{\min,n}=\min_c p_{n,c}$. For a unit $a\in\R^q$ define
+\[
+ S_{h,a}=N^{-1}\sum_n p_{\min,n}\|\Pi D_na\|^2h_nh_n^\top,
+ \qquad S_h^p=N^{-1}\sum_n p_{\min,n}h_nh_n^\top.
+\]
+If W belongs to $\phip$, then
+\[
+ \lambda_{\max}(G_{\phip\phip})\ge\lambda_{\max}(G_{WW})
+ \ge\lambda_{\max}(S_{h,a}).
+\]
+If additionally $\|\Pi D_na\|\ge s$ for every n with $h_n\ne0$,
+then the final lower bound is at least $s^2\lambda_{\max}(S_h^p)$.
+\end{lemma}
+\begin{proof}
+For each unit $u\in\R^d$, $\Delta W=au^\top$ has unit Frobenius norm.
+The CE Hessian satisfies $H_n\succeq p_{\min,n}\Pi$: indeed
+$v^\top H_nv=\min_c\sum_jp_{n,j}(v_j-c)^2
+\ge p_{\min,n}\min_c\sum_j(v_j-c)^2$.
+Consequently the witness Rayleigh quotient is at least
+$N^{-1}\sum_n(h_n^\top u)^2p_{\min,n}\|\Pi D_na\|^2
+=u^\top S_{h,a}u$. Maximize over u. Zero-padding the W perturbation
+proves the full-block inequality. The additional hypothesis gives
+$S_{h,a}\succeq s^2S_h^p$.
+\end{proof}
+\begin{remark}[Mixing, masks, and nonsmooth points]
+For a general interior perturbation, let $\mathcal R_h\operatorname{vec}
+(\Delta W)$ be its full unnormalized preactivation stack, including all
+sites that can affect the loss. If $D_\Phi$ is the full downstream
+Jacobian and $P_{\rm out}$ selects the supervised logits, the valid
+replacement is
+\begin{equation}\label{eq:astra_full_witness}
+ \lambda_{\max}(G_{\phip\phip})\ge
+ \frac1{N_{\rm out}}\|H_\tau^{1/2}P_{\rm out}D_\Phi
+       \mathcal R_h\operatorname{vec}(\Delta W)\|^2,
+ \qquad\|\Delta W\|_F=1.
+\end{equation}
+This follows by the chain rule and the Rayleigh principle and includes
+BN, convolutions, and ignored sites. A product lower bound requires a
+restricted downstream gain on this same witness, with matching site
+normalization; a smallest nonzero singular value does not protect a
+witness in a nullspace. At ReLU kinks one must specify a gate selection;
+for nondegenerate Gaussian preactivations the ordinary Jacobian exists
+a.s. Sites with zero feature and zero bias contribute zero to the
+incoming lower bound, but a Jacobian convention is still necessary.
+\end{remark}
+
+\begin{theorem}[Fixed bottleneck, growing interior width; review Theorem 3.2]
+\label{thm:astra_interior_relu}
+Fix integers $q\ge1$, $C\ge2$, and constants $R,a_0,s_w,s_v>0$,
+$s_b\ge0$. For each M let deterministic features $h_n\in\R^M$ satisfy
+$\|h_n\|^2\le R^2M$ and
+$\lambda_{\max}(S_h)\ge a_0M$, where
+$S_h=N^{-1}\sum_nh_nh_n^\top$.
+Consider $\hat y_n=V\operatorname{ReLU}(Wh_n+b)$ with independent
+$W_{ij}\sim\mathcal N(0,s_w^2/M)$, $b_i\sim\mathcal N(0,s_b^2)$,
+$V_{ci}\sim\mathcal N(0,s_v^2/q)$, independent of the features.
+At any identically zero preactivation fix a gate in $[0,1]$ consistently
+in all Jacobian blocks; such sites have $h_n=0$ and cannot contribute
+to the W witness below. Under averaged CE in these Euclidean
+coordinates there exist $c_0,p_0>0$
+independent of M,N with
+\[
+ \Pr\{\lambda_{\max}(G_{WW})\ge c_0a_0M\}\ge p_0,
+ \qquad \E\lambda_{\max}(G_{\phip\phip})\ge p_0c_0a_0M
+\]
+whenever W belongs to $\phip$.
+One explicit choice is
+\[
+ s_{\max}^2=s_w^2R^2+s_b^2,\quad L_0=\sqrt{48q s_{\max}^2},
+ \quad c_0=e^{-4L_0}/(32C),\quad p_0=p_V/4,
+\]
+where $p_V=\Pr\{\|V\|_F\le2,\ \|\Pi Ve_1\|\ge1/2\}>0$.
+These constants are \emph{existence-only and numerically vacuous}; this
+is a positive-probability/expectation statement, not a probability
+approaching one as M grows.
+\end{theorem}
+\begin{proof}
+Fix a top unit eigenvector u of $S_h$, write
+$a_n=(h_n^\top u)^2$, $A=N^{-1}\sum_na_n\ge a_0M$, and
+$\chi_n=1_{\{(Wh_n+b)_1>0\}}$.
+At sites with $a_n>0$ this preactivation is a nondegenerate centered
+Gaussian. For $Q=N^{-1}\sum_na_n\chi_n$, $\E Q=A/2$ and $0\le Q\le A$,
+hence $\Pr(Q\ge A/4)\ge1/3$ by splitting the expectation.
+The exact moment bound
+$\E\|\operatorname{ReLU}(Wh_n+b)\|^2\le qs_{\max}^2/2$
+gives $\Pr(\|\operatorname{ReLU}(Wh_n+b)\|>L_0)\le1/96$.
+Thus the weighted untame energy U has $\E U\le A/96$ and
+$\Pr(U>A/8)\le1/12$. With probability at least $1/4$, active tame
+sites therefore carry energy at least $A/8$. No independence across
+sites was used.
+
+Independently, the V event has positive probability: a small open ball
+around a matrix with first column a unit class contrast and other
+columns zero is contained in it. At tame sites on that event,
+$\|\hat y_n\|_\infty\le2L_0$ and $p_{\min,n}\ge e^{-4L_0}/C$.
+The unit witness $\Delta W=e_1u^\top$ has logit perturbation
+$(h_n^\top u)\chi_nVe_1$, hence curvature at least
+$(e^{-4L_0}/C)(1/4)(A/8)=c_0A$. Multiply the independent event
+probabilities. Nonnegativity gives the expectation bound.
+\end{proof}
+\begin{remark}[Scope and a squared-loss counterpart]
+A fixed channel direction may be inactive on every site, making its
+bound zero on some draws. Adaptive directions can improve the witness,
+but are not required for validity. For random upstream features, condition
+on an event where both feature bounds hold; its probability multiplies
+$p_0$. The theorem covers a pointwise ReLU bottleneck followed by a
+linear readout, not an arbitrary convolutional BN decoder. It supplies
+no residual-subspace coercivity for Theorem~\ref{thm:astra_affine}.
+For scalar squared loss, independent readout entries
+$v_i\sim\mathcal N(0,s_v^2/q)$ give the simpler bound
+\[
+ \E\lambda_{\max}(G_{WW})\ge\frac{s_v^2}{2q}\lambda_{\max}(S_h).
+\]
+Indeed, the same witness has curvature $v_1^2Q$, and independence gives
+$\E(v_1^2Q)=(s_v^2/q)(A/2)$.
+\end{remark}
+
+\begin{proposition}[Counterexamples 3.3 and 3.4]
+\label{prop:astra_bottleneck_counter}
+A fixed ReLU bottleneck does not in general admit a positive interior
+floor with probability $1-o_M(1)$. Moreover, train-mode BN can erase
+an entire width-linear incoming witness even with a positive stabilizer.
+\end{proposition}
+\begin{proof}
+For the first claim take all $h_n=h\ne0$ with $\|h\|^2=M$ and q
+independent centered nondegenerate Gaussian preactivations. With
+probability $2^{-q}$ all q gates are inactive at every site, and
+$J_W=0$. This probability is independent of M; centered Gaussian bias
+does not remove it.
+
+For the second take $h_n=h$ throughout the \emph{whole normalization
+group}, $\|h\|^2=M$, and place train-mode BN immediately after $Wh_n$.
+For every positive stabilizer $\varepsilon>0$, its output is the BN
+affine offset, independent of W. Thus every weight perturbation is
+annihilated and $G_{WW}=0$, whereas
+$S_h^p=p_{\min}hh^\top$ has eigenvalue $p_{\min}M$ if the downstream
+logits have fixed finite nondegenerate probabilities. At
+$\varepsilon=0$ this zero-variance forward pass is undefined; it is
+not that counterexample. Constant inputs with a $1\times1$ convolution
+or periodic boundaries give literal convolutional realizations.
+\end{proof}
+
+\begin{proposition}[BN derivative: an upper bound, not a lower witness]
+\label{prop:astra_bn_derivative}
+For one normalization group of size L, let
+$P=I-\boldsymbol1\boldsymbol1^\top/L$, $t=Pu$,
+$s^2=\|t\|^2/L$, and $\widetilde\sigma=\sqrt{s^2+\varepsilon}>0$,
+with $\varepsilon\ge0$. With fixed affine scale $\gamma$ and offset,
+\begin{equation}\label{eq:astra_bn_derivative}
+ D_{\rm BN}=\frac{\gamma}{\widetilde\sigma}
+ \left(P-\frac{tt^\top}{L(s^2+\varepsilon)}\right),\qquad
+ \|D_{\rm BN}d\|^2\le\frac{\gamma^2}{s^2+\varepsilon}\|Pd\|^2.
+\end{equation}
+If $s^2>0$, decompose $Pd=d_\parallel+d_\perp$ parallel and orthogonal
+to t. Then exactly
+\[
+ \|D_{\rm BN}d\|^2=\frac{\gamma^2}{s^2+\varepsilon}
+ \left[\|d_\perp\|^2+
+ \left(\frac{\varepsilon}{s^2+\varepsilon}\right)^2\|d_\parallel\|^2\right].
+\]
+\end{proposition}
+\begin{proof}
+Differentiate $\gamma Pu/\sqrt{\|Pu\|^2/L+\varepsilon}$.
+The middle matrix annihilates constants, has eigenvalue one on
+centered vectors orthogonal to t, and eigenvalue
+$\varepsilon/(s^2+\varepsilon)$ in the t direction. This proves both
+identities and the contraction upper bound. If $s^2=0$ and
+$\varepsilon>0$, the derivative is simply $\gamma P/\sqrt\varepsilon$.
+\end{proof}
+
+\begin{proposition}[Function-preserving BN scale law]
+\label{prop:astra_bn_scale}
+Suppose a linear or convolutional block W is used downstream only
+through its immediately following train-mode BN. Scale W and its bias
+by c>0, keep the other parameters fixed, and co-scale the stabilizer
+$\varepsilon\mapsto c^2\varepsilon$. On batches with defined forward
+passes, logits are unchanged and
+\begin{equation}\label{eq:astra_bn_scale}
+ J_W(cW)=c^{-1}J_W(W),\qquad G_{WW}(cW)=c^{-2}G_{WW}(W),
+\end{equation}
+where the left side uses the co-scaled bias and stabilizer.
+For $\varepsilon=0$ the same identities hold without a stabilizer change
+provided every channel has positive variance.
+\end{proposition}
+\begin{proof}
+Centering is linear and variance scales by $c^2$, so
+$\operatorname{BN}_{c^2\varepsilon}(cu)=\operatorname{BN}_{\varepsilon}(u)$.
+This identity holds as a function of W in a neighborhood where defined;
+differentiate it and use unchanged output probabilities in the GGN.
+The incoming bias Jacobian also scales by $c^{-1}$. Jacobians with
+respect to parameters that are not co-scaled remain unchanged, by
+differentiating the function identity with respect to those parameters.
+\end{proof}
+\begin{remark}[Known parameterization sensitivity]
+The effective-learning-rate effect of normalization is established
+\citep{astra_vanlaarhoven2017}. The scalar
+$\|W\|_F^2\lambda_{\max}(G_{WW})$ is invariant under this uniform
+rescaling, not under arbitrary channelwise rescaling. For positive
+diagonal D, channelwise scaling W to DW with channelwise stabilizers
+co-scaled is also function preserving, but the GGN transforms by a
+nonuniform inverse congruence; the scalar generally changes.
+The audited four-channel example with scales $(0.2,1,3,8)$ changed it
+by a factor 235 at identical logits. This is an example, not a universal
+factor. At fixed positive $\varepsilon$, report each $s_i^2/\varepsilon$
+and the scale-control departure: neither a universal accuracy threshold
+such as $s_i^2\ge10^3\varepsilon$ nor a final-logit error bound follows
+without bounds on c and on downstream sensitivity. Empirical tolerances
+from a particular block are diagnostics only.
+\end{remark}
+
+\begin{proposition}[A constant centered Gram can coexist with growing curvature]
+\label{prop:astra_center_counter}
+For $M\ge2$, take three feature rows $(1,0)$, $(0,1)$, $(-1,-1)$ padded
+with zeros to dimension M, and $w_M=e_1/\sqrt M$. Put a single train-mode
+BN with $\gamma=1$, $\varepsilon=0$ after $w_M^\top h$, followed by
+binary logits $(\operatorname{BN}(w_M^\top h),0)$. Then the centered
+incoming Gram has top eigenvalue one, while
+$\lambda_{\max}(G_{ww})=M c_*$ for a constant $c_*>0$.
+\end{proposition}
+\begin{proof}
+The nonzero Gram block is
+$\left(\begin{smallmatrix}2/3&1/3\\1/3&2/3\end{smallmatrix}\right)$.
+At $w=e_1$ the centered preactivation is $(1,0,-1)$, with positive
+variance, and the perturbation $e_2$ induces $(0,1,-1)$ with a
+nonzero component transverse to it. The BN derivative and finite-logit
+CE curvature give a positive Rayleigh quotient. Apply
+Proposition~\ref{prop:astra_bn_scale} with $c=M^{-1/2}$.
+This growth is precisely that function-preserving rescaling: the
+normalization $\|w_M\|=M^{-1/2}$ is the whole mechanism. It refutes
+an \emph{unqualified} necessity claim for a width-linear centered Gram,
+not a claim that assumes width-uniform downstream gain. It is not a
+normalization-free mechanism.
+\end{proof}
+
+\begin{proposition}[Conditional normalization-gain width law]
+\label{prop:astra_bn_gain}
+Let input dimension be d (for a fixed-size convolution, d is a fixed
+multiple of $M+K$). On a fixed BN group let the \emph{centered} feature
+covariance be $S_c$, and initialize a row w independently with
+$\E w=0$, $\E ww^\top=\sigma_w^2 I_d/d$. Its pre-BN variance satisfies
+\begin{equation}\label{eq:astra_bn_variance}
+ \E_w s^2=\sigma_w^2\operatorname{tr}(S_c)/d.
+\end{equation}
+For a realized row assume $c_-/d\le s^2\le c_+/d$, with
+$0<c_-\le c_+<\infty$, and
+$0<\gamma_-\le|\gamma|\le\gamma_+$. Then
+\begin{equation}\label{eq:astra_bn_gain}
+ \frac{\gamma_-^2d}{c_++\varepsilon d}
+ \le\frac{\gamma^2}{s^2+\varepsilon}
+ \le\frac{\gamma_+^2d}{c_-+\varepsilon d}.
+\end{equation}
+For a given unit parameter witness whose pre-BN perturbation d' has
+$\|d'_\perp\|^2\ge\tau\|d'\|^2$ with $\tau>0$, its post-BN energy
+is at least
+$\tau\gamma_-^2d\|d'\|^2/(c_++\varepsilon d)$.
+A final GGN lower bound further requires a positive lower gain of the
+actual downstream softmax-weighted, masked map on that post-BN perturbation.
+\end{proposition}
+\begin{proof}
+$s^2=w^\top S_cw$, so taking a trace proves
+\eqref{eq:astra_bn_variance}. Invert the two realized variance bounds
+to obtain \eqref{eq:astra_bn_gain}. The transverse energy identity in
+Proposition~\ref{prop:astra_bn_derivative} proves the witness assertion;
+then apply \eqref{eq:astra_full_witness} with the stated downstream gain.
+\end{proof}
+\begin{remark}[Diagnostic model and its premises]
+If $s^2=c_0/(M+K)$, its squared BN gain is exactly
+\[
+ \gamma^2(M+K)/(c_0+\varepsilon(M+K)).
+\]
+The premise is fixed positive \emph{total centered} incoming energy as
+channels are added, together with control of the realized row variance.
+Standard fan-in initialization with per-channel centered energy fixed
+instead gives width-independent \emph{expected} pre-BN variance.
+A fixed total uncentered second moment is insufficient (constant
+features have zero centered variance). An expectation of variance cannot
+be inverted into a concentration statement about gain. Even with fixed
+pre-BN witness energy, a radial witness is annihilated at
+$\varepsilon=0$ and need not inherit the gain. These qualifications
+make this a conditional diagnostic identity, not a new general BN theorem
+or an unconditional replacement for Lemma~\ref{lem:phi_scaling}.
+\end{remark}
+\section{Residual excitation and phase-restricted attribution}
+\label{sec:astra_excitation}
+\begin{lemma}[Directional gradient gain is not directional GGN curvature]
+\label{lem:astra_direction_gain}
+Let $R_u$ isometrically embed a directional parameter subspace and
+$J_u=J_\thetap R_u$. Then
+\[
+ \|J_u^\top r\|^2\le\lambda_{\max}(J_u^\top J_u)\|r\|^2.
+\]
+If $H\succeq0$ and $r\in\operatorname{range}(H)$, also
+\begin{equation}\label{eq:astra_pseudoinverse}
+ \|J_u^\top r\|^2\le\lambda_{\max}(J_u^\top HJ_u)r^\top H^\dagger r.
+\end{equation}
+For finite-logit softmax CE the range condition holds. A bound
+$H\succeq h_0\Pi_{\rm cls}$ on the class-contrast space, $h_0>0$,
+permits $r^\top H^\dagger r\le\|r\|^2/h_0$.
+\end{lemma}
+\begin{proof}
+The first claim is the operator-norm inequality. For the second, write
+\[J_u^\top r=(H^{1/2}J_u)^\top H^{\dagger/2}r.\]
+Apply the operator-norm inequality again.
+The last assertion follows by diagonalizing H on its range.
+Here the Hessian floor is understood for the softmax Hessian, whose
+range is exactly the class-contrast space at finite logits.
+\end{proof}
+\begin{remark}[CE counterexample and saturation]
+For one example with logits $(\theta,0)$, $\theta=0$, and label one, the residual and Jacobian are
+\[r=(-1/2,1/2),\qquad J=(1,0)^\top.\]
+Then
+$|\nabla_\theta\loss|^2=1/4$, while
+$G_{\theta\theta}\|r\|^2=(1/4)(1/2)=1/8$.
+Thus replacing the logit Gram by the GGN without the factor in
+\eqref{eq:astra_pseudoinverse} is false. At general first-class probability
+p the ratio is $1/(2p(1-p))$, unbounded near zero or one.
+A uniform positive h0 is a further assumption, not supplied by
+saturation. For a linear encoder and unit input direction u,
+$R_u b=\operatorname{vec}(bu^\top)$, so $J_u^\top r=(\nabla_\Theta\loss)u$.
+\end{remark}
+
+\begin{theorem}[Cumulative energy and excitation; review Theorem 2.1]
+\label{thm:astra_excitation}
+Let $A_u,A_v$ be constant directional logit Jacobians along a path,
+$r(t)=\nabla_z\ell(z(t))$ square integrable on $[0,T]$, and
+$C_u=A_uA_u^\top$, $\lambda_u=\|C_u\|$, with analogous v notation.
+Define $Q_T=\int_0^T r(t)r(t)^\top dt$ and
+$E_u=\int_0^T\|A_u^\top r(t)\|^2dt$. Then
+\[
+ E_u=\operatorname{tr}(C_uQ_T)\le\lambda_u\operatorname{tr}(Q_T).
+\]
+Suppose $\lambda_v>0$, $\lambda_u>0$, $\operatorname{tr}(Q_T)>0$,
+and a top unit eigenvector $q_v$ of $C_v$ satisfies
+$q_v^\top Q_Tq_v\ge\rho\operatorname{tr}(Q_T)$ with $\rho>0$.
+Then $E_v\ge\rho(\lambda_v/\lambda_u)E_u$; division by $E_u$ requires
+$E_u>0$. More generally, if $C_v\succeq c\lambda_vP$ and
+$\operatorname{tr}(PQ_T)\ge\rho\operatorname{tr}(Q_T)$ for a projector P,
+replace $\rho$ by $c\rho$.
+\end{theorem}
+\begin{proof}
+Integrate $\|A_u^\top r\|^2=r^\top C_ur$ and use
+$C_u\preceq\lambda_uI$. Since $C_v\succeq\lambda_vq_vq_v^\top$,
+$E_v\ge\lambda_v q_v^\top Q_Tq_v\ge\rho\lambda_v\operatorname{tr}(Q_T)$.
+The projector version is identical.
+\end{proof}
+\begin{remark}
+This theorem is loss-agnostic under its constant-Jacobian and integrability
+hypotheses; it includes affine CE. An envelope
+$\|r(t)\|\le C_r/(1+\mu t)$ gives $E_u\le\lambda_u C_r^2/\mu$.
+Here $\lambda_u$ is a logit-kernel eigenvalue. The exponential residual
+formulas in the next counterexamples specifically use squared loss.
+Excitation is an output-space condition on the visited residual; an
+input principal component alone does not establish it.
+\end{remark}
+
+\begin{proposition}[Counterexamples 2.2 and 2.3 and the decoupled ratio]
+\label{prop:astra_energy_counter}
+For affine squared loss take
+$C_v=L e_1e_1^\top$, $C_u=\ell e_2e_2^\top$, $L,\ell>0$, with
+total kernel $\operatorname{diag}(L,\ell)$.
+If $r(0)=e_2$, then $E_v(T)=0<E_u(T)$ for $T>0$.
+If $r(0)=e_1+e_2$, then
+\[
+ E_v(T)=(1-e^{-2LT})/2,\qquad E_u(T)=(1-e^{-2\ell T})/2,
+\]
+so their ratio tends to one even for arbitrarily large $L/\ell$.
+More generally assume e1,e2 are orthonormal eigenvectors of the total
+constant kernel with positive eigenvalues $\gamma_v,\gamma_u$,
+$C_v=\lambda_v e_1e_1^\top$, $C_u=\lambda_u e_2e_2^\top$, and the
+initial residual components are $a_v,a_u$ with $a_u\ne0$,
+$\lambda_u>0$, $T>0$. Then
+\begin{equation}\label{eq:astra_decoupled}
+ \frac{E_v(T)}{E_u(T)}=
+ \frac{\lambda_v}{\lambda_u}\frac{a_v^2}{a_u^2}
+ \frac{\gamma_u}{\gamma_v}
+ \frac{1-e^{-2\gamma_vT}}{1-e^{-2\gamma_uT}}.
+\end{equation}
+\end{proposition}
+\begin{proof}
+Each residual component is $a_je^{-\gamma_jt}$; integrate
+$\lambda_ja_j^2e^{-2\gamma_jt}$. The first two constructions are
+realized by the affine map $(\sqrt L\theta_1,\sqrt\ell\theta_2)$.
+Without the decoupling hypothesis, these scalar exponentials do not
+represent mixed residual components.
+\end{proof}
+
+\begin{proposition}[Attribution during a residual-excited phase]
+\label{prop:astra_phase}
+Assume the differentiability, absolute continuity, unit-flow and
+energy-identity conventions of Corollary~\ref{cor:astra_attribution},
+but not its global Rayleigh bounds. Let
+$q_b(t)=r^\top K_br$, $D(t)=q_\thetap(t)+q_\phip(t)$, and
+$\Delta L=\int_0^TD(t)dt=\loss(0)-\loss(T)>0$.
+For a measurable phase $E\subset[0,T]$, put
+\[
+ \tau_E=|E|,\qquad w_E=\frac{\int_E D(t)dt}{\Delta L}.
+\]
+On E suppose a measurable top-k projector $P_k(t)$ of $K_\phip(t)$
+(with a fixed measurable tie convention) satisfies
+\[
+ \|P_k(t)r(t)\|^2\ge\alpha\|r(t)\|^2,\quad
+ \lambda_k(K_\phip(t))\ge\ell_*>0,\quad
+ q_\thetap(t)\le a\|r(t)\|^2,
+\]
+where $0<\alpha\le1$, $a\ge0$. Then, when the phase denominator is positive,
+\begin{align}
+ \frac{\int_E q_\thetap}{\int_E D}&\le\frac{a}{a+\alpha\ell_*},
+ \label{eq:astra_phase}\\
+ \frac{\int_0^Tq_\thetap}{\Delta L}
+ &\le w_E\frac{a}{a+\alpha\ell_*}+(1-w_E).
+ \label{eq:astra_phase_total}
+\end{align}
+A verified complementary share bound b replaces the last term by
+$(1-w_E)b$. Time-varying pointwise constants give the sharper
+$D(t)dt/\Delta L$-weighted average of their share caps.
+\end{proposition}
+\begin{proof}
+PSD spectral decomposition gives
+$q_\phip\ge\lambda_k\|P_kr\|^2\ge\alpha\ell_*\|r\|^2$.
+Thus $q_\thetap\le[a/(a+\alpha\ell_*)]D$ on E.
+Integrate on E and its complement, where $q_\thetap\le D$.
+The phase duration is explicit but imposes no value on $w_E$.
+For $E=[0,\tau]$, $\int_E D=\loss(0)-\loss(\tau)$; under squared
+loss additionally $\|r(t)\|\le e^{-\alpha\ell_*t}\|r(0)\|$
+through this interval by differentiating its squared norm.
+\end{proof}
+\begin{corollary}[What a width-dependent cumulative share additionally requires]
+\label{cor:astra_phase_width}
+For a family satisfying Proposition~\ref{prop:astra_phase}, suppose
+its early-phase constants obey $a\le a_*$ and
+$\alpha\ell_*\ge cM$, with fixed $a_*\ge0,c>0$. On the complement
+assume $0<b_-\le q_\thetap/D\le b_+\le1$ at almost every time with
+$D>0$, for constants independent of M. Writing the cumulative share
+as $S_M$, one has
+\[
+ b_-(1-w_E)\le S_M
+ \le w_E\frac{a_*}{a_*+cM}+b_+(1-w_E).
+\]
+Consequently $S_M=O(M^{-1})$ holds if and only if
+$1-w_E=O(M^{-1})$. The same statement holds for nonnegative weighted
+sums on one discrete sequence, interpreting $w_E$ and $S_M$ as
+\emph{gradient-energy} fractions.
+\end{corollary}
+\begin{proof}
+The upper bound is Proposition~\ref{prop:astra_phase}. For the lower
+bound retain only the complementary numerator and use its share floor.
+Both implications follow since $b_->0$ and $a_*/(a_*+cM)=O(M^{-1})$.
+This characterizes what the claimed cumulative scaling needs under the
+stated late-phase floor; early excitation or a short phase alone is insufficient.
+\end{proof}
+
+\begin{remark}[Discrete diagnostic and admissible reference space]
+Replacing integrals by nonnegative weighted sums of gradient squares
+proves the same \emph{gradient-energy} inequalities on any one sampled
+sequence, regardless of optimizer. This is not Adam loss-decrease
+attribution. Probe-defined phases and training-minibatch energies are
+different sequences unless explicitly matched. No phase-share bound
+alone replaces the stability assumptions needed to compare two trajectories.
+For CE let $\Pi_{\rm cls}=I_N\otimes(I_C-\boldsymbol1\boldsymbol1^\top/C)$.
+The residual belongs to its rank-$N(C-1)$ range. For a uniformly random
+unit vector in that range, expected energy in a projector P is
+$\operatorname{tr}(P\Pi_{\rm cls})/[N(C-1)]$, since its second moment is
+$\Pi_{\rm cls}/[N(C-1)]$. The full-space baseline
+$\operatorname{rank}(P)/(NC)$ is generally inappropriate.
+\end{remark}
+
+\section{A solvable serial cross-entropy instance}
+\label{sec:astra_serial}
+\begin{proposition}[Information retained by a fitting serial encoder]
+\label{prop:astra_information}
+If the predictions depend on X only through $Z=f_\thetap(X)$ and a
+classifier $q_\phip(Y\mid Z)$ has population CE at most $\eta<\infty$,
+then $H(Y\mid Z)\le\eta$ and $I(Y;Z)\ge H(Y)-\eta$.
+The same statement holds for the empirical distribution with a fixed model.
+\end{proposition}
+\begin{proof}
+CE is conditional entropy plus the nonnegative expected conditional KL
+divergence. Suppression of a selected coordinate or failure under a
+specified shift is therefore different from absence of all training-label
+information in the serial representation.
+\end{proof}
+
+\begin{theorem}[Serial CE instance; review Theorem 5.1]
+\label{thm:astra_serial}
+Let $Y$ be uniform on $\{-1,1\}$ and let training inputs be
+$x_1=(S,0)$, $x_2=(0,C_{\rm ctx})$ with $S=C_{\rm ctx}=Y$.
+The shared linear encoder is $W=(a,v)$, giving $z_1=aS,z_2=vC_{\rm ctx}$.
+For integer $M\ge1$ define
+\[
+ F=z_1+\sum_{j=1}^M\beta_jz_2=aS+bvC_{\rm ctx},\quad
+ b=\sum_j\beta_j,\quad\thetap=(a,v),\quad\phip=\beta.
+\]
+All coordinates follow unit Euclidean gradient flow on the averaged
+binary CE $\loss=\E\log(1+e^{-YF})=\log(1+e^{-q})$, $q=a+bv$,
+from $a_0=0,v_0=1,\beta_0=0$, with no clipping, decay or momentum.
+Fix $0<\delta<1/2$, $m=\log((1-\delta)/\delta)$, and let $T_m$ be
+the first time q reaches m. Write $\varrho=(1+e^q)^{-1}$ and
+$\Psi(q)=q+e^q-1$. Then:
+\begin{align}
+ \dot a&=\varrho,&\dot v&=b\varrho,&\dot b&=Mv\varrho,\label{eq:astra_serial_ode}\\
+ v&=\cosh(\sqrt M a),&b&=\sqrt M\sinh(\sqrt M a),\label{eq:astra_serial_phase}\\
+ q&=a+\frac{\sqrt M}{2}\sinh(2\sqrt M a),&
+ \dot q&=(M+1+2b^2)\varrho.\label{eq:astra_serial_q}
+\end{align}
+The solution is global and reaches m in finite time, with
+\begin{equation}\label{eq:astra_serial_time}
+ \frac{\Psi(m)}{M+1+2m^2}\le T_m\le\frac{\Psi(m)}{M+1}.
+\end{equation}
+At that time, writing $a_M=a(T_m)$,
+\begin{gather}
+ 0<a_M\le\frac{m}{M+1},\qquad b(T_m)v(T_m)\ge\frac{Mm}{M+1},
+ \qquad Ma_M\longrightarrow m,\label{eq:astra_serial_update}\\
+ 0\le v(T_m)-1\le\frac{m^2}{2M},\qquad
+ \|W(T_m)-W_0\|\le
+ \sqrt{\frac{m^2}{(M+1)^2}+\frac{m^4}{4M^2}}.\label{eq:astra_serial_disp}
+\end{gather}
+For fixed m, $a_M$ decreases strictly with M; removing the contextual
+path entirely requires $a=m$ at the same fitting margin. Moreover,
+\begin{equation}\label{eq:astra_serial_envelope}
+ \varrho(t)\le\frac{1/2}{1+(M+1)t/4},\qquad t\ge0.
+\end{equation}
+In the stated parameter blocks and loss convention,
+\[
+ \lambda_{\max}(G_{\thetap\thetap})=\varrho(1-\varrho)(1+b^2),\quad
+ \lambda_{\max}(G_{\phip\phip})=M\varrho(1-\varrho)v^2,
+\]
+so at initialization they equal $1/4,M/4$ and the disparity is M.
+For the separately trained frozen encoder $W=(0,1)$, $\beta_F(0)=0$,
+its margin obeys $\Psi(q_F(t))=Mt$ and
+\begin{equation}\label{eq:astra_serial_gap}
+ 0\le q(t)-q_F(t)\le\frac{(1+2m^2)t}{2+Mt/2}
+ \le\frac{2(1+2m^2)}M,\qquad0\le t\le T_m.
+\end{equation}
+Under the specified reversal $S=Y,C_{\rm ctx}=-Y$, the joint model at
+$T_m$ has error one; the fitted spectral-only comparator has error zero.
+\end{theorem}
+\begin{proof}
+The training margin is the same on each example, so direct differentiation
+gives \eqref{eq:astra_serial_ode}. Divide by $\dot a=\varrho>0$ to get
+$dv/da=b$, $db/da=Mv$, which proves \eqref{eq:astra_serial_phase}.
+It implies $b^2=M(v^2-1)$ and \eqref{eq:astra_serial_q}.
+Since $0<\dot a\le1/2$, a stays finite on every finite time interval;
+the phase formula then gives global existence. The strictly increasing
+map $Q_M(a)=a+(\sqrt M/2)\sinh(2\sqrt M a)$ maps $[0,\infty)$
+onto itself and has a finite inverse at m. On this compact a interval,
+$\dot a\ge\delta>0$, so the hitting time is finite.
+
+$\sinh x\ge x$ gives $Q_M(a)\ge(M+1)a$, strictly for $a>0$.
+Before fitting, $v\ge1$, $0\le bv=q-a\le m$, hence $b\le m$.
+The invariant gives $v-1=b^2/[M(v+1)]\le m^2/(2M)$.
+For fixed positive a the contextual term increases strictly with M;
+invert to get strict decrease of $a_M$. Its upper bound implies
+$\sqrt M a_M\to0$, and the expansion
+$m=(M+1)a_M+O(M^2a_M^3)$ gives $Ma_M\to m$.
+
+$\dot\varrho=-(M+1+2b^2)\varrho^2(1-\varrho)$ and
+$\varrho\le1/2$ imply $(d/dt)(1/\varrho)\ge(M+1)/2$.
+Integrate from $\varrho(0)=1/2$ for the envelope.
+Since $\Psi'(q)=1/\varrho$, before fitting
+$\frac d{dt}\Psi(q)=M+1+2b^2\in[M+1,M+1+2m^2]$;
+integration proves \eqref{eq:astra_serial_time}.
+The margin gradients are $Y(1,b)$ and $Yv\boldsymbol1_M$;
+the scalar logistic Hessian is $\varrho(1-\varrho)$, giving the GGN.
+
+For the frozen system $\dot q_F=M/(1+e^{q_F})$. Thus
+$0\le\Psi(q)-\Psi(q_F)=\int_0^t(1+2b^2)ds\le(1+2m^2)t$.
+Convexity gives a lower bound $\Psi'(q_F)(q-q_F)$ for this difference.
+As $q_F\le e^{q_F}-1$,
+$Mt=\Psi(q_F)\le2(e^{q_F}-1)$, so
+$\Psi'(q_F)\ge2+Mt/2$, proving \eqref{eq:astra_serial_gap}.
+The shifted margin is $a-bv=2a_M-m<0$: for $M>1$ use
+\eqref{eq:astra_serial_update}, and for $M=1$ use the strict
+inequality $Q_1(a)>2a$. The spectral-only shifted margin is m.
+\end{proof}
+
+\begin{corollary}[Analytic instantiation of the displacement bound]
+\label{cor:astra_serial_bound}
+For Theorem~\ref{thm:astra_serial}, embed the scalar prediction in
+symmetric logits $(F/2,-F/2)$. The packet residual norm is
+$R=\sqrt2\varrho$, and on $[0,T_m]$
+\[
+ \|J_\thetap\|=\sqrt{(1+b^2)/2}\le B_m:=\sqrt{(1+m^2)/2}.
+\]
+With envelope amplitude $C_r=1$ and $\mu=(M+1)/4$,
+Theorem~\ref{thm:twoscale} gives
+\begin{equation}\label{eq:astra_serial_bound}
+ \|W(T_m)-W_0\|\le\frac{4B_m}{M+1}\log\frac1{\sqrt2\delta}.
+\end{equation}
+Also $\|W(T_m)-W_0\|\le\sqrt{1+m^2}\,a_M
+\le\sqrt{1+m^2}m/(M+1)$.
+\end{corollary}
+\begin{proof}
+The symmetric logit derivative has squared norm $(1+b^2)/2$, while
+the full residual norm is $\sqrt2\varrho$, so their product is the
+exact encoder gradient norm. The envelope has true initial amplitude
+$1/\sqrt2$; $C_r=1$ is a valid larger amplitude matching the main
+text's $C_r\ge1$ convention. Its target is $\sqrt2\delta<1$.
+All constants apply on the fitting region $|b|\le m$.
+Alternatively integrate $\|\dot W\|=\varrho\sqrt{1+b^2}
+\le\sqrt{1+m^2}\dot a$.
+\end{proof}
+\begin{remark}[Embedding, head, and initialization conventions]
+For logits $(F,0)$, loss, residual norm and GGN agree, but the unprojected
+logit-Jacobian norm is $\sqrt{1+b^2}$; the symmetric embedding makes
+the norm-product bound exact. A freely trained dense two-row head is
+not the parameter block $\phip=\beta$: its initial head eigenvalue is
+$M/2$, not $M/4$, while the encoder eigenvalue remains $1/4$ at the
+same initial function. Labels need not be balanced for the training
+ODE; balance is used in the information/noisy-accuracy statement below.
+The initial encoder orientation in Theorem~\ref{thm:astra_serial} is
+explicitly asymmetric; the next corollary removes that choice for W,
+not the routing/readout asymmetry.
+\end{remark}
+
+\begin{proposition}[Readout normalization and representation interpretation]
+\label{prop:astra_serial_control}
+Replace the contextual readout by $\alpha_M\sum_j\gamma_jz_2$,
+$\gamma_j(0)=0$, at unit rates. Its reduced equation for
+$b=\alpha_M\sum_j\gamma_j$ is $\dot b=M\alpha_M^2v\varrho$.
+In particular $\alpha_M=M^{-1/2}$ gives exactly the $M=1$ dynamics
+for every M. At every finite M in the original theorem, the noiseless
+spectral coordinate $a_MS$ still determines Y. If it is instead
+observed as $Z_S=a_MY+\sigma\xi$, with $\xi\sim\mathcal N(0,1)$
+independent, $\sigma>0$ fixed, then Bayes accuracy is
+$\Phi(a_M/\sigma)$ and $I(Y;Z_S)\le a_M^2/(2\sigma^2)$.
+\end{proposition}
+\begin{proof}
+Differentiate each readout and sum. The Gaussian likelihood-ratio test
+is thresholding at zero, giving the accuracy. For
+$Q=\mathcal N(0,\sigma^2)$,
+$\E_Y\operatorname{KL}(P_{Z_S|Y}\|Q)=a_M^2/(2\sigma^2)
+=I(Y;Z_S)+\operatorname{KL}(P_{Z_S}\|Q)$.
+This noise is a specified observation perturbation, not training noise.
+\end{proof}
+
+\begin{corollary}[General and isotropic encoder initialization]
+\label{cor:astra_isotropic}
+In the serial model let $m>0$, $a_0<m$, $v_0\ne0$, and allow any
+readout initialization with $\sum_j\beta_{j0}=0$. Set
+$u=a-a_0$, $\Delta=m-a_0>0$. Then
+\begin{align}
+ v&=v_0\cosh(\sqrt M u),\quad b=\sqrt Mv_0\sinh(\sqrt M u),
+ \label{eq:astra_iso_phase}\\
+ q&=a_0+u+\frac{\sqrt Mv_0^2}{2}\sinh(2\sqrt M u),\notag\\
+ 0<u_M&\le\frac{\Delta}{1+Mv_0^2},\qquad
+ Mu_M\longrightarrow\frac{\Delta}{v_0^2},\qquad
+ \frac{a(T_m)-a_0}{m-a_0}\longrightarrow0.
+ \label{eq:astra_iso_update}
+\end{align}
+The fitting root decreases strictly with M and
+\begin{equation}\label{eq:astra_iso_disp}
+ |v(T_m)-v_0|\le\frac{\Delta^2}{2M|v_0|^3},\qquad
+ \|W(T_m)-W_0\|\le
+ \sqrt{\frac{\Delta^2}{(1+Mv_0^2)^2}+
+       \frac{\Delta^4}{4M^2|v_0|^6}}.
+\end{equation}
+With $\Psi_{a_0}(q)=q-a_0+e^q-e^{a_0}$,
+\[
+ \frac{\Psi_{a_0}(m)}{1+Mv_0^2+2\Delta^2/v_0^2}
+ \le T_m\le\frac{\Psi_{a_0}(m)}{1+Mv_0^2}.
+\]
+For a frozen encoder at $(a_0,v_0)$ and the same initial readouts,
+$\Psi_{a_0}(q_F)=Mv_0^2t$. If
+$p_0=e^{a_0}/(1+e^{a_0})$ and $C_0=1+2\Delta^2/v_0^2$, then
+\begin{equation}\label{eq:astra_iso_gap}
+ 0\le q_J-q_F\le\frac{C_0t}{1+e^{a_0}+p_0Mv_0^2t}
+ \le\frac{C_0}{p_0Mv_0^2},\qquad0\le t\le T_m.
+\end{equation}
+Under contextual reversal the fitted margin is $2a(T_m)-m$.
+For $a_0<m/2$, error is one for all sufficiently large M, with sufficient
+condition $Mv_0^2>m/(m-2a_0)$. For $m/2\le a_0<m$, the reversed
+classifier is correct at every width. If $a_0\ge m$, define fitting to
+stop immediately, in which case it is also correct.
+
+If $(a_0,v_0)\sim\mathcal N(0,\sigma^2 I_2)$, $\sigma>0$, then
+$v_0\ne0$ almost surely; use the preceding stopping convention.
+The expected reversal error satisfies
+\begin{equation}\label{eq:astra_iso_error}
+ \lim_{M\to\infty}\E_{W_0}\operatorname{Err}_{\rm reversal}
+ =\Phi\left(\frac{m}{2\sigma}\right).
+\end{equation}
+The same-threshold spectral-only comparator has zero reversal error.
+\end{corollary}
+\begin{proof}
+Dividing the ODE by $\dot a>0$ gives
+\eqref{eq:astra_iso_phase}; only the initial readout sum enters.
+Each $\beta_i-\beta_j$ is conserved, so equal initial readouts are not
+needed for closure. Positivity of the contextual margin
+$b v=(\sqrt Mv_0^2/2)\sinh(2\sqrt M u)$ and the sinh inequality
+prove \eqref{eq:astra_iso_update}; Taylor expansion at
+$\sqrt M u_M\to0$ gives the limit. The invariant is
+$b^2=M(v^2-v_0^2)$; v keeps its sign and $|v|\ge|v_0|$.
+Since $bv\le\Delta$, $|b|\le\Delta/|v_0|$ and
+\[
+ |v-v_0|=\frac{b^2}{M(|v|+|v_0|)}
+ \le\frac{\Delta^2}{2M|v_0|^3}.
+\]
+This finite-M inequality proves \eqref{eq:astra_iso_disp}.
+Now $\dot q=(1+Mv_0^2+2b^2)\varrho$ and
+$b^2\le\Delta^2/v_0^2$ on the fitting interval; integrate the
+transformed margin for the time bounds. Global existence follows as
+before from $\dot u\le1$ and the phase formula; every finite m is hit.
+
+The transformed joint/frozen difference lies between zero and $C_0t$.
+Also $q_F-a_0\le(e^{q_F}-e^{a_0})/e^{a_0}$ gives
+$\Psi'_{a_0}(q_F)\ge1+e^{a_0}+p_0Mv_0^2t$.
+Convexity proves \eqref{eq:astra_iso_gap}. For $a_0<m/2$, use
+$a(T_m)\le a_0+\Delta/(1+Mv_0^2)$ to get the finite-M reversal
+condition. For $a_0>m/2$ the classifier is correct at every fitted
+width, since $u_M>0$ gives $2a(T_m)-m>2a_0-m>0$; equality
+$a_0=m/2$ also gives a positive margin. Immediate stopping covers
+$a_0\ge m$. Almost surely the limiting error is
+$1_{\{a_0<m/2\}}$, apart from the zero-probability boundary and
+$v_0=0$ events. Dominated convergence gives \eqref{eq:astra_iso_error}.
+\end{proof}
+
+\begin{remark}[Confidence dependence and limiting quantity]
+For $a_0\ne0$, $a(T_m)/a_0\to1$ but $a(T_m)/m\to a_0/m$;
+the vanishing quantity is the \emph{update} fraction in
+\eqref{eq:astra_iso_update}. For $0<\rho<1$, a Gaussian tail and its
+maximum density give, with probability at least $1-\rho$,
+\[
+ |a_0|\le\sigma\sqrt{2\log(4/\rho)},\qquad
+ |v_0|\ge\frac{\rho\sigma}{2}\sqrt{\pi/2}.
+\]
+Substitute these bounds in the finite-M inequalities for uniform
+confidence bounds. The dependence is severe: for fixed
+$(\Delta,v_0)\in(0,\infty)\times(\R\setminus\{0\})$, expansion
+of the root yields
+\[
+ Mu_M=\frac{\Delta}{v_0^2}\left[
+ 1-\frac1{Mv_0^2}-\frac{2\Delta^2}{3Mv_0^4}+O(M^{-2})\right].
+\]
+Indeed substitute $u=A/M+B/M^2$ in the sinh equation and match its
+constant and $M^{-1}$ coefficients. The expansion's remainder is
+pointwise, not already uniform in rho. Its small-$|v_0|$ crossover
+requires control of $\Delta^2/(Mv_0^4)$; at the confidence cutoff this
+has scale $\Delta^2\rho^{-4}\sigma^{-4}/M$, a fourth power of
+$1/\rho$, not a second. A rigorous uniform remainder can instead be
+bounded from the sinh series on this controlled argument. Do not
+present this asymptotic crossover as a universal necessary width.
+\end{remark}
+
+\paragraph{Provenance and interpretation.}
+Architecture- and initialization-dependent implicit bias is established
+in linear-network analyses \citep{astra_yun2021,astra_moroshko2020};
+trajectory-level incremental learning is studied by
+\citet{astra_berthier2023}. Exact deep-linear dynamics
+\citep{astra_saxe2014} and conservation of layer-norm differences
+\citep{astra_du2018balance} supply the underlying tools. CE feature
+competition is central to \citet{astra_pezeshki2021}.
+The serial example instantiates a known optimization-metric mechanism
+with finite-margin formulas, an encoder-update comparison and a specified
+reversal distribution. Replication is equivalent to a rate M on b,
+and normalization removes it; the function class does not grow.
+These particular calculations are not a claim of a new general implicit-bias
+mechanism, and finite-time or serial composition alone is not a novelty claim.
+
+\section{A scoped nonlinear existence result}
+\label{sec:astra_nonlinear}
+
+\paragraph{Flow convention and normalization.}
+Here the loss is squared loss, the encoder is linear, the decoder has
+one hidden ReLU layer, and every parameter uses unit Euclidean gradient
+flow. There is no BatchNorm, convolution, weight decay, clipping,
+preconditioning, or stochastic sampling. Write
+\[
+ f_n=V\sigma(W\Theta x_n+b)+\beta,\qquad
+ \loss=\frac1{2N}\sum_{n=1}^N\norm{f_n-y_n}^2,
+ \qquad \thetap=\Theta,\quad\phip=(W,b,V,\beta).
+\]
+Parameter norms are Euclidean, with Frobenius norms on matrices.
+Set $\bar f=N^{-1/2}(f_1,\ldots,f_N)$ and
+$e=\bar f-\bar y$, so that $\loss=\norm e^2/2$.
+At a ReLU kink choose a measurable gate in $[0,1]$, using the same gate
+in every parameter block for that neuron and datum. A solution is an
+absolutely continuous parameter path satisfying the resulting gradient
+flow almost everywhere. The theorem concerns every such solution;
+uniqueness is not asserted. Local existence and the energy identity
+needed below are proved in the proof. This formulation avoids identifying
+arbitrary backpropagation selections with the Clarke subdifferential.
+
+\begin{theorem}[Theorem N: nonlinear, unnormalized-readout existence result]
+\label{thm:astra_nonlinear}
+Fix positive integers $N,D,K,C$, fixed data $x_n\in\R^D,y_n\in\R^C$,
+and a deterministic $\Theta_0\in\R^{K\times D}$ such that the
+$\Theta_0x_n$ are pairwise distinct. Fix $s_w,s_v,s_b>0$ and initialize
+independently across neurons, entries, and blocks:
+\[
+ w_i\sim\mathcal N(0,s_w^2 I_K/K),\quad
+ b_i\sim\mathcal N(0,s_b^2),\quad
+ V_{ci}\sim\mathcal N(0,s_v^2/M).
+\]
+The output bias $\beta_0$ is fixed, or independent of the other blocks
+with an $M$-independent distribution of finite second moment. In
+particular $\beta_0$ need not be centered. Compare joint training from
+this initialization with training of all decoder parameters from the
+same initialization while fixing $\Theta=\Theta_0$.
+For every $\rho\in(0,1)$ there are finite positive constants
+$\kappa,A,B,R_0,C_{\rm gap},M_*$, depending on the fixed data,
+initialization scales and $\rho$, but not on $M$, with the following
+property. For each $M\ge M_*$, with probability at least $1-\rho$,
+both flows have global solutions, and every pair of solutions obeys,
+for every $t\ge0$,
+\begin{align*}
+ \norm{e^J(t)},\norm{e^F(t)}
+   &\le R_0e^{-\kappa Mt/2}, \tag{N1}\label{eq:astra_n1}\\
+ \sup_t\norm{\Theta^J(t)-\Theta_0}
+   &\le\frac{2AR_0}{\kappa M},&
+ \sup_t\norm{\phip^{J,F}(t)-\phip_0}
+   &\le\frac{2BR_0}{\kappa\sqrt M}, \tag{N2}\label{eq:astra_n2}\\
+ \sup_t\norm{\bar f^J(t)-\bar f^F(t)}
+   &\le\frac{C_{\rm gap}R_0}{\kappa M}. \tag{N3}\label{eq:astra_n3}
+\end{align*}
+For every finite $T>0$ with $\loss(0)>\loss(T)$ on the joint path,
+\begin{equation*}
+ \frac{\int_0^T\norm{\nabla_{\thetap}\loss}^2dt}
+ {\loss(0)-\loss(T)}
+ \le\frac{A^2}{A^2+\kappa M/2}. \tag{N4}\label{eq:astra_n4}
+\end{equation*}
+For $0<\delta<R_0$, residual norm at most $\delta$ is reached by
+$2(\kappa M)^{-1}\log(R_0/\delta)$. If the initial residual is already
+at most $\delta$, the first hitting time can be zero.
+The constants and threshold constructed below are existence-only and
+can be numerically vacuous. This is not a uniform theorem for learned
+encoders, growing datasets, general deep decoders, or production Adam.
+\end{theorem}
+
+\begin{proof}
+We give explicit finite constants to make all quantifiers and
+probability events checkable.
+
+\emph{Population kernel and initialization events.}
+Let $X=\max_n\norm{x_n}$, $z_n=\Theta_0x_n$, and
+\[
+ H_{ni}=N^{-1/2}\sigma(w_i^Tz_n+b_i),\quad
+ K_* =\E[H_{:i}H_{:i}^T],\quad
+ \kappa_* =\lambda_{\min}(K_*),\quad \kappa=\kappa_*/2.
+\]
+Here $K_*$ uses one random neuron with the displayed normalization,
+so that $\E[HH^T]=MK_*$. The distinct-input kink argument in the proof
+of Corollary~\ref{cor:astra_init} gives $\kappa_*>0$: if a linear
+combination of the ReLU features vanishes almost surely, it vanishes
+everywhere by continuity and full Gaussian support in $(w,b)$;
+one can cross each distinct affine hyperplane away from the others,
+forcing its coefficient to vanish.
+Put
+\[
+ s_{\max}^2=\frac{s_w^2}{K}\max_n\norm{z_n}^2+s_b^2,
+ \quad Z_0=\sqrt{1+(\norm{\Theta_0}X)^2},\quad Z=Z_0+X.
+\]
+Operator norm may be used for $\norm{\Theta_0}$ here; its Frobenius
+norm is also a valid upper bound. For $\norm{\Theta-\Theta_0}\le1$,
+\begin{equation}\label{eq:astra_zbound}
+ \sqrt{1+\norm{\Theta x_n}^2}\le Z.
+\end{equation}
+Indeed, with $a=\norm{\Theta_0}X$,
+$(\sqrt{1+a^2}+X)^2-[1+(a+X)^2]
+=2X(\sqrt{1+a^2}-a)\ge0$.
+
+Choose positive $h_0,C_w,C_v,A_0,R_0$ such that each of
+\begin{equation}\label{eq:astra_fiveevents}
+ \norm{H_0}_F\le h_0\sqrt M,\quad
+ \norm{W_0}_F\le C_w\sqrt M,\quad
+ \norm{V_0}_F\le C_v,\quad
+ \norm{J_{\Theta,0}}_{\rm op}\le A_0,\quad
+ \norm{e_0}\le R_0
+\end{equation}
+has failure probability at most $\rho/7$. Here and below $J$ is
+the Jacobian of $\bar f$. For example, Markov's inequality applies
+with respective second-moment upper bounds
+\[
+ \frac{s_{\max}^2}{2},\quad s_w^2,\quad Cs_v^2,\quad
+ Cs_v^2s_w^2X^2,\quad
+ Cs_v^2s_{\max}^2+2\E\norm{\beta_0}^2+2\norm{\bar y}^2
+\]
+after dividing the first two squared norms by $M$. Take each squared
+constant at least $7/\rho$ times the corresponding bound, enlarging
+to a positive value if necessary. For $J_{\Theta,0}$, conditional
+centering and independence of the entries of $V_0$ eliminate cross
+terms in $V_0\Gamma_{n,0}W_0$; its expected squared Frobenius norm
+is at most $Cs_v^2s_w^2$. The factors $x_n$ and $N^{-1/2}$ give the
+stated bound. The residual bound follows by conditioning on $(W_0,b_0)$
+and using the independent centered $V_0$; the output bias itself need
+not be centered.
+The variance calculation used in Corollary~\ref{cor:astra_init} gives
+\[
+ \Pr\{\lambda_{\min}(H_0H_0^T)<\kappa M\}
+ \le\frac{6s_{\max}^4}{M\kappa_*^2}.
+\]
+Thus $M\ge42s_{\max}^4/(\rho\kappa_*^2)$ makes this sixth failure
+probability at most $\rho/7$.
+
+\emph{Boundary event and constants.}
+Set
+\[
+ h=h_0+1,\quad \Omega=Z(C_v+1),\quad
+ B=\sqrt{h^2+\Omega^2+1},\quad R_\phi=4BR_0/\kappa,
+ \quad \tau_i=\frac{X\norm{w_{i,0}}+ZR_\phi}{\sqrt M}.
+\]
+For the seventh event define
+\[
+ \mathcal B=\sum_{i=1}^M\norm{V_{:i,0}}\norm{w_{i,0}}
+ \mathbf1\{\min_n|w_{i,0}^Tz_n+b_{i,0}|\le\tau_i\}.
+\]
+Conditioning on $w_{i,0}$, the Gaussian density of $b_{i,0}$ is bounded
+by $(s_b\sqrt{2\pi})^{-1}$. A union bound over $n$, independence
+of $V_{:i,0}$, and $\E\norm{V_{:i,0}}\le s_v\sqrt{C/M}$ give
+\[
+ \E\mathcal B\le C_{\rm bd}
+ :=\frac{2Ns_v\sqrt C}{s_b\sqrt{2\pi}}
+ \left(X\E\norm w^2+ZR_\phi\E\norm w\right).
+\]
+Here $\E\norm w^2=s_w^2$ and $\E\norm w\le s_w$; either the actual
+moment or its bound can define the constant. Put
+$\mathcal B_*=7C_{\rm bd}/\rho$. Then
+$\Pr\{\mathcal B>\mathcal B_*\}\le\rho/7$.
+Define
+\begin{align*}
+ A&=A_0+X\{R_\phi C_w+(C_v+1)+\mathcal B_*\},&
+ R_\theta&=4AR_0/\kappa,\\
+ D_H&=XC_wR_\theta+ZR_\phi,&
+ D_K&=(2h_0+1)D_H,\\
+ C_{\rm gap}&=2D_K+2\Omega^2+A^2.
+\end{align*}
+It suffices to take the integer ceiling of
+\begin{equation}\label{eq:astra_widththreshold}
+ M_*\ge\max\left\{1,R_\theta^2,R_\phi^2,D_H,
+              2D_K/\kappa,42s_{\max}^4/(\rho\kappa_*^2)\right\}.
+\end{equation}
+All constants are determined before $M$ is chosen. The intersection
+of the five events in \eqref{eq:astra_fiveevents}, the head-kernel
+event, and the boundary event has probability at least $1-\rho$.
+Initialization at a kink has probability zero and may be excluded
+without another probability charge.
+
+\emph{Deterministic estimates in the bootstrap tube.}
+Work on this intersection and in the closed tube
+\[
+ \norm{\Theta-\Theta_0}\le R_\theta/M,\qquad
+ \norm{\phip-\phip_0}\le R_\phi/\sqrt M.
+\]
+The width conditions imply $\norm{\Theta-\Theta_0}\le1$ and
+$\norm{\phip-\phip_0}\le1$, as well as
+$R_\theta/M\le M^{-1/2}$. Write $\omega=(W,b)$.
+ReLU is 1-Lipschitz, so
+\begin{align*}
+ \norm{H-H_0}_F
+ &\le X\norm{W_0}_F\norm{\Theta-\Theta_0}
+        +Z\norm{\omega-\omega_0}
+ \le D_H/\sqrt M,\\
+ \norm H_F&\le h\sqrt M,\qquad
+ \norm{HH^T-H_0H_0^T}_{\rm op}\le D_K.
+\end{align*}
+For the second line use $D_H\le M$ and expand the product; in
+particular $2h_0D_H+D_H^2/M\le D_K$.
+Consequently
+\begin{equation}\label{eq:astra_headfloor}
+ HH^T\succeq(\kappa M/2)I_N.
+\end{equation}
+The preactivation change for neuron $i$ on any datum is bounded by
+\[X\norm{w_{i,0}}R_\theta/M+Z\norm{\omega_i-\omega_{i,0}}\le\tau_i.\]
+Thus a changed gate belongs to the initial boundary event above.
+To control the encoder Jacobian use the exact three-term decomposition
+\begin{equation}\label{eq:astra_three_terms}
+ V\Gamma_nW-V_0\Gamma_{n,0}W_0
+ =(V-V_0)\Gamma_nW_0+V\Gamma_n(W-W_0)
+       +V_0(\Gamma_n-\Gamma_{n,0})W_0.
+\end{equation}
+The last term has operator norm at most $\mathcal B$. The first
+uses the current gates and initial $W_0$; the second uses the current
+$V$; both distinctions matter. Averaging over $n$ and multiplying by
+$x_n$ yields
+\[
+ \norm{J_\Theta}_{\rm op}
+ \le A_0+X\{\norm{V-V_0}_F\norm{W_0}_F
+       +\norm V_F\norm{W-W_0}_F+\mathcal B_*\}\le A.
+\]
+The separate block bounds are
+\[
+ \norm{J_\omega}_{\rm op}\le Z\norm V_F\le\Omega,\qquad
+ \norm{J_V}_{\rm op}\le h\sqrt M,\qquad
+ \norm{J_\beta}_{\rm op}=1,
+ \quad \norm{J_\phip}_{\rm op}\le B\sqrt M.
+\]
+Furthermore $J_\phip J_\phip^T\succeq
+(HH^T)\otimes I_C\succeq(\kappa M/2)I_{NC}$.
+These estimates also hold for the frozen path in its decoder tube.
+
+\emph{Flow existence, chain rule and continuation.}
+For completeness, local solutions in the convention above can be
+obtained by replacing ReLU by
+$\sigma_\epsilon(u)=(u+\sqrt{u^2+\epsilon^2})/2$.
+For fixed $M$, on a compact parameter neighborhood its values and
+first derivatives are uniformly bounded for $0<\epsilon\le1$.
+The smooth gradient vector fields are therefore uniformly bounded
+there, giving a common positive interval of existence and uniformly
+Lipschitz paths on a smaller neighborhood. A subsequence converges
+uniformly. The finitely many gates have a weak-* convergent subsequence
+in $L^\infty$ with limits in $[0,1]$ and the correct values away from
+zero preactivations. Each block gradient is linear in the corresponding
+gate, with all remaining coefficients converging uniformly. Passing
+to the integral equations gives one common limiting gate selection
+and a local solution.
+Along any such absolutely continuous solution, each preactivation
+has derivative zero almost everywhere on its zero level set.
+Consequently $d\sigma(g(t))/dt=\gamma(t)\dot g(t)$ almost everywhere,
+for every admissible gate selection. The ordinary product rule then
+gives $\dot e=-JJ^Te$ and
+$\dot\loss=-\norm{J^Te}^2$ almost everywhere. These facts follow
+directly here; related nonsmooth chain-rule frameworks are discussed
+by \citet{astra_davis2020,astra_bolte2021}. We do not infer a Clarke
+inclusion solely from the computational graph.
+
+Until a first exit from the tube,
+$\frac d{dt}\norm e^2\le-\kappa M\norm e^2$, proving (N1).
+The integrated speeds are bounded by
+\[
+ \int_0^\infty\norm{\dot\Theta}\,dt\le\frac{2AR_0}{\kappa M}
+     =\frac{R_\theta}{2M},\qquad
+ \int_0^\infty\norm{\dot\phip}\,dt
+     \le\frac{2BR_0}{\kappa\sqrt M}
+     =\frac{R_\phi}{2\sqrt M}.
+\]
+At a first exit these bounds contradict the tube boundary. Thus no
+exit occurs. Bounded velocities in this compact tube preclude finite
+escape, give a limit at any finite endpoint, and the local existence
+argument continues the path from that endpoint. This proves global
+existence and (N1)--(N2) for every selection, without uniqueness.
+
+\emph{Common linear reference and attribution.}
+Let
+\[
+ K_0=(H_0H_0^T)\otimes I_C+
+             (\mathbf1\mathbf1^T/N)\otimes I_C,
+ \qquad e^{\rm lin}(t)=e^{-K_0t}e_0.
+\]
+The second summand is the constant output-bias kernel.
+For the full output kernels $K^J(t)$ and $K^F(t)$,
+\[
+ \norm{K^J(t)-K_0}_{\rm op}\le D_K+\Omega^2+A^2,
+ \qquad
+ \norm{K^F(t)-K_0}_{\rm op}\le D_K+\Omega^2.
+\]
+Since $K_0\succeq\kappa MI$, variation of constants gives
+\[
+ e^a(t)-e^{\rm lin}(t)
+ =-\int_0^t e^{-K_0(t-s)}(K^a(s)-K_0)e^a(s)\,ds,
+ \qquad a\in\{J,F\}.
+\]
+Use $\norm{e^a(s)}\le R_0$ and
+$\int_0^te^{-\kappa M(t-s)}ds\le1/(\kappa M)$ and add the two
+bounds to obtain (N3). Both paths track the same linear reference;
+(N3) is not a general stability theorem for arbitrary nonlinear
+joint and frozen flows. Applying
+Corollary~\ref{cor:astra_attribution} with $a=A^2$ and decoder floor
+$\kappa M/2$ gives (N4), completing the proof.
+\end{proof}
+
+\begin{remark}[Threshold and scope]
+The threshold \eqref{eq:astra_widththreshold} is deliberately
+conservative. The boundary term contains an explicit factor $N/\rho$
+and $R_0$ can scale as $\rho^{-1/2}$, before its further dependence
+on $R_\phi$, the data, and $\kappa_*$ is substituted. When these
+factors are nonzero and the remaining scales are held fixed, already
+$R_\theta^2$ can contain a contribution of order
+$N^2/(\rho^3\kappa_*^2)$; the full displayed construction can be
+substantially worse. This is an illustration of vacuity, not a
+universal necessary lower bound (degenerate inputs can remove some
+terms), and it is not an empirical width prediction.
+\end{remark}
+
+\paragraph{Relation to prior work and a normalization control.}
+Positive limiting kernels, small parameter movement, and control of
+ReLU gate changes are established tools in wide-network convergence
+proofs \citep{astra_du2019,astra_arora2019}. Linearized dynamics are
+studied by \citet{astra_lee2019}; their dependence on parameterization
+and the distinction between lazy and feature-learning limits are
+central to \citet{astra_chizat2019,astra_yang2021}.
+The divergent kernel scale of the naive standard parameterization and
+its relation to layerwise training rates are also explicit in
+\citet{astra_sohldickstein2020}.
+The result above is a scoped instantiation with a coupled finite-width
+encoder and a joint/frozen comparison. It does not establish a new
+general lazy-training mechanism. Its gain disparity vanishes under
+an explicit $1/\sqrt M$ readout in the following precise convention:
+write $f=M^{-1/2}U\sigma(W\Theta x+b)+\beta$, initialize the entries
+of $U$ with variance $s_v^2$, and train $U$ at unit Euclidean rate.
+This preserves the initial function distribution but changes the
+optimization metric. The readout kernel is then $HH^T/M=O(1)$,
+and the encoder kernel remains $O(1)$; there is no forced factor-$M$
+readout/encoder separation. This does not assert equality of the two
+kernels or of their directional gains. Merely inserting the factor
+while retaining variance $s_v^2/M$ for the trained readout would be
+a different, shrinking-output initialization.
+
+% BEGIN ASTRA BIBTEX: copy the entries below, without the leading percent, to references.bib.
+% @inproceedings{astra_karimi2016,
+%   author = {Karimi, Hamed and Nutini, Julie and Schmidt, Mark},
+%   title = {Linear Convergence of Gradient and Proximal-Gradient Methods Under the {Polyak--Lojasiewicz} Condition},
+%   booktitle = {European Conference on Machine Learning and Knowledge Discovery in Databases},
+%   year = {2016}, url = {https://arxiv.org/abs/1608.04636}
+% }
+% @article{astra_tropp2012,
+%   author = {Tropp, Joel A.},
+%   title = {User-Friendly Tail Bounds for Sums of Random Matrices},
+%   journal = {Foundations of Computational Mathematics}, volume = {12},
+%   pages = {389--434}, year = {2012}, doi = {10.1007/s10208-011-9099-z}
+% }
+% @article{astra_vanlaarhoven2017,
+%   author = {van Laarhoven, Twan},
+%   title = {{L2} Regularization versus Batch and Weight Normalization},
+%   journal = {arXiv preprint arXiv:1706.05350}, year = {2017},
+%   url = {https://arxiv.org/abs/1706.05350}
+% }
+% @inproceedings{astra_yun2021,
+%   author = {Yun, Chulhee and Krishnan, Shankar and Mobahi, Hossein},
+%   title = {A Unifying View on Implicit Bias in Training Linear Neural Networks},
+%   booktitle = {International Conference on Learning Representations}, year = {2021},
+%   url = {https://arxiv.org/abs/2010.02501}
+% }
+% @inproceedings{astra_moroshko2020,
+%   author = {Moroshko, Edward and Woodworth, Blake and Gunasekar, Suriya and Lee, Jason D. and Srebro, Nathan and Soudry, Daniel},
+%   title = {Implicit Bias in Deep Linear Classification: Initialization Scale vs Training Accuracy},
+%   booktitle = {Advances in Neural Information Processing Systems}, volume = {33}, year = {2020},
+%   url = {https://arxiv.org/abs/2007.06738}
+% }
+% @article{astra_berthier2023,
+%   author = {Berthier, Rapha{\"e}l},
+%   title = {Incremental Learning in Diagonal Linear Networks},
+%   journal = {Journal of Machine Learning Research}, volume = {24}, number = {171},
+%   pages = {1--26}, year = {2023}, url = {https://jmlr.org/papers/v24/22-1395.html}
+% }
+% @inproceedings{astra_saxe2014,
+%   author = {Saxe, Andrew M. and McClelland, James L. and Ganguli, Surya},
+%   title = {Exact Solutions to the Nonlinear Dynamics of Learning in Deep Linear Neural Networks},
+%   booktitle = {International Conference on Learning Representations}, year = {2014},
+%   url = {https://arxiv.org/abs/1312.6120}
+% }
+% @inproceedings{astra_du2018balance,
+%   author = {Du, Simon S. and Hu, Wei and Lee, Jason D.},
+%   title = {Algorithmic Regularization in Learning Deep Homogeneous Models: Layers are Automatically Balanced},
+%   booktitle = {Advances in Neural Information Processing Systems}, volume = {31}, year = {2018},
+%   url = {https://arxiv.org/abs/1806.00900}
+% }
+% @inproceedings{astra_pezeshki2021,
+%   author = {Pezeshki, Mohammad and Kaba, Sekou-Oumar and Bengio, Yoshua and Courville, Aaron and Precup, Doina and Lajoie, Guillaume},
+%   title = {Gradient Starvation: A Learning Proclivity in Neural Networks},
+%   booktitle = {Advances in Neural Information Processing Systems}, volume = {34}, year = {2021},
+%   url = {https://arxiv.org/abs/2011.09468}
+% }
+% @inproceedings{astra_du2019,
+%   author = {Du, Simon S. and Zhai, Xiyu and Poczos, Barnabas and Singh, Aarti},
+%   title = {Gradient Descent Provably Optimizes Over-parameterized Neural Networks},
+%   booktitle = {International Conference on Learning Representations}, year = {2019},
+%   url = {https://openreview.net/forum?id=S1eK3i09YQ}
+% }
+% @article{astra_davis2020,
+%   author = {Davis, Damek and Drusvyatskiy, Dmitriy and Kakade, Sham and Lee, Jason D.},
+%   title = {Stochastic Subgradient Method Converges on Tame Functions},
+%   journal = {Foundations of Computational Mathematics}, volume = {20}, pages = {119--154},
+%   year = {2020}, url = {https://arxiv.org/abs/1804.07795}
+% }
+% @article{astra_bolte2021,
+%   author = {Bolte, J{\'e}r{\^o}me and Pauwels, Edouard},
+%   title = {Conservative Set Valued Fields, Automatic Differentiation, Stochastic Gradient Methods and Deep Learning},
+%   journal = {Mathematical Programming}, volume = {188}, pages = {19--51},
+%   year = {2021}, doi = {10.1007/s10107-020-01501-5},
+%   url = {https://arxiv.org/abs/1909.10300}
+% }
+% @inproceedings{astra_lee2019,
+%   author = {Lee, Jaehoon and Xiao, Lechao and Schoenholz, Samuel S. and Bahri, Yasaman and Novak, Roman and Sohl-Dickstein, Jascha and Pennington, Jeffrey},
+%   title = {Wide Neural Networks of Any Depth Evolve as Linear Models Under Gradient Descent},
+%   booktitle = {Advances in Neural Information Processing Systems}, volume = {32}, year = {2019},
+%   url = {https://arxiv.org/abs/1902.06720}
+% }
+% @inproceedings{astra_arora2019,
+%   author = {Arora, Sanjeev and Du, Simon S. and Hu, Wei and Li, Zhiyuan and Wang, Ruosong},
+%   title = {Fine-Grained Analysis of Optimization and Generalization for Overparameterized Two-Layer Neural Networks},
+%   booktitle = {Proceedings of the 36th International Conference on Machine Learning},
+%   series = {Proceedings of Machine Learning Research}, volume = {97}, pages = {322--332}, year = {2019},
+%   url = {https://proceedings.mlr.press/v97/arora19a.html}
+% }
+% @inproceedings{astra_chizat2019,
+%   author = {Chizat, Lenaic and Oyallon, Edouard and Bach, Francis},
+%   title = {On Lazy Training in Differentiable Programming},
+%   booktitle = {Advances in Neural Information Processing Systems}, volume = {32}, year = {2019},
+%   url = {https://arxiv.org/abs/1812.07956}
+% }
+% @inproceedings{astra_yang2021,
+%   author = {Yang, Greg and Hu, Edward J.},
+%   title = {Tensor Programs {IV}: Feature Learning in Infinite-Width Neural Networks},
+%   booktitle = {Proceedings of the 38th International Conference on Machine Learning},
+%   series = {Proceedings of Machine Learning Research}, volume = {139}, pages = {11727--11737}, year = {2021},
+%   url = {https://proceedings.mlr.press/v139/yang21c.html}
+% }
+% @article{astra_sohldickstein2020,
+%   author = {Sohl-Dickstein, Jascha and Novak, Roman and Schoenholz, Samuel S. and Lee, Jaehoon},
+%   title = {On the Infinite Width Limit of Neural Networks with a Standard Parameterization},
+%   journal = {arXiv preprint arXiv:2001.07301}, year = {2020},
+%   url = {https://arxiv.org/abs/2001.07301}
+% }
+% END ASTRA BIBTEX

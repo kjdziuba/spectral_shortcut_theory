@@ -1,0 +1,34 @@
+\section{Limitations and conclusion}
+\label{sec:limitations}
+
+We have separated three ingredients of selective encoder adaptation in
+serial models and given conditional bounds for each: curvature disparity
+under a head hypothesis, displacement under a residual envelope, and a
+finite-horizon attribution that needs coercivity only on the residual
+actually visited. The solvable instance shows the bounds biting; the
+production model shows the diagnostics failing in instructive ways; the
+matched protocol shows an apparent training effect dissolving.
+
+The limits are these. The theorems assume a linear encoder, and the
+strongest constructive guarantees hold for deliberately scoped models: an
+affine system, a shallow ReLU head with a numerically vacuous width
+threshold, and a scalar serial instance. The production study does not
+establish their mechanism; it establishes that the scalar disparity is the
+wrong lens on rank-one inputs, that a width trend can be a normalization
+gain, and that the head hypothesis is unmet, with three-width slopes that are
+descriptive rather than asymptotic. The residual experiment is a probe-batch
+diagnostic under Adam: eleven checkpoints cannot certify an almost-everywhere
+condition, and its comparison against an isotropic residual awaits a
+reference computed in the class-contrast subspace of dimension $N(C-1)$.
+The matched study is one width, three seeds, one validation fold, no test
+set and two matched pairs; it rules out reading the earlier gap as
+architectural, not the existence of an effect. Mitigation strategies,
+including per-module learning rates, gradient modulation and freezing, are
+not evaluated as prescriptions here, and the matched study is a reason to
+distrust untuned comparisons of them. What the paper adds beyond
+lazy-training, optimization-metric and feature-competition results is the
+distinction itself, with measurements showing where each ingredient fails
+to transfer. The open problem is a same-sequence phase certificate: a
+training run on which the phase membership, its energy fraction $w_E$ and
+the bound of Proposition~\ref{prop:astra_phase} are evaluated on one
+sequence, or a full-batch flow instance where the energy identity is exact.

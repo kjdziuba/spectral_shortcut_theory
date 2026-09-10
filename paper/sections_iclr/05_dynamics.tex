@@ -1,0 +1,124 @@
+\section{Dynamics: finite-time starvation, attribution, and the bridge}
+\label{sec:dynamics}
+
+We analyze the continuous-time limit of joint training with a shared
+learning rate, $\dot\thetap=-\nabla_\thetap\loss$,
+$\dot\phip=-\nabla_\phip\loss$, along absolutely continuous trajectories
+(almost everywhere for ReLU). For unregularized cross-entropy on separable
+data there is no finite minimizer \citep{soudry2018implicit}, so the honest
+statement is a finite-time bound on how far the encoder can move before the
+loss is fitted. By~\eqref{eq:jacobians},
+$\norm{\dot\thetap}\le\norm{J_\thetap}_{\mathrm{op}}\norm{r}$. Fix a horizon
+$T$ and suppose the trajectory stays in
+$\Phi_{\mathrm{reg}}\times\mathcal{Z}_{\mathrm{reg}}$ (\emph{containment});
+Lemma~\ref{lem:opcap} then caps
+$B_T:=\sup_{t\le T}\norm{J_\thetap(t)}_{\mathrm{op}}\le
+\widetilde L\sqrt{\lambda_{\max}(\Sigma_X)}$, a constant independent of $M$.
+
+\begin{assumption}[Shortcut residual decay]
+\label{ass:residual}
+There are $C\ge1$ and $\mu>0$ with $\norm{r(t)}\le C/(1+\mu t)$ along the
+joint trajectory on $[0,T]$; $\mu$ is the \emph{shortcut fitting rate}, and
+$T_\delta:=\inf\{t:\norm{r(t)}\le\delta\}\le(C/\delta-1)/\mu$.
+\end{assumption}
+
+\begin{theorem}[Finite-time spectral starvation]
+\label{thm:twoscale}
+Under Assumptions~\ref{ass:linear}--\ref{ass:inputlip} and~\ref{ass:residual},
+with containment up to $T$,
+\[
+  \norm{\thetap(T)-\thetap_0}\le\frac{B_TC}{\mu}\log(1+\mu T),
+  \qquad
+  \norm{\thetap(T_\delta)-\thetap_0}\le\frac{B_TC}{\mu}\log\frac{C}{\delta}
+  \quad(T\ge T_\delta).
+\]
+With $\varepsilon:=B_T/\mu$, the encoder's displacement by the time the
+residual reaches $\delta$ is $\mathcal{O}(\varepsilon\log(1/\delta))$.
+\end{theorem}
+\begin{proof}
+$\norm{\dot\thetap}\le B_T\norm{r}\le B_TC/(1+\mu t)$ almost everywhere;
+integrate, and use $1+\mu T_\delta\le C/\delta$.
+\end{proof}
+
+The bound is a product of factors with opposite capacity dependence: $B_T$
+is capped independently of $\Cg$, while $\mu$ is expected to grow with
+spatial capacity. That growth is a hypothesis, not a consequence of
+Theorem~\ref{thm:hessian}; the two theorems are logically independent.
+Discrete versions hold for gradient descent, momentum with gradient
+clipping before accumulation (the ordering our trainer uses), velocity
+clipping, and Adam with a positive stabilizer, with the flow-to-step
+dictionary $\mu_{\mathrm{step}}=\eta\mu$ and an additional term for
+decoupled weight decay on the encoder (Appendix~\ref{app:math},
+Lemmas~\ref{lem:astra_gd}--\ref{lem:astra_decay}). The hypothesis is not
+circular: it constrains the loss, and the theorem then caps the encoder on
+every trajectory consistent with that loss, including ones on which the
+encoder does part of the fitting. Read contrapositively, substantial
+spectral learning by the fitting time requires slow fitting.
+
+\begin{corollary}[Sharp finite-horizon attribution]
+\label{cor:attribution}
+Let both blocks follow unit-rate gradient flow with the almost-everywhere
+chain rule, and suppose that along the realised residual, for almost every
+$t\le T$, $r^\top K_\thetap r\le a\norm{r}^2$ and
+$r^\top K_\phip r\ge\kappa\norm{r}^2$, with $\loss(0)>\loss(T)$. Then
+\[
+  \frac{\int_0^T\norm{\nabla_\thetap\loss}^2\,dt}{\loss(0)-\loss(T)}
+  \;\le\;\frac{a}{a+\kappa},
+\]
+and the constant is attained by scalar kernels. No invariant subspace is
+required (Appendix~\ref{app:math}, Corollary~\ref{cor:astra_attribution}).
+\end{corollary}
+
+\begin{theorem}[Affine bridge]
+\label{thm:bridge}
+Let $z=z_0+A(\thetap-\thetap_0)+B(\phip-\phip_0)$ with
+$\loss=\tfrac12\norm{z-y}^2$, and train the joint model and the model with
+$\thetap\equiv\thetap_0$ by unit-rate gradient flow from the same
+initialization. If a common invariant subspace contains $e_0=z_0-y$ and on
+it $K_\phip=BB^\top\succeq\kappa I$ and $0\preceq K_\thetap=AA^\top\preceq aI$,
+then $\sup_t\norm{z_J(t)-z_F(t)}\le a\norm{e_0}/(e\kappa)$,
+$\norm{\thetap_J(t)-\thetap_0}\le(\sqrt a/\kappa)\norm{e_0}$, and
+$\int_0^\infty\norm{\nabla_\thetap\loss}^2dt\le a\norm{e_0}^2/(2\kappa)$
+(Appendix~\ref{app:math}, Theorem~\ref{thm:astra_affine}). For a shallow
+biased-ReLU head with $M$ hidden units on distinct inputs, coercivity holds
+with $\kappa=\kappa_*M/2$ and $M$-independent $a$ above a width threshold
+$M_0\ge72N^2/\rho$ (Corollary~\ref{cor:astra_init}); the threshold is an
+existence statement and numerically vacuous.
+\end{theorem}
+
+The coercivity must hold on the residual actually visited: a large top
+eigenvalue of $K_\phip$ certifies nothing when the residual lives elsewhere
+(Appendix~\ref{app:math}, Proposition~\ref{prop:astra_top_counter}), which
+is what Section~\ref{sec:diagnostics} measures.
+
+\phantomsection\label{par:nonlinear}
+\paragraph{A scoped nonlinear consequence.}
+For the fully trained shallow biased-ReLU model under squared loss in the
+standard parameterization, for $M\ge M_*$ and with probability at least
+$1-\rho$ over the initialization, every joint and every frozen solution fits
+at rate $\Omega(M)$, the encoder moves $\mathcal{O}(1/M)$ while the head
+moves $\mathcal{O}(M^{-1/2})$, both paths track one common linear reference
+to $\mathcal{O}(1/M)$, and the encoder's share of the loss decrease is at
+most $A^2/(A^2+\kappa M/2)$ (Appendix~\ref{app:math},
+Theorem~\ref{thm:astra_nonlinear}). This is lazy training in the standard
+parameterization \citep{chizat2019lazy,astra_sohldickstein2020}, proved with
+the gate-flip argument of \citet{astra_du2019}; its content here is the
+two-block displacement split. The disparity disappears under a readout
+$M^{-1/2}Uh+\beta$ with $\mathcal{O}(1)$ entries trained at unit rate, and
+$M_*$ is existence-only and numerically vacuous.
+
+\paragraph{Residual excitation.}
+\phantomsection\label{prop:excitation}
+Curvature anisotropy does not imply cumulative starvation: the gradient
+energy an encoder direction receives is $\int(r^\top J_u)^2dt$, which
+vanishes whenever the residual has no component along that direction's
+image, however large the curvature elsewhere (Appendix~\ref{app:math},
+Theorem~\ref{thm:astra_excitation}). Attribution is therefore phase
+dependent. If on a phase $E$ the residual keeps a fraction $\alpha$ of its
+mass in the top-$k$ eigenspace of $K_\phip$ whose $k$th eigenvalue is at
+least $\ell$, the encoder's share of the decrease accrued on $E$ is at most
+$a/(a+\alpha\ell)$, and the total share is at most
+$w_E\,a/(a+\alpha\ell)+(1-w_E)$ with $w_E$ the phase's fraction of the
+decrease; a cumulative share of order $1/M$ then requires the complementary
+phase to carry order $1/M$ of the energy
+(Proposition~\ref{prop:astra_phase}, Corollary~\ref{cor:astra_phase_width}).

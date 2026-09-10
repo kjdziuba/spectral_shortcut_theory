@@ -1,0 +1,19 @@
+Serial pipelines that reduce a per-element signal with a small encoder and
+then apply a wide downstream model are the default in spectroscopic imaging,
+and the same structure appears wherever a compact encoder feeds a large head.
+We separate three ingredients of selective encoder adaptation in such models:
+block curvature, residual excitation, and optimizer-dependent displacement.
+Conditional bounds identify when a fast downstream module limits encoder
+movement: a width-linear curvature disparity under an explicit head
+hypothesis, a finite-time displacement bound under a residual envelope, a
+sharp finite-horizon attribution bound, a transparent affine comparison of
+joint and frozen training, and a scoped nonlinear existence result. An
+exactly solvable serial cross-entropy instance exposes the role of the induced
+training metric at a matched fitting threshold; there the displacement bound
+is within a factor of six of the truth. Measurements on a production
+spectral--spatial segmentation model show why scalar curvature can mislead:
+rank-one inputs invert it, its width trend is carried by batch-normalization
+gains, and a shallow-model trajectory experiment shows the residual leaving
+the fast directions. Matched retraining comparisons show that a previously
+reported freezing advantage cannot be attributed to architecture from that
+protocol.

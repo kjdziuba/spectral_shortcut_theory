@@ -1,0 +1,83 @@
+\section{Conditional geometry: capacity-induced curvature disparity}
+\label{sec:geometry}
+
+\begin{theorem}[Capacity-induced module curvature disparity]
+\label{thm:hessian}
+Consider $F_{\thetap,\phip}=g_\phip\circ f_\thetap$ with a fixed-dimensional
+linear encoder (Assumption~\ref{ass:linear}) and a family of spatial
+networks $g^{(M)}_\phip$ indexed by width $M$. Suppose
+Assumptions~\ref{ass:subg} and~\ref{ass:inputlip} hold, and suppose
+$g_\phip$ ends in a dense classifier head over penultimate features
+$h_n\in\R^{M_h}$ with $M_h=\Theta(M)$ whose softmax-weighted mean Gram
+$S_h^p:=N^{-1}\sum_n p^{(n)}_{\min}h_nh_n^\top$ satisfies
+$\lambda_{\max}(S_h^p)\ge q_hM_h$ with probability at least $1-\delta_h$
+over the initialization, for constants $q_h>0$, $\delta_h<1$ independent
+of $M$ (the \emph{head hypothesis}: the features carry a common direction of
+$\Theta(M)$ energy across inputs on pixels whose initial predictions are
+non-degenerate). Then there are constants $c_1,c_2>0$, depending on the
+data, the initialization scheme, $K$, $S$ and the architecture class but not
+on $M$ or $\Cg$, such that in expectation over Kaiming initialization
+\[
+  \Dcurv^{(M)}
+  =\frac{\lambda_{\max}(G^{(M)}_{\phip\phip})}{\lambda_{\max}(G_{\thetap\thetap})}
+  \;\ge\; c_1M-c_2 .
+\]
+For families with $\Cg=\Theta(M^2)$, equivalently
+$\Dcurv^{(M)}\ge c_1'\sqrt{\Cg/\Cf}-c_2$.
+\end{theorem}
+
+\begin{lemma}[Spectral block cap]
+\label{lem:opcap}
+Under Assumptions~\ref{ass:linear}--\ref{ass:inputlip},
+$\lambda_{\max}(G_{\thetap\thetap})\le\|J_\thetap\|_{\mathrm{op}}^2
+\le\widetilde L^{\,2}\lambda_{\max}(\Sigma_X)=:C_\thetap$, a constant
+independent of $M$, $\Cg$ and $N$.
+\end{lemma}
+
+The proof (Appendix~\ref{app:proofs}) is elementary. The rank-one
+head-weight perturbation $V=c\,u^\top$, with $c$ a unit class contrast and
+$u$ the dominant feature direction, gives the deterministic inequality
+$\lambda_{\max}(G_{\phip\phip})\ge\lambda_{\max}(S_h^p)$, and the head
+hypothesis supplies $\Omega(M)$; the cap follows from the chain rule
+$J_\thetap=(\partial\hat y/\partial Z)(\partial Z/\partial\thetap)$, whose
+second factor has squared operator norm exactly $\lambda_{\max}(\Sigma_X)$
+under linearity. The width-linear rate matches the mean-field law of
+\citet{karakida2019universal} in the model class where the latter applies.
+
+\paragraph{The hypothesis boundary.}
+The theorem measures the downstream module's \emph{readiness to move}, the
+curvature its parameters command at initialization, not the usefulness of
+its features: the width-linear spike exists before any feature is learned.
+It is a statement about the top of the spatial spectrum only, and it is not
+a dynamical claim; whether joint training pins the encoder requires the
+hypotheses of Section~\ref{sec:dynamics}. It is stated for the standard
+variance-scaled parameterization, and we do not claim it transfers to
+parameterizations that rescale layers with width \citep{yang2021tensor}. The
+head hypothesis is a cross-input correlation condition on $\Theta(M)$
+penultimate features. It is met by dense per-pixel heads on CNN and ViT
+backbones, and it is structurally \emph{unmet} by the production model of
+Section~\ref{sec:diagnostics}, whose classifier input has a fixed dimension
+at every width; there the theorem has no premise rather than a
+counterexample.
+
+\paragraph{Empirical check (Experiment 1.1).}
+We measure both blocks of $G$ by power iteration on a synthetic
+spectral--spatial problem ($S=64$, $K=16$, two classes; five seeds per
+width; Appendix~\ref{app:synthetic}). For the shallow verified instance
+(linear encoder, two-layer ReLU head) under default fan-in initialization,
+$\lambda_{\max}(G_{\phip\phip})$ rises from $0.62$ to $46.0$ over
+$M=16\to8192$ (log--log slope $0.71$) while
+$\lambda_{\max}(G_{\thetap\thetap})\approx0.02$ is flat (slope $-0.02$), so
+$\Dcurv$ grows from $40$ to $2405$. Under the theorem's own initialization
+(He weights with a width-independent bias variance) the slope is $0.90$
+($2.1\to442$) with $\lambda_{\max}(G_{\thetap\thetap})\approx0.6$ flat. A
+deeper head separates the two regimes sharply: over $M=16\to1024$ its
+spatial slope is $0.105$ under default initialization and $0.989$ under
+the theorem's, and the isolation arms give $0.924$ with a fixed bias
+variance alone, $0.696$ with He weights and a scaled bias, and $0.606$ with
+He weights and zero bias. The reading is causal in the sense of the proof:
+the width-linear floor survives when either the weight-variance or the
+bias-variance term of the head hypothesis is width-independent, and default
+fan-in initialization makes both vanish with width. Slopes are finite-range
+fits and are quoted with their levels; $\Dcurv$ is not used to attribute
+differences across arms, since its denominator differs between them.

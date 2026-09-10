@@ -1,0 +1,51 @@
+\section{Related work}
+\label{sec:related}
+
+\paragraph{Modality competition and laziness.}
+Joint training of multi-branch models is known to under-train the branch
+that is slower to fit: \citet{wang2020what} and \citet{peng2022balanced}
+document the effect and propose gradient blending and modulation,
+\citet{du2023unimodal} name the under-used branch lazy, and
+\citet{huang2022modality} prove competition for explicit late-fusion
+networks. Our setting is a single input passed serially through two modules;
+the asymmetry is positional rather than between parallel branches, and our
+bounds concern module displacement rather than feature selection.
+
+\paragraph{Shortcut and starvation theory.}
+\citet{pezeshki2021gradient} prove, in a linearized regime with coupled
+feature dynamics, that a fast feature starves a slow one of gradient. We
+bound displacement of a whole module in a compositional pipeline and take
+the residual envelope as a hypothesis; neither result subsumes the other. The
+residual-excitation statement of Section~\ref{sec:dynamics} makes precise
+why curvature anisotropy alone does not imply starvation.
+
+\paragraph{Curvature, width and normalization.}
+The width-linear growth of the top Gauss--Newton eigenvalue in
+proportional-width networks is the mean-field law of
+\citet{karakida2019universal}; block heterogeneity of the Hessian is the
+optimizer-side antecedent of \citet{zhang2024adam}, and the top-eigenvector
+structure $u\otimes\E[x]$ appears in \citet{papyan2020prevalence}. The
+scale invariance of layers feeding batch normalization, and its effect on
+effective learning rates, is established in \citet{vanlaarhoven2017l2}; we
+use it as a diagnosis of one model, not as a new mechanism.
+
+\paragraph{Lazy training and implicit bias in serial models.}
+Our nonlinear existence result is an explicit-constant instance of lazy
+training in the standard parameterization
+\citep{chizat2019lazy,astra_sohldickstein2020,yang2021tensor}, proved with
+the gate-flip argument of \citet{astra_du2019} and the kernel-tracking
+estimates of \citet{astra_lee2019,astra_arora2019}. The solvable serial
+instance rests on the layer-balance invariant of \citet{astra_du2018balance}
+and sits beside the exact dynamics of \citet{astra_saxe2014} and the
+architecture- and initialization-dependent implicit biases of
+\citet{astra_yun2021,astra_moroshko2020,astra_berthier2023}; it adds a
+matched-margin encoder-update bound, a frozen comparator and a reversal test
+in one system, not a new mechanism of implicit bias.
+
+\paragraph{Frozen features in practice.}
+Last-layer retraining on frozen features recovers robustness to spurious
+correlations \citep{kirichenko2023dfr}; some layers barely move during
+training \citep{zhang2022layers}; and \citet{coil2025freezing} hypothesize
+that freezing acts as regularization. Our matched-protocol study is a
+caution for this literature: the apparent benefit of freezing in our
+production model was a property of an unmatched protocol.

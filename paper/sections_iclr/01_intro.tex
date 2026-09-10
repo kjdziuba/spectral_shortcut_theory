@@ -1,0 +1,69 @@
+\section{Introduction}
+\label{sec:intro}
+
+A common pipeline in spectroscopic imaging reduces each pixel's spectrum
+with a small encoder and classifies the resulting feature map with a wide
+spatial network \citep{berisha2019deep,oleary2026spatial}. Hyperspectral
+remote sensing, frozen image encoders under temporal models, and multimodal
+fusion share the structure: a compact module sits behind a bottleneck, a
+high-capacity module sits next to the loss, and both are trained jointly with
+one learning rate. Practitioners often pretrain the small module and freeze
+it. Whether freezing is necessary, or merely habitual, is exactly what a
+fair comparison has to decide, and part of this paper is about what makes
+such a comparison fair.
+
+We ask what the loss geometry says about how the two modules learn, and what
+a production model does and does not show. We distinguish three ingredients
+of selective encoder adaptation: the curvature of the two parameter blocks,
+the excitation of the encoder's directions by the training residual, and
+the displacement the optimizer actually applies. Every statement we prove is
+conditional, and we say on what.
+
+\paragraph{Contributions.}
+\begin{itemize}
+\item \textbf{Conditional theory.} Under an explicit head hypothesis the
+      module curvature disparity grows linearly in the downstream width
+      (Theorem~\ref{thm:hessian}); under a residual envelope the encoder's
+      displacement by the fitting time is
+      $\mathcal{O}(\varepsilon\log(1/\delta))$ (Theorem~\ref{thm:twoscale});
+      the encoder's share of the loss decrease is at most $a/(a+\kappa)$ at
+      every horizon (Corollary~\ref{cor:attribution}); an affine bridge turns
+      kernel coercivity on the visited residual into joint-versus-frozen
+      closeness (Theorem~\ref{thm:bridge}), with a scoped nonlinear
+      existence version (Section~\ref{sec:dynamics}).
+\item \textbf{A solvable instance.} A serial cross-entropy model with
+      replicated readouts has disparity exactly $M$, fitting rate $(M+1)/4$,
+      a spectral update suppressed as $1/(1+Mv_0^2)$, and a failure under
+      contextual reversal with probability $\Phi(m/2\sigma)$
+      (Theorem~\ref{thm:instance}, Figure~\ref{fig:serial}); the displacement
+      bound is within a factor of six of the truth.
+\item \textbf{Diagnostic limits.} On a production spectral--spatial model the
+      head hypothesis is structurally unmet, rank-one inputs invert the
+      scalar disparity, the informative quantity is directional anisotropy,
+      the observed width trend of downstream curvature is carried by
+      batch-normalization gains, and on our own shallow instance the residual
+      leaves the coercive subspace early (Section~\ref{sec:diagnostics},
+      Figure~\ref{fig:diagnostics}).
+\item \textbf{Matched protocol.} A freezing advantage observed under an
+      earlier protocol is absent once clipping scope, normalization-parameter
+      treatment and checkpoint policy are equalized
+      (Section~\ref{sec:matched}, Figure~\ref{fig:matched},
+      Table~\ref{tab:matched}); the original contrast cannot identify an
+      architectural shortcut.
+\end{itemize}
+
+\paragraph{What the measurements teach.}
+The theory is a set of sufficient conditions, and the production model
+violates or evades most of them in instructive ways. Its classifier head has a
+fixed input dimension, so the width-linear floor has no premise. Its inputs
+are effectively rank one, so the top-eigenvalue ratio the theory bounds is
+uninformative and the directional picture must replace it. The width growth
+of its downstream curvature is produced by normalization gains acting on
+width-diluted activations, which a function-preserving rescaling can move
+freely. On the shallow instance where the geometry is proved, the residual
+leaves the coercive part of the downstream kernel within a hundred steps, so
+curvature at initialization predicts only an early phase. And in training,
+three protocol asymmetries were enough to produce an apparent freezing
+effect that a matched protocol does not reproduce. The paper's practical
+content is therefore a set of measurements one must make before reading a
+shortcut into a curvature ratio or a training curve, not a recipe.

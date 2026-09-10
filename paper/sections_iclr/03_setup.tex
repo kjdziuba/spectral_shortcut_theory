@@ -1,0 +1,76 @@
+\section{Setup}
+\label{sec:setup}
+
+\paragraph{Model.}
+An input $X\in\R^{H\times W\times S}$ has a spectrum $x_{h,w}\in\R^S$ at
+every pixel. A \emph{spectral encoder} $f_\thetap:\R^S\to\R^K$ is applied
+per pixel, producing $Z\in\R^{K\times H\times W}$; a \emph{spatial model}
+$g_\phip$ of characteristic width $M$ (channels, embedding dimension or
+hidden width) maps $Z$ to per-pixel logits $\hat y\in\R^{N_{\mathrm{cls}}
+\times H\times W}$. We write $F_{\thetap,\phip}=g_\phip\circ f_\thetap$,
+$\Cf=\dim\thetap$ and $\Cg=\dim\phip$. The theorems are informative when
+$\Cg\gg\Cf$; the production model of Section~\ref{sec:diagnostics} has
+$\Cg/\Cf\approx 299$.
+
+\paragraph{Loss, residual and Jacobians.}
+With per-pixel cross-entropy averaged over the $N=N_{\mathrm{data}}HW$
+pixels, the gradient with respect to the logits at pixel $n$ is the residual
+$r_n=\mathrm{softmax}(\hat y_n)-y_{n,\mathrm{onehot}}$. We stack with
+$N^{-1/2}$ so that no constant depends on the dataset size:
+\begin{equation}
+\label{eq:jacobians}
+  r:=N^{-1/2}(r_1,\dots,r_N),\qquad
+  J_b:=N^{-1/2}\,\frac{\partial(\hat y_1,\dots,\hat y_N)}{\partial b},\qquad
+  \nabla_b\loss=J_b^\top r,\quad b\in\{\thetap,\phip\}.
+\end{equation}
+Two objects must be kept apart. The Gauss--Newton matrix and its diagonal
+blocks live in parameter space,
+\begin{equation}
+\label{eq:ggn}
+  G=J^\top H_\tau J,\qquad J=[J_\thetap,\,J_\phip],\qquad
+  G_{bb}=J_b^\top H_\tau J_b,
+\end{equation}
+with $H_\tau=\mathrm{diag}(p)-pp^\top$ the softmax Jacobian, blockwise over
+pixels \citep{botev2017practical}; they measure \emph{curvature}. The
+output-space kernels $K_b=J_bJ_b^\top$ measure \emph{gradient gain}: for
+cross-entropy, $r^\top K_br=\norm{\nabla_b\loss}^2$ holds exactly, with no
+squared-loss approximation. Section~\ref{sec:geometry} concerns curvature;
+Section~\ref{sec:dynamics} concerns gain along the realised residual.
+
+\begin{definition}[Module curvature disparity]
+\label{def:dcurv}
+$\Dcurv(G):=\lambda_{\max}(G_{\phip\phip})/\lambda_{\max}(G_{\thetap\thetap})$,
+evaluated at random initialization unless stated otherwise, with
+$\Dcurv:=+\infty$ if the spectral block vanishes.
+\end{definition}
+
+\paragraph{Assumptions.}
+\begin{assumption}
+\label{ass:linear}
+(i) \emph{Linear encoder}: $f_\thetap(x)=W^\top x$ with
+$\thetap=\mathrm{vec}(W)$, $W\in\R^{S\times K}$.
+\end{assumption}
+\begin{assumption}
+\label{ass:subg}
+(ii) \emph{Bounded input Gram}: the mean per-pixel second moment
+$\Sigma_X:=N^{-1}\sum_n x_nx_n^\top$ satisfies
+$\lambda_{\max}(\Sigma_X)\le\Lambda_X<\infty$.
+\end{assumption}
+\begin{assumption}
+\label{ass:inputlip}
+(iii) \emph{Width-uniform input Jacobian}: there is $\widetilde L$,
+independent of $M$ and $\Cg$, with
+$\sup\|\partial g_\phip(Z)/\partial Z\|_{\mathrm{op}}\le\widetilde L$ over a
+parameter regime $\Phi_{\mathrm{reg}}$ and feature domain
+$\mathcal{Z}_{\mathrm{reg}}$ (compact when $g_\phip$ uses attention). This
+is a modelling assumption: it is proved in expectation for a two-layer ReLU
+head at initialization (Appendix~\ref{app:proofs}), where the naive product
+of layer norms would give $\Theta(M/K)$ instead.
+\end{assumption}
+\begin{assumption}
+\label{ass:reg}
+(iv) \emph{Regularity}: $g_\phip$ is $C^2$ jointly in $(\phip,Z)$, or
+piecewise smooth (ReLU), in which case gradient flow is read almost
+everywhere with a consistent gate selection
+(Appendix~\ref{app:math}).
+\end{assumption}

@@ -1,0 +1,83 @@
+\documentclass{article}
+\usepackage{iclr2027_conference,times}
+% NOTE: math_commands.tex from the template is NOT loaded (its \E and \R
+% clash with the paper's macros).
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsthm, mathtools}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{url}
+
+% --- Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% --- Custom macros (identical to main.tex)
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\inner}[2]{\left\langle#1,#2\right\rangle}
+\newcommand{\loss}{\mathcal{L}}
+\newcommand{\thetap}{{\boldsymbol{\theta}}}
+\newcommand{\phip}{{\boldsymbol{\phi}}}
+\newcommand{\EGR}{\mathrm{EGR}}
+\newcommand{\Cg}{C_g}
+\newcommand{\Cf}{C_f}
+\newcommand{\Dcurv}{\mathcal{D}_{\mathrm{curv}}}
+
+\title{The Spectral Shortcut: Conditional Theory and Diagnostic Limits of
+Encoder Starvation in Serial Spectral--Spatial Pipelines}
+
+% Anonymous submission: authors hidden while \iclrfinalcopy is commented out.
+\author{Anonymous authors\\
+Paper under double-blind review}
+
+%\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\input{sections_iclr/00_abstract}
+\end{abstract}
+
+\input{sections_iclr/01_intro}
+\input{sections_iclr/02_related}
+\input{sections_iclr/03_setup}
+\input{sections_iclr/04_geometry}
+\input{sections_iclr/05_dynamics}
+\input{sections_iclr/06_instance}
+\input{sections_iclr/07_diagnostics}
+\input{sections_iclr/08_matched}
+\input{sections_iclr/09_limitations}
+
+\subsubsection*{AI use statement}
+\IfFileExists{sections_iclr/statement_ai.tex}{\input{sections_iclr/statement_ai}}{\emph{[AI use statement: to be inserted.]}}
+
+\subsubsection*{Reproducibility statement}
+\IfFileExists{sections_iclr/statement_repro.tex}{\input{sections_iclr/statement_repro}}{\emph{[Reproducibility statement: to be inserted.]}}
+
+\bibliography{references}
+\bibliographystyle{iclr2027_conference}
+
+\appendix
+\IfFileExists{sections_iclr/appendix.tex}{\input{sections_iclr/appendix}}{%
+\section{Proofs for Section 4}\label{app:proofs}\emph{[Appendix scaffold pending.]}
+\section{Additional theory}\label{app:math}\input{sections_iclr/appendix_math}
+\section{Synthetic experiment details}\label{app:synthetic}\emph{[Pending.]}
+\section{Production model details}\label{app:production}\emph{[Pending.]}}
+
+\end{document}
