@@ -429,9 +429,10 @@ degradation itself.
 
 \paragraph{Matched protocol.}
 The matched protocol equalizes the three asymmetries and re-runs the
-pre-registered comparisons at $M{=}48$ (Table~\ref{tab:e3c_matched}):
+pre-registered comparisons at $M{=}48$ (Table~\ref{tab:e3c_matched},
+Figure~\ref{fig:e3c_matched}):
 the reduction-stage
-batch-normalization affine parameters are placed in $\phip$ and
+batch-nor\-mal\-i\-za\-tion affine parameters are placed in $\phip$ and
 trained in \emph{every} arm; the clip norm at $1.0$ is computed over
 $\phip$ only in \emph{every} arm; and the best-validation checkpoint is
 saved. AdamW at learning rate $10^{-4}$, 60 epochs, 3 seeds, flip and
@@ -485,6 +486,21 @@ Joint, cosine schedule            & $0.660 \pm 0.020$ & $0.825 \pm 0.033$ & $0.3
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig8c_matched.pdf}
+\caption{Controlled study, \emph{matched protocol}: identical
+batch-normalization affine treatment, $\phip$-only clipping and saved
+best-validation checkpoints in every arm ($M{=}48$, AdamW, 3 seeds;
+dots are seeds, bars are seed means, whiskers sd). (a)~Best-validation
+macro-F1 --- a post-hoc maximum over 60 evaluations on the same 28-core
+fold-0 validation split, hence exploratory and selection-optimistic.
+(b)~The pre-registered metric, the mean over the final 5 epochs.
+Brackets mark the two pre-registered pairs; no pre-registered
+difference is resolvable at $n=3$ under either policy.}
+\label{fig:e3c_matched}
+\end{figure}
 
 \paragraph{The pre-registered predictions under the matched protocol.}
 All comparisons below are paired by seed with $90\%$ $t$-intervals
