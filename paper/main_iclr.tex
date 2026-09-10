@@ -15,14 +15,14 @@
 
 % --- Theorem environments
 \newtheorem{theorem}{Theorem}
-\newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{corollary}[theorem]{Corollary}
-\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{proposition}{Proposition}
 \theoremstyle{definition}
-\newtheorem{definition}[theorem]{Definition}
-\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
 \theoremstyle{remark}
-\newtheorem{remark}[theorem]{Remark}
+\newtheorem{remark}{Remark}
 
 % --- Custom macros (identical to main.tex)
 \newcommand{\R}{\mathbb{R}}
@@ -74,8 +74,12 @@ Paper under double-blind review}
 \bibliographystyle{iclr2027_conference}
 
 \appendix
-\setcounter{theorem}{0}
-\renewcommand{\thetheorem}{\Alph{section}.\arabic{theorem}}
+\makeatletter
+\@for\envname:=theorem,lemma,corollary,proposition,definition,assumption,remark\do{%
+  \setcounter{\envname}{0}%
+  \expandafter\renewcommand\csname the\envname\endcsname{\Alph{section}.\arabic{\envname}}%
+  \expandafter\@addtoreset\expandafter{\envname}{section}}
+\makeatother
 \IfFileExists{sections_iclr/appendix.tex}{\input{sections_iclr/appendix}}{%
 \section{Proofs for Section 4}\label{app:proofs}\emph{[Appendix scaffold pending.]}
 \section{Additional theory}\label{app:math}\input{sections_iclr/appendix_math}
