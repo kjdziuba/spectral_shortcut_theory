@@ -177,6 +177,27 @@ Secondary (descriptive, not pre-registered): trajectories a_u(t) to show
 whether suppression is transient (encoder aligns after the context fit) or
 persistent; the ‖∇_W L‖²/‖∇_φ L‖² ratio at init versus M.
 
+### 4.4a Pilot amendment (recorded 20:00, after ONE seed of sp M∈{8,2048} and ctxfree M=8; before the grid)
+
+Observed: at L* = 0.30 spectral learning is fully suppressed at BOTH widths
+(align_u 0.0048 / 0.0045 against an initial 0.0044; probe 0.65; reversed
+accuracy 0.12), while ctxfree at M = 8 aligns (0.127; probe 0.92; reversed
+0.89). The context fit at M = 8 takes 2,633 steps against 10,714 for the
+encoder-driven fit, so every width ≥ 8 sits in the saturated regime
+Mv₀² ≫ 1 and P1's *trend* cannot be seen there. Amendments, made before any
+further run and applied uniformly:
+
+- widths 2 and 4 added to `sp` and `mup` (the O(1)-speed regime);
+- `lrmult` gains fractional multipliers 1/16 and 1/4 (slowing the readout
+  is the continuous version of the `mup` control; 1/32 at M = 32 IS `mup`);
+- `ctxfree` and `frozen` run at widths {2, 8, 128, 512} (2048 dropped for
+  cost; the pilot shows the effect saturates far below it);
+- learning rate fixed at 1e-3 from the stability check;
+- P1 is evaluated as pre-registered at L* = 0.30 AND, as a labelled
+  secondary analysis, at the lowest threshold the context cue alone can
+  reach (0.15) and at 0.10 (beyond it), because the pilot shows the
+  saturation floor at 0.30. The predictions' directions are unchanged.
+
 ### 4.5 Known limitations to state
 Linear encoder (as in the theorem); one head family; full-batch GD; a
 constructed context cue; matched-fit stopping is the theorem's convention,

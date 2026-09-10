@@ -70,16 +70,19 @@ S, K, H, W = 256, 12, 16, 16
 N_TRAIN, N_TEST = 256, 64
 ALPHA, BETA, SIGMA = 1.645, 5.0, 1.0
 TARGET_ORACLE = 0.95
-LR_DEFAULT = 3e-4
+LR_DEFAULT = 1e-3          # stability check 2026-09-10: largest monotone rate at M=2048
 MAX_STEPS = 40_000
 LOSS_STAR = 0.30
 THRESHOLDS = [0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.10]
 STOP_LOSS = 0.10
 DIVERGE_LOSS = 3.0
 LOG_EVERY = 25
-WIDTHS_FULL = [8, 32, 128, 512, 2048]
-WIDTHS_CTRL = [8, 128, 2048]
-LR_MULTS = [1, 4, 16, 64]
+# Amended 2026-09-10 20:00 after the one-seed pilot (REFOCUS_PLAN 4.4a):
+# widths 2 and 4 added (O(1)-speed regime); fractional readout multipliers
+# added; 2048 dropped from the control arms for cost.
+WIDTHS_FULL = [2, 4, 8, 32, 128, 512, 2048]
+WIDTHS_CTRL = [2, 8, 128, 512]
+LR_MULTS = [1 / 16, 1 / 4, 1, 4, 16]
 LRMULT_WIDTH = 32
 SEEDS = [0, 1, 2]
 
@@ -118,11 +121,12 @@ class CNNHead(nn.Module):
                   (the theorem's alpha_M = M^{-1/2} control).
     """
 
-    def __init__(self, K: int, M: int, param: str) -> None:
+    def __init__(self, K: int, M: int, param: str, use_conv: bool = False) -> None:
         super().__init__()
         if param not in ("sp", "mup"):
             raise ValueError(param)
         self.M, self.param = M, param
+        self.use_conv = use_conv  # True: nn.Conv2d path (reference); False: matmul path (fast, identical)
         self.conv1 = nn.Conv2d(K, M, 3, padding=1, padding_mode="circular")
         self.conv2 = nn.Conv2d(M, 1, 3, padding=1, padding_mode="circular", bias=False)
         if param == "mup":
@@ -132,10 +136,56 @@ class CNNHead(nn.Module):
         else:
             self.scale = 1.0
 
+    @staticmethod
+    def _windows(Z: torch.Tensor) -> torch.Tensor:
+        """(B,H,W,K) -> (B,H,W,K,9): [..., k, 3*iy+ix] = Z[p + (iy-1, ix-1), k] on the torus,
+        the cross-correlation convention of nn.Conv2d with circular padding."""
+        cols = [torch.roll(Z, shifts=(-(iy - 1), -(ix - 1)), dims=(1, 2))
+                for iy in range(3) for ix in range(3)]
+        return torch.stack(cols, dim=-1)
+
     def forward(self, Z: torch.Tensor) -> torch.Tensor:  # (B,H,W,K) -> (B,H,W)
-        Z = Z.permute(0, 3, 1, 2).contiguous()
-        h = F.relu(self.conv1(Z))
-        return (self.conv2(h) * self.scale).squeeze(1)
+        if self.use_conv:
+            Zc = Z.permute(0, 3, 1, 2).contiguous()
+            h = F.relu(self.conv1(Zc))
+            return (self.conv2(h) * self.scale).squeeze(1)
+        B, H_, W_, Kc = Z.shape
+        zw = self._windows(Z).reshape(B * H_ * W_, Kc * 9)          # (k, iy, ix) order
+        W1 = self.conv1.weight.reshape(self.M, Kc * 9)               # (M, K, 3, 3) -> same order
+        h = F.relu(zw @ W1.T + self.conv1.bias)                       # (BHW, M)
+        W2 = self.conv2.weight.reshape(self.M, 9)                     # (1, M, 3, 3) -> (M, (iy, ix))
+        G = (h @ W2).reshape(B, H_, W_, 9)
+        out = torch.zeros(B, H_, W_, device=Z.device, dtype=Z.dtype)
+        i = 0
+        for iy in range(3):
+            for ix in range(3):
+                out = out + torch.roll(G[..., i], shifts=(-(iy - 1), -(ix - 1)), dims=(1, 2))
+                i += 1
+        return out * self.scale
+
+
+def selftest_head(device) -> None:
+    """The matmul path must reproduce nn.Conv2d with circular padding (outputs and gradients)."""
+    # cuDNN convolutions use TF32 by default (relative precision ~1e-3); compare in float64.
+    torch.backends.cudnn.allow_tf32 = False
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.manual_seed(0)
+    for param in ("sp", "mup"):
+        for M in (2, 37, 512):
+            ref = CNNHead(K, M, param, use_conv=True).to(device).double()
+            fast = CNNHead(K, M, param, use_conv=False).to(device).double()
+            fast.load_state_dict(ref.state_dict())
+            Z = torch.randn(3, H, W, K, device=device, dtype=torch.float64)
+            y = torch.sign(torch.randn(3, H, W, device=device, dtype=torch.float64))
+            o_ref = ref(Z); o_fast = fast(Z)
+            l_ref = margin_loss(o_ref, y); l_fast = margin_loss(o_fast, y)
+            g_ref = torch.autograd.grad(l_ref, list(ref.parameters()))
+            g_fast = torch.autograd.grad(l_fast, list(fast.parameters()))
+            d_out = float((o_ref - o_fast).abs().max() / (o_ref.abs().max() + 1e-12))
+            d_grad = max(float((a - b).abs().max() / (a.abs().max() + 1e-12)) for a, b in zip(g_ref, g_fast))
+            print(f"[selftest] param={param} M={M}: max rel |out diff| {d_out:.2e}, max rel |grad diff| {d_grad:.2e}")
+            assert d_out < 1e-9 and d_grad < 1e-9, "matmul head disagrees with Conv2d"
+    print("[selftest] OK")
 
 
 def margin_loss(logits: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -197,7 +247,11 @@ def encoder_stats(enc: nn.Module, W0: torch.Tensor, u: torch.Tensor, V: torch.Te
 # ---------------------------------------------------------------------------
 # One run
 # ---------------------------------------------------------------------------
-def run_one(arm: str, width: int, mult: int, seed: int, tau: float, lr: float,
+def mult_tag(mult: float) -> str:
+    return f"{mult:g}"
+
+
+def run_one(arm: str, width: int, mult: float, seed: int, tau: float, lr: float,
             max_steps: int, device: torch.device, quiet: bool = False) -> pd.DataFrame:
     cfg = ARMS[arm]
     spec = ProblemSpec(S=S, H=H, W=W, alpha=ALPHA, beta=BETA, tau=tau, sigma=SIGMA)
@@ -219,7 +273,7 @@ def run_one(arm: str, width: int, mult: int, seed: int, tau: float, lr: float,
     opt = torch.optim.SGD(groups, momentum=0.0)
 
     Xtr, ytr = data["Xtr"], data["ytr"]
-    tag = f"{arm}_M{width}_x{mult}_s{seed}"
+    tag = f"{arm}_M{width}_x{mult_tag(mult)}_s{seed}"
     pending = sorted(THRESHOLDS, reverse=True)
     traj_rows, snap_rows = [], []
     t0 = time.time()
@@ -506,15 +560,50 @@ def main():
     ap.add_argument("--arms", nargs="*", default=list(ARMS))
     ap.add_argument("--widths", nargs="*", type=int, default=None)
     ap.add_argument("--seeds", nargs="*", type=int, default=SEEDS)
-    ap.add_argument("--mults", nargs="*", type=int, default=None)
+    ap.add_argument("--mults", nargs="*", type=float, default=None)
     ap.add_argument("--lr", type=float, default=LR_DEFAULT)
     ap.add_argument("--max-steps", type=int, default=MAX_STEPS)
     ap.add_argument("--skip-existing", action="store_true")
+    ap.add_argument("--tf32", action="store_true",
+                    help="allow TF32 convolutions/matmuls (speed; ~1e-3 relative precision)")
+    ap.add_argument("--benchmark", action="store_true",
+                    help="time forward+backward at M=2048 with/without TF32")
+    ap.add_argument("--selftest", action="store_true",
+                    help="check the matmul head against nn.Conv2d (outputs and gradients)")
     args = ap.parse_args()
+    if args.selftest:
+        selftest_head(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        return
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.backends.cudnn.benchmark = True
-    print(f"[exp2] device {device}")
+    if args.tf32:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+    print(f"[exp2] device {device}  tf32={args.tf32}")
+
+    if args.benchmark:
+        tau_b = float(json.loads(CALIB.read_text())["tau"]) if CALIB.exists() else 1.7
+        spec = ProblemSpec(S=S, H=H, W=W, alpha=ALPHA, beta=BETA, tau=tau_b, sigma=SIGMA)
+        data = build_data(0, spec, "iid", device)
+        for tf32 in (False, True):
+            torch.backends.cuda.matmul.allow_tf32 = tf32
+            torch.backends.cudnn.allow_tf32 = tf32
+            for width in (512, 2048):
+                torch.manual_seed(0)
+                enc = Encoder(S, K).to(device); head = CNNHead(K, width, "sp").to(device)
+                ps = list(enc.parameters()) + list(head.parameters())
+                for _ in range(5):  # warm-up (cudnn autotune)
+                    loss = margin_loss(head(enc(data["Xtr"])), data["ytr"]); loss.backward()
+                    for p in ps: p.grad = None
+                torch.cuda.synchronize(); t0 = time.time(); n = 30
+                for _ in range(n):
+                    loss = margin_loss(head(enc(data["Xtr"])), data["ytr"]); loss.backward()
+                    for p in ps: p.grad = None
+                torch.cuda.synchronize()
+                print(f"[bench] tf32={tf32} M={width}: {(time.time() - t0) / n * 1e3:.1f} ms/step "
+                      f"(loss {float(loss):.5f})")
+        return
 
     if args.calibrate:
         calibrate(device)
@@ -544,7 +633,7 @@ def main():
             for mult in mults:
                 for seed in args.seeds:
                     total += 1
-                    tag = f"{arm}_M{width}_x{mult}_s{seed}"
+                    tag = f"{arm}_M{width}_x{mult_tag(mult)}_s{seed}"
                     if args.skip_existing and (OUT_DIR / f"snap_{tag}.csv").exists():
                         print(f"[exp2] skip {tag}")
                         continue
