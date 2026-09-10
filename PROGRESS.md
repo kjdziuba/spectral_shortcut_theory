@@ -1918,3 +1918,22 @@ ViT sweep:
   + the diagnostic-limits study + the demonstration that protocol
   asymmetries (clip scope, BN affine, checkpoint policy) manufacture
   apparent shortcut effects. LR arms + cosine seed 2 pending (~08:20).
+
+## 2026-09-10 (07:35) — LR-discriminator at n=3 (matched, h48)
+
+  arm   best-val (s0 s1 s2 | mean)        final-5 (mean)   theta drift
+  x0.1  0.848 0.839 0.835 | 0.841         0.626            0.08
+  x1    0.864 0.806 0.842 | 0.837         0.694            0.57
+  x10   0.874 0.856 0.927 | 0.886         0.561            4.91
+  Paired (90% t, n=3): best-val x10-x1 = +0.048 [-0.016,+0.112], 3/3 seeds
+  positive; x0.1-x1 = +0.004 [-0.039,+0.046]. final-5: x0.1-x1 = -0.068
+  [-0.173,+0.037]; x10-x1 = -0.133 [-0.419,+0.152] (huge variance).
+- VERDICT per refutation commitment: the pre-registered harmful-drift
+  ordering (x0.1 >= x1 >= x10) is NOT observed. On selected-checkpoint
+  performance the ordering is reversed (larger spectral LR helps; x10 > x1
+  sign-consistent 3/3 but not resolved at n=3); on the un-stopped endpoint
+  both extremes are worse than x1 (non-monotone). Reading: more spectral
+  movement (x10 drifts ~5x its init norm) raises the attainable peak and
+  costs endpoint stability. Report all three points under both metrics;
+  no binary mechanism verdict (Astra's branch 3).
+- Last run (joint_cos_m s2) finishing ~08:15; then analyze + commit.
