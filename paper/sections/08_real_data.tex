@@ -18,10 +18,11 @@ Theorem~\ref{thm:hessian} does \emph{not} manifest at initialization,
 for a reason we can measure (rank-one input statistics); a strong
 directional curvature anisotropy is measurable at initialization,
 and whether it starves learning is a hypothesis we state and test; the
-momentum-SGD controls, which are the closest buildable approach to
-Theorem~\ref{thm:twoscale}'s regime without being inside it, show
-similar best-validation performance for joint and frozen arms; and the
-joint-versus-frozen comparison turns out to depend on the training
+momentum-SGD controls, which vary the optimizer family but do not
+instantiate Theorem~\ref{thm:twoscale}'s gradient flow, show no
+resolvable best-validation difference between joint and frozen arms at
+three seeds; and the joint-versus-frozen comparison turns out to depend
+on the training
 protocol rather than on the architecture --- under our original
 protocol it inverts between checkpoint policies, and under a protocol
 that equalizes the incidental asymmetries between the arms neither a
@@ -205,7 +206,7 @@ along the component of the clinically decisive CancerEpi--CAS class
 contrast that is orthogonal to $v_1$ --- a component retaining
 $76$--$84\%$ of the contrast's squared norm --- the restricted
 curvature is $12$--$28\times$ smaller than along $v_1$ itself
-(2 seeds $\times$ 3 batches at $M{=}192$). The curvature along the
+(3 seeds $\times$ 3 batches at $M{=}192$). The curvature along the
 \emph{un-orthogonalized} full contrast --- which retains its $v_1$
 component ($|\cos(d, v_1)| = 0.45$) --- the gap is far smaller:
 $3.7\times$ on average (range $2.6$--$4.8$; 3 seeds $\times$ 3 batches).
@@ -285,12 +286,15 @@ triple at $M{=}48$ as a positive control. Following
 Section~\ref{sec:thm2}, the spectral parameters sit in a
 zero-weight-decay group in every arm; frozen arms log counterfactual
 spectral gradients. On the pre-registered metric --- mean validation
-macro-F1 over the final 5 epochs --- freezing the spectral module at a
-\emph{random} initialization outperforms training it jointly at both
-widths under AdamW (gaps $-0.110$ at $M{=}48$, $-0.085$ at $M{=}192$;
-Figure~\ref{fig:e3c}a, Table~\ref{tab:e3c}), and the pre-registered
-falsifier --- joint beating frozen-PCA --- is negative at both widths
-($-0.193$, $-0.081$). Taking instead each run's maximum over its 60
+macro-F1 over the final 5 epochs --- the arm with the spectral module
+frozen at a \emph{random} initialization scores higher than the jointly
+trained arm at both widths under AdamW: the gaps are $-0.110$ at
+$M{=}48$ ($90\%$ paired-$t$ interval $[-0.333, +0.114]$) and $-0.085$
+at $M{=}192$ ($[-0.185, +0.015]$), neither of them resolvable at $n=3$
+(Figure~\ref{fig:e3c}a, Table~\ref{tab:e3c}). The pre-registered
+falsifier --- joint scoring above frozen-PCA --- is negative at both
+widths ($-0.193$, $[-0.334, -0.052]$; $-0.081$, $[-0.175, +0.014]$).
+Taking instead each run's maximum over its 60
 per-epoch evaluations reverses the ordering: joint $-$ frozen-random
 $= +0.033$ ($M{=}48$) and $+0.041$ ($M{=}192$), joint $-$ frozen-PCA
 $= +0.104$ and $-0.004$. The switch between the two policies is an
@@ -361,15 +365,16 @@ Joint (MLP)     & $0.566 \pm 0.070$ & $0.575 \pm 0.184$ & $0.900 \pm 0.000$ & $0
 \caption{Controlled retraining study, \emph{original protocol} (breast
 QCL fold 0; bars: mean over 3 seeds, whiskers: sd, dots: individual
 seeds). (a)~Under AdamW, on the pre-registered final-window metric,
-every frozen arm beats every joint arm at both widths; the ordering
-reverses under a best-validation policy (Table~\ref{tab:e3c}). Both
-orderings are confounded by the clip-scope and
+every frozen arm scores higher than every joint arm at both widths; the
+ordering reverses under a best-validation policy (Table~\ref{tab:e3c}).
+Both orderings are confounded by the clip-scope and
 batch-normalization-affine asymmetries described in the text and do
 not survive the matched protocol (Table~\ref{tab:e3c_matched}).
-(b)~Under momentum SGD --- an optimizer-family control, not the regime
-of Theorem~\ref{thm:twoscale} --- joint training and frozen-random
-reach similar best-validation scores, while their final-window gaps
-differ in sign between the two widths.}
+(b)~Under momentum SGD --- an optimizer-family control, not an
+instantiation of Theorem~\ref{thm:twoscale}'s gradient flow --- joint
+training and frozen-random show no resolvable best-validation
+difference at $n=3$, while their final-window gaps differ in sign
+between the two widths.}
 \label{fig:e3c}
 \end{figure}
 
@@ -382,23 +387,24 @@ $\thetap$; mini-batches of $4$ cores with reshuffling; and global
 gradient-norm clipping at $1.0$, which binds on $73$--$89\%$ of steps.
 Logged gradient norms are recorded before clipping, so the theory
 quantities we plot are not the quantities the trajectory applied.
-Under momentum SGD, joint training and frozen-random reach similar
-best-validation scores: the paired gap is $+0.002$ at $M{=}48$ and
+Under momentum SGD, joint training and frozen-random show no resolvable
+best-validation difference: the paired gap is $+0.002$ at $M{=}48$ and
 $+0.011$ at $M{=}192$, with $90\%$ paired-$t$ intervals
 $[-0.008, +0.011]$ and $[-0.007, +0.030]$ ($n=3$). On the final-window
 metric the same pairs give $+0.028$ and $-0.057$, with intervals
 $[-0.173, +0.228]$ and $[-0.124, +0.010]$ --- gaps that differ in sign
 between the two widths, and intervals an order of magnitude wider than
-the effect they bracket. What this establishes is similar
-best-validation performance for joint and frozen arms in under-fitted
-momentum-SGD controls, in which both arms lose $0.12$--$0.22$ macro-F1
-between their peak and their final window. It does not establish
-broader functional equivalence, and it is not a test of
+the effect they bracket. What this establishes is no resolvable
+best-validation difference between joint and frozen arms at $n=3$
+(intervals above) in under-fitted momentum-SGD controls, in which both
+arms lose $0.12$--$0.22$ macro-F1 between their peak and their final
+window. It does not establish broader functional equivalence, and it is
+not a test of
 Theorem~\ref{thm:twoscale}: that theorem bounds the displacement of
 $\thetap$ along the joint trajectory, and says nothing about the
 difference between that trajectory and a separately trained frozen
 model. Descriptively, the spectral share of total squared gradient flow
-drops from $\approx 0.94$ (AdamW joint) to $\approx 0.27$ (SGD joint).
+drops from $\approx 0.94$ (AdamW joint) to $\approx 0.26$ (SGD joint).
 The optimizer family is the variable that changes the outcome;
 momentum, clipping, weight decay and adaptivity all differ between the
 two families, so no single factor is isolated here.
@@ -416,7 +422,7 @@ undo is the instability of the endpoint number: it repairs the two
 collapsed joint checkpoints ($+0.24$ and $+0.15$ macro-F1) and shrinks
 the seed standard deviation by roughly $3.7\times$, while leaving the
 frozen arms essentially unchanged ($|\Delta| \le 0.02$, and
-$\le 0.005$ for frozen-PCA, whose spectral stage carries no batch
+$\le 0.006$ for frozen-PCA, whose spectral stage carries no batch
 normalization). Stale normalization statistics therefore explain the
 \emph{variance} of the joint arms' final-epoch number, not the
 degradation itself.
@@ -437,9 +443,9 @@ decay, with gradient flow to $\thetap$ verified from the logged update
 norms); joint-linear with the spectral learning rate multiplied by
 $0.1$ and by $10$; and joint-linear under a cosine schedule. Clipping
 still binds --- the logged per-step clip coefficient averages
-$0.38$--$0.58$ across arms --- but now identically in every arm, and
+$0.33$--$0.57$ across arms --- but now identically in every arm, and
 the logged applied update norms confirm that the spectral share of the
-applied update tracks the multiplier ($0.02$, $0.17$ and $1.35$ times
+applied update tracks the multiplier ($0.02$, $0.17$ and $1.36$ times
 the $\phip$ update norm for $\times 0.1$, $\times 1$ and $\times 10$).
 Four disclosures. The pretrained encoder was selected by pixel
 validation macro-F1 on the \emph{same} fold-0 validation cores the
@@ -505,8 +511,8 @@ pretrained arms carry the validation-selection advantage disclosed
 above.
 
 \emph{The spectral-learning-rate discriminator.} The pre-registered
-ordering, in which harmful drift would predict
-$\times 0.1 \ge \times 1 \ge \times 10$, is not observed. On best-val
+harmful-drift prediction --- the ordering
+$\times 0.1 \ge \times 1 \ge \times 10$ --- is not observed. On best-val
 the ordering is reversed: $\times 10 - \times 1 = +0.048$
 $[-0.016, +0.112]$, positive in $3/3$ seeds though not resolved at
 $n=3$, while $\times 0.1 - \times 1 = +0.004$ $[-0.039, +0.046]$. On
@@ -531,11 +537,11 @@ spectral movement raises the attainable peak (the $\times 10$ arm
 drifts $\thetap$ by $4.9$ times its initial norm and attains the
 highest best-val of any arm) and lowers the un-stopped endpoint (the
 same arm has the lowest and by far the most variable final-5). We read
-this as a checkpoint-policy trade-off, not as evidence for starvation
-or for harmful drift as a blanket mechanism; the $\times 0.1$ arm,
-which the starvation reading would penalize and the harmful-drift
-reading would favor, is unresolved against $\times 1$ on best-val and
-below it on final-5, so neither reading is selected. Two further
+this as a checkpoint-policy trade-off, and it selects neither of the
+two pre-registered mechanism readings: the $\times 0.1$ arm, which the
+pre-registered starvation prediction would penalize and the
+pre-registered harmful-drift prediction would favor, is unresolved
+against $\times 1$ on best-val and below it on final-5. Two further
 cautions carry over. A large parameter displacement is not by itself
 evidence that spectral information was lost --- a linear projection can
 change scale or basis substantially while spanning much the same
@@ -572,8 +578,8 @@ trend.
 
 \paragraph{The scalar EGR diagnostic is blind here.}
 The scalar effective-gradient-ratio \emph{rises} during joint AdamW
-training (epoch-1 median $\approx 0.8$ to $\approx 4$ by epoch 60),
-including in the runs whose validation score is falling. A single
+training (joint-linear epoch-1 median $0.6$--$0.8$, rising to $3$--$5$
+by epoch 60), including in the runs whose validation score is falling. A single
 global ratio cannot see a direction-wise anisotropy (cf.\
 Remark~\ref{rem:egr_ratio_caveat}): the spectral gradients are large
 along the mean-spectrum direction and small along the discriminative
@@ -599,13 +605,15 @@ proxy instantiation of the theorem's displacement bound --- a per-step
 envelope fitted to a 25-step smoothed mini-batch residual, a
 99th-percentile rather than supremum gain, and no conversion from the
 optimizer's step clock to flow time --- exceeds the measured
-displacement by $10^{4}$--$10^{5}$. Correcting the time units
-($\hat\mu_{\mathrm{flow}} = \hat\mu_{\mathrm{step}}/\eta$) and using
+displacement by $2 \times 10^{4}$--$2 \times 10^{5}$. Correcting the
+time units ($\hat\mu_{\mathrm{flow}} = \hat\mu_{\mathrm{step}}/\eta$)
+and using
 the supremum gain, the proxy still exceeds the measured displacement by
 $\approx 17$--$47\times$ under AdamW and $\approx 450$--$1900\times$
 under momentum SGD; and the raw per-step residual violates the fitted
-envelope on $22$--$28\%$ of steps, so the residual-envelope assumption
-is verified for the smoothed curve rather than for the logged quantity.
+envelope on $19$--$28\%$ of the joint-linear steps, so the
+residual-envelope assumption is verified for the smoothed curve rather
+than for the logged quantity.
 None of these figures is a certified instantiation of
 Theorem~\ref{thm:twoscale}. Momentum, gradient clipping and adaptive
 preconditioning all lie outside its hypotheses, and under AdamW the
@@ -635,8 +643,9 @@ a checkpoint-policy trade-off, not as a demonstrated mechanism.
 One scoping statement concerns the empirical headline rather than the
 theory. Under the matched protocol of
 Section~\ref{sec:real_dynamics}, the practical claim that freezing the
-spectral module beats training it does not survive: at $M{=}48$, with
-$n=3$ seeds and a validation-selected checkpoint, no freezing benefit
+spectral module is better than training it does not survive: at
+$M{=}48$, with $n=3$ seeds and a validation-selected checkpoint, no
+freezing benefit
 or penalty is resolvable. What remains from the controlled study is a
 diagnostic-limits result --- which of the theory's ingredients can and
 cannot be measured to constrain anything on a production pipeline ---
