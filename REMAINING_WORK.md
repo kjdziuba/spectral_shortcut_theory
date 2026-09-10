@@ -332,7 +332,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
 **Phase P — rebuild the paper on frozen theory + fresh artifacts (weeks 3-4)**
 - [ ] P1. Section 7: Exp 1.6 subsection written in (A17); Exp 1.2/1.3
       numbers from new artifacts; corrected SEs (A20); setup honesty (A53).
-- [~] P2. TEX DRAFTED 2026-09-01 (all numbers artifact-verified; A29/A51/A52 applied; compiles clean). Remaining: P5 figures (Fig-8A/8B + appendix), critique pass. Section 8 rebuild, artifacts only, companion cited correctly
+- [~] P2. Section 8 rebuilt 2026-09-01; corrected 2026-09-09 (Astra B1-B5: head hypothesis unmet, anisotropy wording, optimizer-family control, bound proxy withdrawn, 3.7x full contrast); 8.4/8.5 being rewritten 2026-09-10 around the matched lane (no resolvable freezing effect). Remaining: author review; BN-gain attribution sentence in 8.3 (2 seeds — extend first). Section 8 rebuild, artifacts only, companion cited correctly
       (A7, A8, A29, A51, A52) + separate critique pass per decision.
       MUST absorb the E3a finding (2026-08-24): the old "theory
       predicts large D_curv ~ c1'*sqrt(299)" framing is DEAD — the
@@ -387,7 +387,7 @@ Verification confirmed 31 of the 33 verify-worthy findings outright and partiall
       v202, "On Uni-Modal Feature Learning..."); Peng 2022 uses
       "optimization imbalance"; Wang 2020 has zero hits (A32
       refined).
-- [~] P5. DONE 2026-09-01: Fig-8A (E3b geometry) + Fig-8B (E3c dynamics)
+- [~] P5. Fig-8A/8B done 2026-09-01; Fig-8A panel (b) gaining full-contrast column 2026-09-10; Fig-8B must be regenerated for the MATCHED arms (7 x 3, both metrics)
       built (paper/figures_src/) and placed in Section 8. Remaining:
       exp1_1 v3 figure (fig:exp11_paired, waits on E1v3 results), Exp 1.7
       EGR appendix figures, kill Figure ?? (A10).
