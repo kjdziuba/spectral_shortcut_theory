@@ -7,11 +7,24 @@ mean over the 12 measurements. The spatial spectrum overtakes the spectral
 one at rank 2-5: theta's curvature is concentrated in a handful of
 directions.
 
-Panel (b): curvature along the mean-spectrum direction vs along the
-CancerEpi-CAS class-contrast direction, per measurement (6 batches contain
-both classes). The contrast direction is 12-28x starved.
+Panel (b): curvature along THREE directions, for each of the 9 measurements
+whose batch contains both classes (3 seeds x 3 batches at M=192):
+  1. the mean-spectrum direction v1        (lam_v1 == summary lam_along_vdata)
+  2. the full, un-orthogonalized
+     CancerEpi-CAS class contrast          (lam_d_full)
+  3. that contrast orthogonalized to v1    (lam_d_perp == summary
+                                            lam_contrast_CancerEpi-CAS)
+Thin grey lines connect the three values of a single measurement. The
+mean/full ratio is ~3.7x; the mean/orthogonalized ratio is ~20x — i.e. the
+large anisotropy is a statement about the v1-orthogonal *part* of the
+contrast, not about the contrast as a whole.
 
-Inputs:  results/exp1_8b_spectra.csv, results/exp1_8b_summary.csv
+Note on sources: exp1_8b_summary.csv carries lam_along_vdata /
+lam_contrast_CancerEpi-CAS for seeds 0-1 only; exp1_8b_directions.csv carries
+the identical quantities (verified equal where both are defined) plus
+lam_d_full for all three seeds, so panel (b) reads the directions file.
+
+Inputs:  results/exp1_8b_spectra.csv, results/exp1_8b_directions.csv
 Outputs: paper/figures/fig8a_geometry.{pdf,png}
 """
 from pathlib import Path
@@ -34,13 +47,16 @@ plt.rcParams.update({
 C_THETA = "#4d4d4d"
 C_PHI = "#2c7fb8"
 C_MEAN = "#4d4d4d"
+C_FULL = "#e6550d"
 C_CONTRAST = "#d7301f"
 
 sp = pd.read_csv(ROOT / "results" / "exp1_8b_spectra.csv")
-su = pd.read_csv(ROOT / "results" / "exp1_8b_summary.csv")
+di = pd.read_csv(ROOT / "results" / "exp1_8b_directions.csv")
 
 fig, (ax1, ax2) = plt.subplots(
-    1, 2, figsize=(5.5, 2.5), gridspec_kw={"width_ratios": [1.35, 1]})
+    # Panel (a) keeps its previous width (5.5 x 1.35/2.35 = 3.16 in); the
+    # figure is widened only to give panel (b) room for a third column.
+    1, 2, figsize=(5.75, 2.5), gridspec_kw={"width_ratios": [1.22, 1]})
 
 # --------------------------------------------------------------- panel (a)
 for block, color in [("theta", C_THETA), ("phi", C_PHI)]:
@@ -68,31 +84,56 @@ ax1.annotate("overtake at rank 2–5",
 ax1.set_title("(a) block spectra at initialization", loc="left")
 
 # --------------------------------------------------------------- panel (b)
-pairs = su.dropna(subset=["lam_contrast_CancerEpi-CAS", "lam_along_vdata"])
-x_mean = pairs["lam_along_vdata"].to_numpy()
-x_con = pairs["lam_contrast_CancerEpi-CAS"].to_numpy()
+# M=192, batches in which the CancerEpi-CAS contrast is defined (both classes
+# present); all 3 seeds.
+tri = di[(di.width == 192) & di.lam_d_full.notna()
+         & di.lam_d_perp.notna()].sort_values(["seed", "batch"])
+assert sorted(tri.seed.unique()) == [0, 1, 2], "expected all three seeds"
 
-for i, (a, b) in enumerate(zip(x_mean, x_con)):
-    ax2.plot([0, 1], [a, b], color="0.75", lw=0.7, zorder=1)
-ax2.scatter(np.zeros_like(x_mean), x_mean, s=18, color=C_MEAN, zorder=2,
-            label="mean-spectrum dir.")
-ax2.scatter(np.ones_like(x_con), x_con, s=18, color=C_CONTRAST, zorder=2,
-            label="CancerEpi–CAS contrast")
-ratios = x_mean / x_con
-ax2.text(0.5, np.sqrt(x_mean.mean() * x_con.mean()),
-         f"{ratios.min():.0f}–{ratios.max():.0f}$\\times$",
-         ha="center", va="center", fontsize=8,
-         bbox=dict(fc="white", ec="none", pad=1))
+x_mean = tri["lam_v1"].to_numpy()        # == summary lam_along_vdata
+x_full = tri["lam_d_full"].to_numpy()    # un-orthogonalized class contrast
+x_perp = tri["lam_d_perp"].to_numpy()    # == summary lam_contrast_CancerEpi-CAS
+
+r_full = (x_mean / x_full)
+r_perp = (x_mean / x_perp)
+
+for a, b, c in zip(x_mean, x_full, x_perp):
+    ax2.plot([0, 1, 2], [a, b, c], color="0.75", lw=0.7, zorder=1)
+for xpos, vals, color, lab in [
+        (0, x_mean, C_MEAN, "mean-spectrum dir."),
+        (1, x_full, C_FULL, "full class contrast"),
+        (2, x_perp, C_CONTRAST, r"$v_1$-orthog. contrast")]:
+    ax2.scatter(np.full_like(vals, xpos), vals, s=18, color=color, zorder=2,
+                label=lab)
+
+# Ratio annotations. Displayed to the precision used in the body text of
+# Sec. 8.3: mean(r_full) = 3.65 -> 3.7x, mean(r_perp) = 19.67 -> 20x.
+assert 3.6 <= r_full.mean() <= 3.8 and 19.0 <= r_perp.mean() <= 21.0
+ax2.text(0.5, 16.0, "mean / full\n$\\approx 3.7\\times$",
+         ha="center", va="center", fontsize=7, color="0.25",
+         linespacing=1.25)
+ax2.text(1.5, 460.0, "mean / orthog.\n$\\approx 20\\times$",
+         ha="center", va="center", fontsize=7, color="0.25",
+         linespacing=1.25)
 
 ax2.set_yscale("log")
-ax2.set_xlim(-0.45, 1.45)
-ax2.set_xticks([0, 1])
-ax2.set_xticklabels(["mean-spectrum\ndirection", "class-contrast\ndirection"])
+ax2.set_xlim(-0.5, 2.5)
+ax2.set_ylim(6, 2600)
+ax2.set_xticks([0, 1, 2])
+ax2.set_xticklabels(["mean-spectrum\ndirection", "full class\ncontrast",
+                     "$v_1$-orthog.\ncontrast"])
+for tick, color in zip(ax2.get_xticklabels(), [C_MEAN, C_FULL, C_CONTRAST]):
+    tick.set_color(color)
 ax2.set_ylabel(r"curvature along direction")
 ax2.set_title("(b) direction-wise starvation", loc="left")
 
 fig.tight_layout()
 for ext in ("pdf", "png"):
     fig.savefig(OUT / f"fig8a_geometry.{ext}", bbox_inches="tight")
-print("ratios:", np.sort(ratios).round(1))
+
+print(f"n measurements (3 seeds x 3 batches): {len(tri)}")
+print(f"mean/full        : mean {r_full.mean():.3f}  "
+      f"range {r_full.min():.2f}-{r_full.max():.2f}")
+print(f"mean/orthogonal. : mean {r_perp.mean():.3f}  "
+      f"range {r_perp.min():.2f}-{r_perp.max():.2f}")
 print("saved fig8a")
