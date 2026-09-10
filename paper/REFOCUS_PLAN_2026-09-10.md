@@ -462,6 +462,47 @@ Decision (Astra refocus_01 §3, adopted): **3B primary, 3A secondary.**
   end of §3).
 - Exp 2: §4.4b above. Exp 3: §5 above (B primary).
 
+## 6b. Response to Astra's review 02 (2026-09-11 05:00–08:00)
+
+- **Recovery experiment (the "single change"):** `code/experiments/
+  exp2_recovery.py`, protocol fixed before any shifted result was read
+  (frozen L* encoders of κ = 1 and κ = 1/256 plus the random initial
+  encoder, M = 32, three seeds; fresh head with paired initialization;
+  20,000 GD steps on newly sampled context-random images; final state
+  evaluated on the original paired test family). Result: retrained
+  reversal accuracy 0.84/0.77/0.75 from the κ = 1/256 encoders vs
+  0.62/0.59/0.54 from κ = 1 and 0.60/0.59/0.53 from random initialization;
+  original classifiers 0.12–0.15 in both arms; no retraining reached loss
+  0.10 (final 0.33–0.47 vs 0.65–0.68). Real-spectra version
+  `exp3_recovery.py` (three regimes) running; γ = 30 whitened encoders
+  recover 0.45–0.56 for all three encoders.
+- **Update projections** (`update_projections.py`): Exp 3 R_C
+  0.99995–0.99998 (γ = 30), 0.9996–0.9998 (γ = 10), ctxfree 0.88–0.90; Exp 2
+  R_V 0.95–0.98, R_u 0.013–0.08 (ctxfree R_u 0.88–0.92). Reported in §5 as
+  the measured fact; the amplitude account is a supported hypothesis.
+- **Registered verdicts** recomputed on the original five widths (Astra's
+  table reproduced: P1 not met 1/3; P2 alignment/probe flatness met,
+  reversal not met; P2b met; P3 both requirements fail; P4 alignment met,
+  reversal opposite; P5 met; P6 probe/h_u met, reversal 2/3) → Appendix C
+  criterion table; §4 paragraph = Astra's suggested text.
+- **γ = 10 paired rate effect:** +0.030/+0.049/+0.095 (γ = 10) vs
+  +0.002/+0.023/+0.016 (γ = 30) within seeds; reversal unchanged; kept as
+  one sentence in §5 with its table in Appendix D.
+- **All 32 ledger items** addressed in the text (finite-width reversal
+  condition everywhere; abstract split by regime; no binary
+  recoverability; base rate + declared block multipliers; matched
+  calibration discriminant; comparator defined by its training
+  intervention; synthetic reversal changes the field at every pixel; 5×5
+  receptive field; "substantially less accessible"; per-seed initial
+  values; baseline-only wording for the width summaries; budget endpoints
+  separated and labelled in Fig 3; no toy margin decomposition for the CNN;
+  probe = accessibility on clean spectral inputs; no theorem-case
+  identification for the real regimes; patch readiness; heterogeneous
+  gains with the 0.10 run named; γ = 10 wording; excess risk 0.83–0.84;
+  production paragraph numbers corrected; appendix repairs).
+- Page fit: main text ends exactly at the bottom of page 9 after trims to
+  §1, §3, §4, §5, §6 and the figure captions.
+
 ## 7. For Astra (relayed by the author)
 
 1. Restate the serial result as ONE main theorem with every hypothesis

@@ -57,6 +57,23 @@ for regime, name in (("unready", "unready (whitened, $\\gamma=30$)"), ("unready1
     init = df[(df["regime"] == regime) & (df["threshold"].astype(str) == "init")]
     print(f"init probe_val {regime}: {init.groupby('seed')['probe_val'].first().round(3).to_dict()}")
 
+rec_path = ROOT / "results" / "exp3" / "recovery_summary.csv"
+if rec_path.exists():
+    r = pd.read_csv(rec_path)
+    L.append("\\begin{table}[htbp]\\centering\\scriptsize")
+    L.append("\\caption{Recovery at $M=32$ (real spectra): a fresh patch head with paired initialization trained for 20,000 steps on newly "
+             "sampled context-random patches with the encoder frozen at its $L^\\ast$ checkpoint (\\texttt{init} = random initial encoder); "
+             "validation and test patients under the paired conditions; original = the run's own classifier at $L^\\ast$ (validation).}"
+             "\\label{tab:exp3_recovery}")
+    L.append("\\begin{tabular}{lllcccccc}\\toprule regime & seed & encoder & probe (val) & orig.\\ rev.\\ (val) & retr.\\ iid (val) & retr.\\ rev.\\ (val) & retr.\\ ctx-rand.\\ (val) & retr.\\ rev.\\ (test) \\\\ \\midrule")
+    for _, x in r.sort_values(["regime", "seed", "encoder"]).iterrows():
+        o = f"{x['original_acc_reversed_val']:.3f}" if pd.notna(x.get("original_acc_reversed_val", float('nan'))) else "--"
+        L.append(f"{x['regime']} & {int(x['seed'])} & \\texttt{{{x['encoder']}}} & {x['probe_val']:.3f} & {o} & {x['retrained_acc_iid_val']:.3f} & "
+                 f"{x['retrained_acc_reversed_val']:.3f} & {x['retrained_acc_ctx_random_val']:.3f} & {x['retrained_acc_reversed_test']:.3f} \\\\")
+    L.append("\\bottomrule\\end{tabular}\\end{table}")
+    print("--- recovery3 means ---")
+    print(r.groupby(["regime", "encoder"])[["probe_val", "retrained_acc_reversed_val", "retrained_acc_ctx_random_val", "retrained_acc_reversed_test"]].mean().round(3))
+
 miss = df[(df["threshold"] == "final") & (~df["reached_star"])]
 L.append("\\paragraph{Runs that did not reach $L^\\ast$.}")
 if miss.empty:
