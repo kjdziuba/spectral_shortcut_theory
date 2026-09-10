@@ -1,0 +1,100 @@
+% Appendix C: Experiment 2 details. Design part written 2026-09-11 from
+% code/synthetic/data_v2.py, code/experiments/exp2_intervention.py and
+% results/exp2/calibration.json. Results tables are appended from
+% results/exp2_summary.csv and results/exp2/PREDICTIONS.md when the grid completes.
+
+\subsection{Generator}
+Images are $16\times16$ on a torus with $S=256$ channels per pixel. Labels
+$y_p\in\{-1,+1\}$ are i.i.d.\ Rademacher. Fixed orthonormal directions
+$u,v_1,\dots,v_8\in\R^S$ are drawn once per seed (QR of a Gaussian matrix).
+With $o_1,\dots,o_8$ the eight $3\times3$ offsets, the spectrum of pixel $p$
+is
+\[
+ x_p=\alpha\,y_p\,u+\beta\sum_{d=1}^8\big(y_{p-o_d}+\tau\,\eta_{p,d}\big)v_d+\sigma\,\varepsilon_p,
+ \qquad \eta_{p,d},\varepsilon_p\ \text{standard Gaussian},
+\]
+so that the pixel at $p+o_d$ carries $y_p$ along $v_d$: each pixel's label
+is written into all eight neighbours, each along its own direction, while
+$p$'s own $v$-coordinates carry the labels of $p$'s neighbours, which are
+independent of $y_p$. Constants: $\alpha=1.645$, $\beta=5$, $\sigma=1$,
+$\tau=1.7023$; $K=12$. The draw order is condition-independent, so the five
+conditions generated from one seed share $y$, $\eta$ and $\varepsilon$:
+\emph{iid}; \emph{reversed} ($y_{p-o_d}\to-y_{p-o_d}$); \emph{context-random}
+(an independent label field replaces $y$ in the context term);
+\emph{spectral-only} ($\beta=0$); \emph{context-only} ($\alpha=0$).
+Training uses $256$ images; each test condition $64$ images; the spectral
+probe is fitted on $64$ spectral-only images and evaluated on another $64$.
+Seeds: directions $1000+s$, training data $2000+s$, test family $3000+s$,
+probe $4000+s$ and $5000+s$, initialization $s$, for $s\in\{0,1,2\}$.
+
+\subsection{Calibration and readiness (fixed before any training run)}
+The oracle spectral accuracy is a Fisher discriminant on $u^\top x_p$; the
+oracle contextual accuracy is a Fisher discriminant on the $3\times3$ window
+of the eight projections $v_d^\top x$ (72 features), which contains all eight
+copies of $y_p$. $\tau$ was set by bisection so that the contextual oracle
+equals $0.950$ on seed-0 directions. Readiness is the same discriminant
+through a random encoder $W\sim\mathcal N(0,1/S)^{12\times256}$: on the
+encoder output of the pixel itself for spectral-only data, and on the
+$3\times3$ window of encoder outputs for context-only data.
+
+\begin{table}[h]
+\centering\small
+\caption{Experiment 2 calibration (\texttt{results/exp2/calibration.json}).
+Oracle accuracies use the true directions; readiness uses a random encoder.}
+\label{tab:exp2_calib}
+\begin{tabular}{lccccc}
+\toprule
+seed & oracle spectral & oracle context & random enc.\ spectral & random enc.\ context & random enc.\ both \\
+\midrule
+0 & 0.951 & 0.950 & 0.647 & 0.910 & 0.915 \\
+1 & 0.951 & 0.949 & 0.653 & 0.914 & 0.918 \\
+2 & 0.948 & 0.950 & 0.608 & 0.905 & 0.906 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The population optimum of the contextual cue alone is a cross-entropy of
+about $0.126$ nats (spectral alone $0.127$), so training losses below about
+$0.13$ cannot be reached by either cue alone and the threshold $0.15$ sits
+just above the contextual optimum.
+
+\subsection{Model, training and arms}
+Encoder $W\in\R^{12\times256}$, no bias, $\mathcal N(0,1/S)$ initialization.
+Head: $3\times3$ convolution to width $M$ with bias, ReLU, $3\times3$
+convolution to one logit without bias, circular padding, PyTorch default
+initialization; implemented as explicit matrix products with torus rolls
+(identical to the convolution to $10^{-15}$ in double precision). Loss: mean
+over the $65{,}536$ training pixels of $\log(1+e^{-y_pF_p})$. Full-batch
+gradient descent, $\eta=10^{-3}$ for every parameter (the largest of
+$\{10^{-4},3\cdot10^{-4},10^{-3},3\cdot10^{-3}\}$ with a monotone loss over
+$300$ steps at $M=2048$), no momentum, clipping or decay; at most $40{,}000$
+steps, stopping at loss $<0.10$. Snapshots at the first step with loss below
+each of $0.6,0.5,0.4,0.3,0.2,0.15,0.10$; $L^\ast=0.30$ is the pre-registered
+threshold. Gradient norms at a snapshot are those of the snapshotted
+iterate. Arms: \texttt{sp} (standard parameterization) and \texttt{mup}
+(readout $M^{-1/2}\gamma$, $\gamma=\sqrt M\times$default, same function at
+initialization; under plain gradient descent equal to a readout-only rate
+$1/M$) at $M\in\{2,4,8,32,128,512,2048\}$; \texttt{ctxfree} (training
+context from an independent label field) and \texttt{frozen} (encoder fixed
+at initialization) at $M\in\{2,8,128,512\}$; \texttt{lrmult} (readout rate
+$\times\{1/16,1/4,1,4,16\}$) and \texttt{headlr} (whole-head rate
+$\kappa\in\{1,1/16,1/256\}$, extended to $1/4096$ and $1/32768$ on seed 0
+for the reversal outcome) at $M=32$. Three seeds.
+
+\subsection{Pre-registration and amendments}
+The plan (\texttt{paper/REFOCUS\_PLAN\_2026-09-10.md}, \S4) fixed the
+generator, constants, arms, $L^\ast$, measures and predictions P1--P5 before
+the grid. Amendments recorded before the corresponding runs: widths $2$ and
+$4$ and fractional readout multipliers were added after a one-seed pilot at
+$M\in\{8,2048\}$ showed complete suppression at $L^\ast$ (\S4.4a); the
+whole-head arm, the exact $h_u$ export, paired test conditions and
+same-state gradient norms were added after the design review (\S4.4b); the
+$\kappa$ bracket was extended downward after the seed-0 pilot showed that
+the probe responds to $\kappa$ while reversal accuracy does not within
+$\{1,1/16,1/256\}$ (\S4.4c). Original predictions are reported as
+registered; added widths and multipliers are identified as amendments.
+
+\subsection{Results}
+%% [E2] tables: per-seed values at L* for every arm; secondary thresholds
+%% 0.15 and 0.10; kappa sweep; runs that never reached L*; trajectories.
+\emph{[Results tables pending: the grid is running.]}

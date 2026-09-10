@@ -1,0 +1,109 @@
+% Appendix D: Experiment 3 details. Design part written 2026-09-11 from
+% code/experiments/exp3_real_context.py, exp3_train.py,
+% results/exp3/readiness_scan.csv and results/exp3/calibration3.json.
+
+\subsection{Data}
+Breast-tissue QCL micro-array cores, fold~0 of the five-fold patient-level
+split used throughout this work ($115$ training, $28$ validation, $26$ test
+cores). Each labelled tissue pixel contributes the $942$-dimensional vector
+of absorbance, first and second derivative ($3\times314$ channels). Up to
+$600$ (training) or $300$ (validation, test) pixels per class per core were
+sampled with a fixed seed: $75{,}297$ training pixels from $79$ cores,
+$11{,}024$ validation from $20$, $8{,}038$ test from $16$, over the four
+classes; the experiment uses the pair Cancer Epithelium ($+1$; $29{,}603$
+training pixels) versus Cancer-Associated Stroma ($-1$; $21{,}923$).
+
+\subsection{Readiness scan}
+For each class pair, bottleneck $K$ and preprocessing, Table~\ref{tab:exp3_scan}
+reports the centre-only oracle (ridge Fisher discriminant on the preprocessed
+$942$-vector, fitted on one half of the training cores and evaluated on the
+other half) and the same discriminant through three random encoders
+$W\sim\mathcal N(0,1/942)^{K\times942}$. Standardization is per feature;
+whitening is PCA whitening with a relative ridge of $10^{-3}$ on the
+eigenvalues; both are estimated on the fitting half.
+
+\begin{table}[h]
+\centering\small
+\caption{Readiness scan (\texttt{results/exp3/readiness\_scan.csv}): centre-only
+oracle and random-encoder probe (mean over three encoders) by pair, $K$ and
+preprocessing. $|\cos|$ is the cosine between the class-mean contrast and the
+first principal direction of the standardized training half.}
+\label{tab:exp3_scan}
+\begin{tabular}{llcccccc}
+\toprule
+pair & preprocessing & oracle & $K=2$ & $K=4$ & $K=12$ & $K=32$ & $|\cos|$ \\
+\midrule
+CancerEpi vs CAS & standardized & 0.969 & 0.726 & 0.803 & 0.955 & 0.968 & 0.50 \\
+CancerEpi vs CAS & whitened & 0.944 & 0.503 & 0.486 & 0.539 & 0.591 & 0.50 \\
+NormalStroma vs CAS & standardized & 0.810 & 0.580 & 0.639 & 0.674 & 0.741 & 0.44 \\
+NormalStroma vs CAS & whitened & 0.768 & 0.502 & 0.509 & 0.529 & 0.600 & 0.44 \\
+NormalEpi vs CancerEpi & standardized & 0.758 & 0.547 & 0.573 & 0.662 & 0.724 & 0.20 \\
+NormalEpi vs CancerEpi & whitened & 0.761 & 0.575 & 0.545 & 0.624 & 0.580 & 0.20 \\
+NormalStroma vs CancerEpi & standardized & 0.989 & 0.781 & 0.874 & 0.978 & 0.990 & 0.88 \\
+NormalStroma vs CancerEpi & whitened & 0.974 & 0.579 & 0.541 & 0.549 & 0.626 & 0.88 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+With standardized inputs a random encoder already reads the
+epithelium-versus-stroma contrasts, because they lie along the top
+principal directions; whitening removes that accessibility while the
+oracle stays high. The two regimes of Section~\ref{sec:real} follow: the
+same pair, $K=12$, standardized (\emph{ready}) or whitened (\emph{unready}).
+
+\subsection{Patch construction}
+Each training example is a real centre pixel with its recorded label and
+eight real donor spectra sampled uniformly from the same split side (resampled
+once if the donor's core equals the centre's), independent of the centre
+label. In the preprocessed space, donor $d$ receives the constructed cue
+$\gamma_d\,(c\,s+\tau\eta_d)\,e_d$, where $e_1,\dots,e_8$ are the first
+eight principal coordinates (in the standardized regime the directions
+$v_1,\dots,v_8$ with $\gamma_d=3\sqrt{\lambda_d}$; in the whitened regime the
+first eight whitened coordinates with $\gamma_d=30$), $c$ is the centre's
+label code, and $s=+1$ (informative), $s=-1$ (reversed) or $c$ replaced by an
+independent random label (context-random); \emph{spectral-only} removes the
+cue and keeps the donors. The draw order is condition-independent, so the
+four conditions generated from one seed share centres, donors and $\eta$.
+Preprocessing, principal directions and $\lambda_d$ are estimated on
+training pixels only. Training: $24{,}000$ class-balanced centres; probe
+fitting: $6{,}000$ disjoint training pixels; evaluation: up to $6{,}000$
+validation and $6{,}000$ test centres with donors from their own side.
+$\tau$ is calibrated per regime on training-core halves so that the
+neighbourhood oracle (a discriminant on the eight cue projections) matches
+the centre-only oracle.
+
+\begin{table}[h]
+\centering\small
+\caption{Experiment 3 calibration (\texttt{results/exp3/calibration3.json}).
+Readiness: discriminant through a random $12\times942$ encoder on the
+centre alone and on the encoded $3\times3$ patch (three encoders).}
+\label{tab:exp3_calib}
+\begin{tabular}{lcccccc}
+\toprule
+regime & $\tau$ & centre oracle (fit/val) & context oracle & random enc.\ centre & random enc.\ patch \\
+\midrule
+ready (standardized) & 1.475 & 0.969 / 0.959 & 0.969 & 0.935, 0.970, 0.952 & 0.988, 0.994, 0.991 \\
+unready (whitened) & 1.735 & 0.948 / 0.884 & 0.948 & 0.476, 0.512, 0.605 & 0.948, 0.947, 0.950 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Model, training and arms}
+Encoder $W\in\R^{12\times942}$ applied to the nine spectra; head
+$h=\mathrm{ReLU}(W_1\,\mathrm{vec}(z)+b_1)$ of width $M$ over the $9K=108$
+encoded coordinates and a linear readout to one logit; margin loss;
+full-batch gradient descent with $\eta=10^{-3}$, at most $40{,}000$ steps,
+the same thresholds and snapshot rule as Experiment~2. Arms per regime:
+\texttt{sp} at $M\in\{8,32,128,512\}$; \texttt{headlr} with
+$\kappa\in\{1,1/16,1/256\}$ at $M=32$; \texttt{ctxfree} (context-random
+training) at $M\in\{8,128\}$; \texttt{frozen} at $M=32$; seeds $0$--$2$.
+Spectral probe: ridge discriminant on the encoder output of centre pixels,
+fitted on the probe set and evaluated on validation (and test) centres,
+reported as the gain over its initial value. Reliance and failure are
+measured on validation patients with the paired conditions; test patients
+are reported separately and were not used for any choice.
+
+\subsection{Results}
+%% [E3] tables at L*: per regime, arm, width, kappa, seed: probe gain,
+%% acc iid / reversed / context-random / spectral-only (val and test).
+\emph{[Results tables pending: the grid is running.]}
