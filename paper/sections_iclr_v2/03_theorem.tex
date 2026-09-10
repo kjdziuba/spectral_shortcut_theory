@@ -79,33 +79,29 @@ At the matched margin the spectral coefficient has moved by at most a
 fraction $1/(1+Mv_0^2)$ of the update the spectral-only model needs; the
 coefficient itself can be informative at initialization and remain so. It
 is the \emph{adaptation} that is suppressed. When the initial spectral
-coefficient is below half the margin, the fitted joint model relies on
-context strongly enough that contextual reversal misclassifies every
-example, while a spectral-only comparator trained to its own hitting time
-of the same margin is correct. Two comparators appear: the spectral-only
-model is trained to its own first hitting time from the same spectral
-initialization, whereas the frozen comparator is evaluated at the joint
+coefficient is below half the margin and the width is large enough,
+$Mv_0^2>m/(m-2a_0)$, the fitted joint model relies on context strongly
+enough that contextual reversal misclassifies every example, while a
+spectral-only comparator trained to its own hitting time of the same
+margin is correct; at small $Mv_0^2$ the fitted model can be correct even
+with $a_0<m/2$, so the failure is a finite-width statement, not a
+universal one. The spectral-only comparator is trained to
+its own hitting time; the frozen comparator is evaluated at the joint
 path's elapsed times through $T_m$. Part (c) removes the width dependence
 only: the normalized system is the $M=1$ system, which for
-$(a_0,v_0)=(0,1)$ still has reversal error one for every $m>0$. Whether
-normalization also reduces reliance in a trained network is an empirical
-question, asked in Section~\ref{sec:synthetic}, not a consequence of (c).
-Finally, the same calculation with each contextual readout trained at rate
-$\kappa$ instead of unit rate gives $\dot b=\kappa Mv\varrho$ and the bound
-$1/(1+\kappa Mv_0^2)$: the relative training speed of the contextual
-pathway, not width as such, is the competition parameter. This is the
-quantity the experiments manipulate.
+$(a_0,v_0)=(0,1)$ still fails under reversal for every $m>0$. Finally,
+training each contextual readout at rate $\kappa$ instead of unit rate
+gives $\dot b=\kappa Mv\varrho$ and the bound $1/(1+\kappa Mv_0^2)$: the
+relative training speed of the contextual pathway, not width as such, is
+the competition parameter the experiments manipulate.
 
 \paragraph{Numerical check.}
-The closed forms were compared with a full $(2+M)$-parameter integration
-over $525$ non-trivial initialization--width--margin cases
-($M\in\{1,\dots,4096\}$, $m\in\{2,2.9,4\}$): the maximum relative
-discrepancy over the four endpoint quantities $u_M$, $v(T_m)$, $b(T_m)$,
-$T_m$ is $1.3\times10^{-11}$, and no bound in (a)--(b) is violated in any
-case; the Gaussian sweep gives expected reversal error $0.8207$, $0.8380$,
-$0.8397$ at $M=64$, $1024$, $16384$ against the limit $\Phi(1)=0.8413$ for
-$m=2$, $\sigma=1$ (Appendix~\ref{app:verification}). This checks the
-algebra; it is not evidence for the claim beyond the model.
+The closed forms agree with a full $(2+M)$-parameter integration over
+$525$ initialization--width--margin cases to a relative discrepancy of
+$1.3\times10^{-11}$ in the endpoint quantities, with no bound violated, and
+the Gaussian sweep approaches its limit $\Phi(1)$ ($0.8207$, $0.8380$,
+$0.8397$ at $M=64$, $1024$, $16384$; Appendix~\ref{app:verification}). This
+checks the algebra, not the claim beyond the model.
 
 \begin{figure}[t]
 \centering

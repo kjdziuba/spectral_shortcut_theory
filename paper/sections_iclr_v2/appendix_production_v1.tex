@@ -163,10 +163,12 @@ per-channel batch statistics of the two head normalizations, measured over the
 group they actually normalize, together with the activation energy entering and
 leaving the first one. Under fan-in initialization the pre-normalization
 variance of the first head normalization falls roughly as $1/(M+K)$, and its
-inverse-standard-deviation gain grows correspondingly. The stabilizer
-$\varepsilon = 10^{-5}$ is never within three orders of magnitude of the
-variance: the fraction of channels with variance below $10\varepsilon$ is $0$
-in every row of both normalizations at every width, seed and mode.
+inverse-standard-deviation gain grows correspondingly. No channel's variance is
+within a factor of ten of the stabilizer $\varepsilon = 10^{-5}$: the
+fraction of channels with variance below $10\varepsilon$ is $0$ in every row
+of both normalizations at every width, seed and mode. (This recorded check
+does not establish the stronger separation by three orders of magnitude
+claimed in the earlier draft.)
 
 \begin{table}[htbp]
 \centering

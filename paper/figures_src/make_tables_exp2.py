@@ -103,6 +103,24 @@ for k, g in m.groupby("mult"):
 L.append("\\bottomrule\\end{tabular}\\end{table}")
 print("--- lrmult means ---"); print(m.groupby("mult")[["probe_acc_gain", "h_u", "acc_reversed"]].mean().round(3))
 
+# C4b recovery table (retraining the head on frozen L* encoders)
+rec_path = ROOT / "results" / "exp2" / "recovery_summary.csv"
+if rec_path.exists():
+    r = pd.read_csv(rec_path)
+    L.append("\\begin{table}[htbp]\\centering\\scriptsize")
+    L.append("\\caption{Recovery at $M=32$: a fresh head with paired initialization trained for 20,000 steps on newly sampled "
+             "context-random images with the encoder frozen at its $L^\\ast$ checkpoint (\\texttt{init} = the random initial encoder). "
+             "Original = the run's own classifier at $L^\\ast$; retrained = the new head; accuracies on the same paired test family.}"
+             "\\label{tab:exp2_recovery}")
+    L.append("\\begin{tabular}{llccccccc}\\toprule seed & encoder & probe & retrain loss & orig.\\ reversed & orig.\\ ctx-random & retr.\\ iid & retr.\\ reversed & retr.\\ ctx-random \\\\ \\midrule")
+    for _, x in r.sort_values(["seed", "encoder"]).iterrows():
+        o_rev = f"{x['original_acc_reversed']:.3f}" if pd.notna(x.get("original_acc_reversed", float('nan'))) else "--"
+        o_ctx = f"{x['original_acc_ctx_random']:.3f}" if pd.notna(x.get("original_acc_ctx_random", float('nan'))) else "--"
+        L.append(f"{int(x['seed'])} & \\texttt{{{x['encoder']}}} & {x['probe_acc']:.3f} & {x['retrain_train_loss']:.3f} & {o_rev} & {o_ctx} & "
+                 f"{x['retrained_acc_iid']:.3f} & {x['retrained_acc_reversed']:.3f} & {x['retrained_acc_ctx_random']:.3f} \\\\")
+    L.append("\\bottomrule\\end{tabular}\\end{table}")
+    print("--- recovery means ---"); print(r.groupby("encoder")[["probe_acc", "retrained_acc_iid", "retrained_acc_reversed", "retrained_acc_ctx_random"]].mean().round(3))
+
 # C5 runs that never reached L*
 miss = df[(df["threshold"] == "final") & (~df["reached_star"])]
 L.append("\\paragraph{Runs that did not reach $L^\\ast$.}")
@@ -113,21 +131,57 @@ else:
         f"\\texttt{{{r['arm']}}} $M={int(r['width'])}$" + (f", $\\kappa={r['head_mult']:g}$" if r['head_mult'] != 1 else "")
         + f", seed {int(r['seed'])} (final loss {r['loss']:.3f} at step {int(r['step'])})" for _, r in miss.iterrows()) + ".")
 
-# C6 registered verdicts: Spearman per seed at L*
-L.append("\\paragraph{Registered verdicts.}")
+# C6 registered verdicts: criterion table on the original five widths and the amended grid
 d = at(0.3); d = d[(d["mult"] == 1) & (d["head_mult"] == 1)]
-rows = []
-for arm in ("sp", "mup", "ctxfree", "frozen"):
-    for s, g in d[d["arm"] == arm].groupby("seed"):
-        g = g.sort_values("width")
-        rows.append(f"\\texttt{{{arm}}} seed {int(s)}: $\\rho(a_u,M)={spearman(g['width'], g['align_u']):+.2f}$, "
-                    f"$\\rho(\\text{{probe}},M)={spearman(g['width'], g['probe_acc']):+.2f}$, $\\rho(\\text{{rev}},M)={spearman(g['width'], g['acc_reversed']):+.2f}$ "
-                    f"over $M\\in\\{{{','.join(str(int(w)) for w in g['width'])}\\}}$")
-L.append("Spearman correlations across widths at $L^\\ast$, per seed (P1--P3 as registered use $a_u$ and reversal accuracy): " + "; ".join(rows) + ".")
+ORIG = [8, 32, 128, 512, 2048]
+
+
+def rhos(arm, widths, col):
+    out = []
+    for s, g in d[(d["arm"] == arm) & (d["width"].isin(widths))].groupby("seed"):
+        g = g.sort_values("width"); out.append(spearman(g["width"], g[col]))
+    return out
+
+
+def fmt(v):
+    return ", ".join(f"{x:+.2f}" for x in v)
+
+
+L.append("\\begin{table}[htbp]\\centering\\scriptsize")
+L.append("\\caption{Registered predictions (REFOCUS\\_PLAN \\S4.4) evaluated at $L^\\ast=0.30$ on the original five widths and on the amended grid; "
+         "$\\rho$ = Spearman rank correlation across widths (or multipliers), one value per seed. P2's second clause compares $a_u$ at $M=2048$.}\\label{tab:exp2_verdicts}")
+L.append("\\begin{tabular}{p{5.2cm}p{3.1cm}p{4.2cm}p{2.6cm}}\\toprule criterion & grid & per-seed values & verdict \\\\ \\midrule")
+sp_au_o, sp_rev_o = rhos("sp", ORIG, "align_u"), rhos("sp", ORIG, "acc_reversed")
+sp_au_a, sp_rev_a = rhos("sp", sorted(d["width"].unique()), "align_u"), rhos("sp", sorted(d["width"].unique()), "acc_reversed")
+both_o = sum(1 for a, b in zip(sp_au_o, sp_rev_o) if a <= -0.8 and b <= -0.8)
+L.append(f"P1: standard param., $\\rho(a_u,M)\\le-0.8$ and $\\rho(\\text{{rev}},M)\\le-0.8$ in every seed & original & $a_u$: {fmt(sp_au_o)}; rev: {fmt(sp_rev_o)} & not met ({both_o}/3 seeds) \\\\")
+L.append(f" & amended & $a_u$: {fmt(sp_au_a)}; rev: {fmt(sp_rev_a)} & not met \\\\")
+mu_au_o, mu_pr_o, mu_rev_o = rhos("mup", ORIG, "align_u"), rhos("mup", ORIG, "probe_acc"), rhos("mup", ORIG, "acc_reversed")
+mu_au_a, mu_rev_a = rhos("mup", sorted(d["width"].unique()), "align_u"), rhos("mup", sorted(d["width"].unique()), "acc_reversed")
+flat = lambda v: sum(1 for x in v if abs(x) < 0.5) >= 2
+L.append(f"P2a: normalized readout, $|\\rho(\\cdot,M)|<0.5$ in at least two seeds & original & $a_u$: {fmt(mu_au_o)}; probe: {fmt(mu_pr_o)}; rev: {fmt(mu_rev_o)} & alignment {'met' if flat(mu_au_o) else 'not met'}; probe {'met' if flat(mu_pr_o) else 'not met'}; reversal {'met' if flat(mu_rev_o) else 'not met'} \\\\")
+L.append(f" & amended & $a_u$: {fmt(mu_au_a)}; rev: {fmt(mu_rev_a)} & alignment {'met' if flat(mu_au_a) else 'not met'}; reversal {'met' if flat(mu_rev_a) else 'not met'} \\\\")
 sp2048 = d[(d["arm"] == "sp") & (d["width"] == 2048)].set_index("seed")["align_u"]
 mu2048 = d[(d["arm"] == "mup") & (d["width"] == 2048)].set_index("seed")["align_u"]
-comp = [f"seed {int(s)}: {mu2048[s]:.4f} vs {sp2048[s]:.4f}" for s in mu2048.index if s in sp2048.index]
-L.append("P2's second clause ($a_u$ at $M=2048$, normalized readout versus standard): " + "; ".join(comp) + ".")
+comp = [f"{mu2048[s]:.4f} vs {sp2048[s]:.4f}" for s in sorted(mu2048.index) if s in sp2048.index]
+L.append(f"P2b: $a_u(2048)$ normalized $>$ standard in every seed & paired seeds & {'; '.join(comp)} & {'met' if all(mu2048[s] > sp2048[s] for s in mu2048.index if s in sp2048.index) else 'not met'} \\\\")
+cf = d[d["arm"] == "ctxfree"]
+cf_au = rhos("ctxfree", sorted(cf["width"].unique()), "align_u"); cf_pr = rhos("ctxfree", sorted(cf["width"].unique()), "probe_acc")
+L.append(f"P3: uninformative context, $a_u>0.25$ at every width and $|\\rho(a_u,M)|<0.5$ & amended control widths $\\{{{','.join(str(int(w)) for w in sorted(cf['width'].unique()))}\\}}$ & "
+         f"$a_u$ range {cf['align_u'].min():.3f}--{cf['align_u'].max():.3f}; $\\rho(a_u,M)$: {fmt(cf_au)}; $\\rho(\\text{{probe}},M)$: {fmt(cf_pr)} & cutoff not met; flatness not met (probe {cf.groupby('width')['probe_acc'].mean().iloc[0]:.3f}$\\to${cf.groupby('width')['probe_acc'].mean().iloc[-1]:.3f}) \\\\")
+lm = at(0.3); lm = lm[lm["arm"] == "lrmult"]
+lm_au = [spearman(g.sort_values("mult")["mult"], g.sort_values("mult")["align_u"]) for _, g in lm.groupby("seed")]
+lm_rev = [spearman(g.sort_values("mult")["mult"], g.sort_values("mult")["acc_reversed"]) for _, g in lm.groupby("seed")]
+L.append(f"P4: readout multiplier, $a_u$ and reversal accuracy decrease with the multiplier in every seed & run multipliers $\\{{1/16,1/4,1,4,16\\}}$ (64 dropped) & $a_u$: {fmt(lm_au)}; rev: {fmt(lm_rev)} & $a_u$ met; reversal not met (opposite sign) \\\\")
+fr = d[d["arm"] == "frozen"]
+L.append(f"P5: frozen encoder, reversal accuracy $<0.5$ at every width & amended widths & max {fr['acc_reversed'].max():.3f} & met \\\\")
+hk = at(0.3); hk = hk[hk["arm"] == "headlr"]
+hk_pr = [spearman(g.sort_values("head_mult")["head_mult"], g.sort_values("head_mult")["probe_acc"]) for _, g in hk.groupby("seed")]
+hk_hu = [spearman(g.sort_values("head_mult")["head_mult"], g.sort_values("head_mult")["h_u"]) for _, g in hk.groupby("seed")]
+hk_rev = [spearman(g.sort_values("head_mult")["head_mult"], g.sort_values("head_mult")["acc_reversed"]) for _, g in hk.groupby("seed")]
+L.append(f"P6 (amendment 4.4b): whole-head $\\kappa$, probe, $h_u$ and reversal accuracy increase as $\\kappa$ decreases, $\\rho\\le-0.8$ in every seed & $\\kappa\\in\\{{1,1/16,1/256\\}}$, three seeds & probe: {fmt(hk_pr)}; $h_u$: {fmt(hk_hu)}; rev: {fmt(hk_rev)} & probe and $h_u$ met; reversal not met ({sum(1 for x in hk_rev if x <= -0.8)}/3 seeds) \\\\")
+L.append("\\bottomrule\\end{tabular}\\end{table}")
+print("verdict table: original-width sp a_u", fmt(sp_au_o), "rev", fmt(sp_rev_o), "| mup a_u", fmt(mu_au_o), "probe", fmt(mu_pr_o), "rev", fmt(mu_rev_o))
 for arm in ("sp", "mup", "ctxfree", "frozen"):
     a = d[d["arm"] == arm]
     print(arm, "per-seed rho(a_u,M):", [round(spearman(g.sort_values('width')['width'], g.sort_values('width')['align_u']), 2) for _, g in a.groupby('seed')],

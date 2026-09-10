@@ -54,9 +54,12 @@ seed & oracle spectral & oracle context & random enc.\ spectral & random enc.\ c
 \end{table}
 
 The population optimum of the contextual cue alone is a cross-entropy of
-about $0.126$ nats (spectral alone $0.127$), so training losses below about
-$0.13$ cannot be reached by either cue alone and the threshold $0.15$ sits
-just above the contextual optimum.
+about $0.126$ nats (spectral alone $0.127$); the threshold $0.15$ sits
+just above that population optimum. A population optimum is not a bound
+on the finite-sample training loss, which a wide head can drive lower by
+fitting individual pixels, so training losses below $0.13$ are not by
+themselves evidence of spectral learning; the probe and the shifted
+accuracies are.
 
 \subsection{Model, training and arms}
 Encoder $W\in\R^{12\times256}$, no bias, $\mathcal N(0,1/S)$ initialization.

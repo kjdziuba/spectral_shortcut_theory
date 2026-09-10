@@ -9,26 +9,26 @@ larger spatial network reads the encoded neighbourhood
 a per-token encoder feeds a contextual model. Practitioners often pretrain
 or freeze the spectral stage, and a companion tokenization study
 (anonymous, under review) reports a frozen random encoder competing with a
-jointly trained one. Whether joint training genuinely starves the encoder,
-and when that matters, is not settled by such comparisons: the spatial
-stage can predict the label from the neighbourhood, and a model that
-learns to do so may never need the spectrum.
+jointly trained one. Such comparisons do not settle whether joint training
+starves the encoder: the spatial stage can predict the label from the
+neighbourhood, and a model that learns to do so may never need the
+spectrum.
 
-This paper makes one claim and tests it at three levels. \emph{In a serial
-spectral--spatial model, increasing the effective training speed of the
-contextual pathway suppresses learning of an equally predictive spectral
-cue; at matched training fit this produces greater reliance on context and
-failure when that context changes.} We prove it in a linear-encoder model
-with a replicated contextual readout (Section~\ref{sec:theorem}); we
-predict that it transfers to any serial model whose contextual pathway
-learns fast relative to the encoder, with head width in the standard
-parameterization and the head's learning rate as two speed controls and
-readout normalization as the control that removes the width dependence;
-and we test that prediction with interventions in a nonlinear
-convolutional model on synthetic data (Section~\ref{sec:synthetic}) and
-with measured tissue spectra in constructed neighbourhoods
-(Section~\ref{sec:real}), in each case with a control that removes the
-proposed cause.
+This paper asks how the relative training speed of the two modules
+affects what the encoder learns, and keeps four measurements apart that
+are easily conflated: adaptation of the encoder, linear accessibility of
+the spectral cue in its output, reliance of the trained classifier on
+context, and what a specified retraining procedure can recover afterwards.
+We prove one instance exactly: in a linear-encoder model with a
+replicated contextual readout, a faster contextual pathway suppresses the
+encoder's update at matched fit, the fitted model fails under contextual
+reversal under explicit finite-width conditions, and readout normalization
+removes the width dependence (Section~\ref{sec:theorem}). We then measure,
+with interventions on training speed, how each of the four quantities
+responds in a nonlinear convolutional model on synthetic data
+(Section~\ref{sec:synthetic}) and with measured tissue spectra in
+constructed neighbourhoods (Section~\ref{sec:real}), in each case against
+a control that removes the proposed cause.
 
 \paragraph{Contributions.}
 \begin{itemize}
@@ -38,27 +38,31 @@ proposed cause.
   margin by at most a fraction $1/(1+Mv_0^2)$ of the update a spectral-only
   model needs; the fitted model misclassifies every example under
   contextual reversal when the initial spectral coefficient is below half
-  the margin, with expected error tending to $\Phi(m/2\sigma)$ over
-  isotropic Gaussian initialization; and a $M^{-1/2}$-normalized readout
-  removes the width dependence, though not the failure.
+  the margin and $Mv_0^2>m/(m-2a_0)$, with expected error tending to
+  $\Phi(m/2\sigma)$ over isotropic Gaussian initialization as $M\to\infty$;
+  and a $M^{-1/2}$-normalized readout removes the width dependence, though
+  it need not remove the failure.
 \item \textbf{Synthetic intervention.} In a ReLU convolutional head over a
-  linear encoder, with two cues of equal oracle information but unequal
-  initial accessibility, an informative context suppresses the encoder's
-  spectral learning at matched fit at every width; slowing the whole head
-  restores it monotonically in every seed, a normalized readout reduces it
-  at large width, and an uninformative context removes it. The fitted
-  head's reliance on context does not respond to any of these controls:
-  the contextual pathway's speed sets how much spectral structure the
-  encoder retains, hence what readout retraining can recover, not whether
-  the shortcut is used.
+  linear encoder, with two cues of matched signal-to-noise ratio but
+  unequal initial accessibility, an informative context suppresses the
+  encoder's spectral learning at matched fit at every width. Slowing the
+  whole head by $256\times$ raises the spectral cue's linear accessibility
+  from $0.66$ to $0.85$, monotonically in every seed, while the trained
+  classifier's reversal accuracy moves from $0.12$ to $0.14$; a normalized
+  readout reduces the suppression at large width; an uninformative context
+  removes it. Retraining a fresh head on decorrelated context from the
+  frozen encoders recovers shifted accuracy of $0.75$--$0.84$ after the
+  slow head and $0.54$--$0.62$ after the fast one, no more than from random
+  encoders.
 \item \textbf{Real spectra.} With measured centre spectra and their
-  recorded labels in constructed neighbourhoods, the same reliance appears
-  in every arm; encoder suppression is complete in the regime where the
-  encoder must learn the contrast and, at the cue amplitude that makes the
-  context accessible, insensitive to the head's rate, while in the regime
-  where a random encoder already reads the contrast there is nothing to
-  suppress. A readiness scan of real class pairs is itself a result: which
-  regime a pipeline is in depends on preprocessing and bottleneck.
+  recorded labels in constructed neighbourhoods, informative-context arms
+  are strongly context-reliant in both a high- and a low-accessibility
+  regime; in the low-accessibility regime the encoder's adaptation is
+  limited relative to the uninformative-context control, with a small
+  rate response at the larger cue amplitude and a larger one at the
+  smaller amplitude, and more than $99.9\%$ of the net encoder update lies
+  in the constructed-cue span. A readiness scan of real class pairs shows
+  that preprocessing and bottleneck decide which regime a pipeline is in.
 \item \textbf{Scope.} We report why scalar curvature on a production model
   does not identify the mechanism and why an earlier apparent freezing
   advantage was protocol-confounded (Section~\ref{sec:limitations},
@@ -71,20 +75,18 @@ gradient starvation \citep{pezeshki2021gradient}, and a preference for
 simpler features that fails under shift is simplicity bias
 \citep{shah2020pitfalls}; modality competition in multimodal training
 \citep{wang2020what,peng2022balanced,huang2022modality,du2023unimodal}
-studies the same imbalance between input streams. Our contribution is
-narrower and, we think, more specific: an explicit finite-fit account of
-selective \emph{encoder} learning in a \emph{serial} system, with a
-reversal failure and a normalization control, tested by interventions on
-training speed rather than inferred from accuracies. The mathematics uses
+studies the same imbalance between input streams. That core features can
+be present in a representation while a spurious feature is used, and that
+last-layer retraining can then restore robustness, is the observation of
+\citet{kirichenko2023dfr}; our addition is that the relative training
+rate of the modules at the original fit changes what such retraining can
+recover, measured at matched fit against a control. The mathematics uses
 the balance invariant of gradient flow in layered linear models
 \citep{astra_du2018balance,astra_saxe2014,astra_yun2021} and sits next to
 lazy-training analyses in which a wide component barely moves
-\citep{chizat2019lazy,yang2021tensor}; the width-dependent gain of a
-replicated readout is the mechanism, and the normalized readout is the
-corresponding parameterization control. Curvature and its growth with
-width and normalization \citep{karakida2019universal,vanlaarhoven2017l2}
-are the reason we measure learning outcomes rather than curvature
-(Appendix~\ref{app:scope}). Frozen or retrained feature extractors in
-practice \citep{kirichenko2023dfr,zhang2022layers,coil2025freezing} are the
-setting in which the question arises; we do not evaluate them as
-remedies.
+\citep{chizat2019lazy,yang2021tensor}. Curvature and its growth with width
+and normalization \citep{karakida2019universal,vanlaarhoven2017l2} are the
+reason we measure learning outcomes rather than curvature
+(Appendix~\ref{app:scope}); frozen or retrained feature extractors in
+practice \citep{zhang2022layers,coil2025freezing} are the setting, not a
+remedy we evaluate.

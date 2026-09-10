@@ -1,23 +1,24 @@
-%% Abstract v2 (2026-09-11). Registered abstract (Sep 18) must match this file.
-Serial spectral--spatial models compress each pixel's spectrum with a small
-encoder and classify with a wide spatial network that reads the encoded
-neighbourhood. When the neighbourhood predicts the label, does joint
-training starve the encoder? In a linear-encoder cross-entropy model with
-$M$ replicated contextual readouts we prove that, at a matched fitting
-margin, the spectral coefficient moves by at most a fraction
-$1/(1+Mv_0^2)$ of the update a spectral-only model needs, that the fitted
-model then fails under contextual reversal when its initial spectral
-coefficient is below half the margin, and that a $M^{-1/2}$-normalized
-readout removes the width dependence without removing the failure: the
-contextual pathway's training speed relative to the encoder is the
-competition parameter. Interventions on that speed in a ReLU convolutional
-model with two equally informative cues, and with measured tissue spectra
-in constructed neighbourhoods, show that an informative context suppresses
-the encoder's spectral learning at matched fit at every width, that slowing
-the head restores it monotonically, and that the fitted head nonetheless
-predicts from context whenever the context is informative. The speed of
-the contextual pathway thus decides not whether the model fails under a
-context shift but whether the spectral cue remains recoverable from the
-encoder afterwards. On a production model, scalar curvature does not
-identify the mechanism and an earlier apparent freezing advantage was
-protocol-confounded; we recommend no mitigation.
+%% Abstract v3 (2026-09-11, after Astra review 02). Registered abstract (Sep 18) must match this file.
+We study how relative module training rates affect spectral adaptation in
+serial spectral--spatial models, in which a small encoder compresses each
+pixel's spectrum and a wide spatial network reads the encoded
+neighbourhood. An exactly solvable serial logistic model bounds the
+spectral encoder's update at matched fit by a fraction $1/(1+Mv_0^2)$ of
+the update a spectral-only model needs, establishes contextual-reversal
+failure under explicit finite-width conditions, and shows through a
+$M^{-1/2}$-normalized readout that replicated-readout width acts through
+the training metric; normalization removes the width dependence but need
+not prevent the failure. In a nonlinear synthetic model with two cues of
+matched signal-to-noise ratio, slowing the spatial head by $256\times$
+raises the linear accessibility of the spectral cue at matched training
+loss from $0.66$ to $0.85$ while the trained classifier remains strongly
+context-reliant (reversal accuracy $0.12$ to $0.14$); retraining the head
+on decorrelated context from the frozen encoders then recovers shifted
+accuracy of $0.75$--$0.84$ from the slow-head encoders against
+$0.54$--$0.62$ from the fast-head ones, no better than random encoders.
+Experiments using measured tissue spectra with constructed context
+distinguish high and low initial spectral accessibility, show strong
+contextual reliance in both, and show a weaker rate response at high
+contextual amplitude. The results separate adaptation of the encoder,
+accessibility of the spectral cue, reliance of the fitted classifier, and
+what a specified retraining recovers.

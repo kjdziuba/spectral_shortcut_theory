@@ -266,7 +266,10 @@ monotonically as the head slows (P6's probe/h_u part), while reversal
 accuracy does not respond within this bracket: the encoder exposes the cue,
 the head still predicts from context — the theorem's regime a(T_m) < m/2,
 where reversal flips only once the spectral coefficient carries half the
-margin, i.e. κMv₀² < m/(m−2a₀). The protocol's extension rule (extend
+margin. [Correction, Astra review 02 §IV: κMv₀² > m/(m−2a₀) is a
+SUFFICIENT condition for failure; its negation does not guarantee
+recovery — the boundary is set by the exact fitting equation. The earlier
+"i.e. κMv₀² < m/(m−2a₀)" is withdrawn and not carried into the paper.] The protocol's extension rule (extend
 downward until the intervention reaches the regime of interest) is
 therefore applied for the REVERSAL outcome: κ ∈ {1/4096, 1/32768} added on
 seed 0 (runs may not reach L* within 40,000 steps; reported as such). The

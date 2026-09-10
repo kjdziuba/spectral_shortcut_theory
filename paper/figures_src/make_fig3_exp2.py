@@ -87,7 +87,11 @@ if not k.empty:
     for _, r in fin.iterrows():
         ax_c.plot(r["head_mult"], r["acc_reversed"], "^", mfc="none", mec="#d62728", ms=4)
         ax_c.plot(r["head_mult"], r["probe_acc_gain"], "o", mfc="none", mec="#2ca02c", ms=4)
+        ax_c.annotate(f"loss {r['loss']:.2f}\n(n=1)", (r["head_mult"], r["probe_acc_gain"]), textcoords="offset points",
+                      xytext=(0, 6), ha="center", fontsize=5, color="0.35")
         print(f"(c) kappa={r['head_mult']:g} did not reach L* (final loss {r['loss']:.3f}); open markers")
+    if not fin.empty:
+        ax_c.plot([], [], "o", mfc="none", mec="0.35", ms=4, label="budget endpoint, not matched")
 ax_c.set_xscale("log", base=16); ax_c.invert_xaxis()
 kt = sorted(set(k["head_mult"]) | set(fin["head_mult"]) if not k.empty else [1, 1 / 16, 1 / 256], reverse=True)
 ax_c.set_xticks(kt); ax_c.set_xticklabels(["1" if v == 1 else f"1/{round(1 / v)}" for v in kt]); ax_c.set_xticks([], minor=True)

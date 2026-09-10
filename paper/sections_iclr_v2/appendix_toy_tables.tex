@@ -15,9 +15,12 @@ implementation to $0$ relative error.
 \small
 \caption{Solvable serial instance ($a_0 = 0$, $v_0 = 1$, $m = \log 19$):
 closed form against ODE solver, from \texttt{results/toy\_serial\_ce.csv}. The
-last block is the two-timescale displacement bound against the realised
-encoder displacement. Every relative discrepancy between closed form and
-solver in this table is at most $1.2\times10^{-13}$.}
+displacement block compares the realised encoder displacement with the
+displacement bound of the earlier draft's framework, which is not part of
+this paper's theory and is retained for the record only. The relative
+discrepancies between closed form and solver for the endpoint quantities
+in this table are at most $1.2\times10^{-13}$; the trajectory-invariant
+check of the next table reaches $2.0\times10^{-11}$.}
 \label{tab:app_toy}
 \begin{tabular}{lrrrr}
 \toprule
@@ -34,7 +37,7 @@ $T_m$ & $0.90784$ & $0.28680$ & $0.078763$ & $0.020252$ \\
 $T_m$ lower bound $\Psi(m)/(M{+}1{+}2m^2)$ & $0.60992$ & $0.25437$ & $0.076345$ & $0.020094$ \\
 $T_m$ upper bound $\Psi(m)/(M{+}1)$ & $1.2320$ & $0.32222$ & $0.081496$ & $0.020434$ \\
 \midrule
-$\sup_t\,(q_J - q_F)$ & $0.38232$ & $0.13813$ & $0.039802$ & $0.010376$ \\
+$\sup_{0\le t\le T_m}(q_J - q_F)$ & $0.38232$ & $0.13813$ & $0.039802$ & $0.010376$ \\
 uniform gap bound & $11.297$ & $2.9547$ & $0.74729$ & $0.18737$ \\
 $(M{+}1)\times$ gap & $6.4994$ & $8.9787$ & $10.229$ & $10.635$ \\
 \midrule

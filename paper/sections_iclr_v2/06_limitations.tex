@@ -2,71 +2,49 @@
 \label{sec:limitations}
 
 \paragraph{Conclusion.}
-%% [E2/E3] Replace the bracketed clause with the supported version once
-%% Experiments 2 and 3 report (Astra's sentence, conditional on support):
-%% "We prove this mechanism in a linear spectral--spatial model and find
-%% corresponding suppression and context-shift failures in the tested
-%% nonlinear architectures."
 We prove, in a serial linear-encoder model, that a contextual pathway
 trained faster than the spectral encoder suppresses the encoder's update
-at matched fit, that the fitted model then fails under contextual reversal
-while a spectral-only comparator does not, and that readout normalization
-removes the width dependence of this effect without removing the failure.
-In a ReLU convolutional head over a linear encoder on synthetic data, and
-with measured tissue spectra in constructed neighbourhoods, we find the
-corresponding suppression at every width and the corresponding failure
-under context shift whenever the context is informative, with excess
-shifted risk of about $0.75$ (synthetic) and $0.85$ (real spectra) over the
-uninformative-context comparator. What transfers with a qualification is
-the role of speed: the head's relative rate controls how much of the
-spectral cue the encoder learns before the fit, not whether the fitted head
-uses the shortcut, and where the contextual cue dominates the encoder's
-own gradient even that control disappears.
+at matched fit, that the fitted model fails under contextual reversal
+under explicit finite-width conditions, and that readout normalization
+removes the width dependence without necessarily removing the failure.
+At matched training loss in the synthetic spectral--spatial model, slowing
+the spatial head substantially increases the linear accessibility of the
+spectral cue while the trained classifier remains strongly
+context-reliant; retraining a fresh head on decorrelated context from the
+frozen encoders recovers about $0.2$ more shifted accuracy after the slow
+head than after the fast one, from which no more is recovered than from a
+random encoder. With measured spectra, high spectral accessibility
+coexists with severe contextual reliance, so a deficit in this probe is
+not necessary for failure; with low initial accessibility, slowing the
+head yields only small accessibility gains at the larger constructed
+amplitude and a larger response at the smaller one. The four
+measurements respond differently to the same interventions; the paper's
+claim is that difference, at the stated fits, rates and constructions,
+not a general law.
 
 \paragraph{Limitations.}
 The theorem has a linear encoder, noiseless cues and a fixed spectral skip
-coefficient; the experiments add noisy cues and jointly learned routing, but
-keep a linear encoder and one head family each. The contextual cues are
-constructed, in the synthetic data by design and in the real-spectrum
-experiment explicitly, so neither experiment shows that natural tissue
-neighbourhoods produce the effect. Matched mean training loss is an
-experimental analogue of the theorem's matched margin, not the same
-stopping rule, and the fit threshold is a convention for comparison, not a
-training recipe. The initial accessibility asymmetry that the mechanism
-needs is set by the bottleneck and the input statistics: where a random
-encoder already exposes the spectral cue, as it does for one real class
-pair at bottleneck twelve (Section~\ref{sec:real}), the theorem's
-$a_0\ge m/2$ case applies and no failure is predicted. Plain gradient
-descent with one global rate is the only optimizer studied.
+coefficient; the experiments add noisy cues and jointly learned routing
+but keep a linear encoder and one head family each, trained by plain
+gradient descent with a base rate and declared block multipliers. The
+contextual cues are constructed, so neither experiment shows that natural
+tissue neighbourhoods produce the effect, and matched mean training loss
+is an analogue of the theorem's matched margin, not the same rule. The
+accessibility asymmetry the mechanism needs is set by preprocessing and
+bottleneck: where a random encoder already reads the spectral cue, there
+is little for the encoder to gain, and the failure that still occurs there
+is not the theorem's. Real-spectrum seed variation is conditional on one
+patient split.
 
-\paragraph{What curvature diagnostics do not tell us.}
-On a production spectral--spatial segmentation model we measured the
-initialization curvature of the two parameter blocks and found the scalar
-ratio inverted ($0.46\pm0.21$ at width $192$) because the inputs are
-effectively rank one (effective rank $1.07$ of $942$), and found its growth
-with width to be a normalization-gain effect (first-head-convolution slope
-$+0.61$ with batch statistics against $+0.006$ with both head BatchNorm
-layers at fixed statistics), while the class-contrast direction carries
-$12$--$28\times$ less curvature than the dominant input direction
-(Appendix~\ref{app:scope}). Scalar curvature therefore does not identify
-the mechanism, and directional curvature is not a measurement of impaired
-learning; this is why the present paper measures learning outcomes under
-interventions rather than curvature.
-
-\paragraph{What a matched retraining study did not show.}
-At width $48$ and three seeds, an earlier apparent advantage of freezing
-the spectral encoder in that production model came from a comparison that
-confounded freezing with gradient-clipping scope and normalization-parameter
-treatment. Once those differences were removed, its nominal final-window
-advantage was absent, checkpoint selection reversed the ordering within the
-original runs, and neither the within-protocol freezing contrasts nor the
-change in their gap establishes a population effect (paired $90\%$
-intervals in Appendix~\ref{app:scope}). That study cannot identify an
-architectural shortcut and does not support a mitigation recommendation;
-we make none.
-
-\paragraph{Open problem.}
-Whether the mechanism operates in production pipelines trained from scratch
-with natural context statistics, where readiness, cue balance and
-optimizer all differ from the controlled settings here, is the question
-these results leave open.
+\paragraph{What the production model showed and did not.}
+On a production segmentation model, initialization curvature is not the
+diagnostic used here: the scalar block ratio is inverted, coexisting with
+effectively rank-one inputs, its width trend is sensitive to the head's
+BatchNorm statistics, and the class contrast carries $2.6$--$4.8\times$
+less curvature than the dominant input direction, none of which measures
+impaired learning. A matched retraining study at width $48$ and three
+seeds found an earlier apparent freezing advantage to be
+protocol-confounded and unresolved once matched (Appendix~\ref{app:scope}).
+We recommend no mitigation; whether the mechanism operates in production
+pipelines trained from scratch with natural context statistics remains
+open.

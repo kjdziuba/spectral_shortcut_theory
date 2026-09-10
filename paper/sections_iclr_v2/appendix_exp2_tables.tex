@@ -99,8 +99,31 @@ arm & $M$ & probe gain & $h_u$ & reversed acc. & context-random acc. \\ \midrule
 4 & 0.015$\pm$0.003 & 0.059$\pm$0.022 & 0.127$\pm$0.008 & 0.509$\pm$0.008 \\
 16 & 0.008$\pm$0.001 & 0.054$\pm$0.019 & 0.133$\pm$0.009 & 0.510$\pm$0.006 \\
 \bottomrule\end{tabular}\end{table}
+\begin{table}[htbp]\centering\scriptsize
+\caption{Recovery at $M=32$: a fresh head with paired initialization trained for 20,000 steps on newly sampled context-random images with the encoder frozen at its $L^\ast$ checkpoint (\texttt{init} = the random initial encoder). Original = the run's own classifier at $L^\ast$; retrained = the new head; accuracies on the same paired test family.}\label{tab:exp2_recovery}
+\begin{tabular}{llccccccc}\toprule seed & encoder & probe & retrain loss & orig.\ reversed & orig.\ ctx-random & retr.\ iid & retr.\ reversed & retr.\ ctx-random \\ \midrule
+0 & \texttt{init} & 0.647 & 0.658 & -- & -- & 0.592 & 0.599 & 0.596 \\
+0 & \texttt{kappa1} & 0.675 & 0.645 & 0.128 & 0.515 & 0.608 & 0.618 & 0.612 \\
+0 & \texttt{kappa256} & 0.870 & 0.328 & 0.152 & 0.519 & 0.845 & 0.840 & 0.844 \\
+1 & \texttt{init} & 0.658 & 0.659 & -- & -- & 0.596 & 0.590 & 0.593 \\
+1 & \texttt{kappa1} & 0.683 & 0.658 & 0.121 & 0.511 & 0.594 & 0.591 & 0.592 \\
+1 & \texttt{kappa256} & 0.861 & 0.447 & 0.146 & 0.510 & 0.776 & 0.771 & 0.773 \\
+2 & \texttt{init} & 0.615 & 0.682 & -- & -- & 0.562 & 0.533 & 0.546 \\
+2 & \texttt{kappa1} & 0.628 & 0.676 & 0.112 & 0.500 & 0.574 & 0.539 & 0.554 \\
+2 & \texttt{kappa256} & 0.820 & 0.470 & 0.130 & 0.500 & 0.757 & 0.750 & 0.755 \\
+\bottomrule\end{tabular}\end{table}
 \paragraph{Runs that did not reach $L^\ast$.}
 The following runs ended at the step budget above $L^\ast$: \texttt{headlr} $M=32$, $\kappa=0.000244141$, seed 0 (final loss 0.320 at step 40000); \texttt{headlr} $M=32$, $\kappa=3.05176e-05$, seed 0 (final loss 0.347 at step 40000).
-\paragraph{Registered verdicts.}
-Spearman correlations across widths at $L^\ast$, per seed (P1--P3 as registered use $a_u$ and reversal accuracy): \texttt{sp} seed 0: $\rho(a_u,M)=-0.54$, $\rho(\text{probe},M)=-0.54$, $\rho(\text{rev},M)=-0.64$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{sp} seed 1: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=-0.96$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{sp} seed 2: $\rho(a_u,M)=-0.96$, $\rho(\text{probe},M)=-0.93$, $\rho(\text{rev},M)=-0.82$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{mup} seed 0: $\rho(a_u,M)=+0.25$, $\rho(\text{probe},M)=-0.04$, $\rho(\text{rev},M)=-0.89$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{mup} seed 1: $\rho(a_u,M)=-0.96$, $\rho(\text{probe},M)=-0.96$, $\rho(\text{rev},M)=-0.89$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{mup} seed 2: $\rho(a_u,M)=-0.54$, $\rho(\text{probe},M)=-0.46$, $\rho(\text{rev},M)=-0.89$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{ctxfree} seed 0: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{ctxfree} seed 1: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{ctxfree} seed 2: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 0: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 1: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 2: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$.
-P2's second clause ($a_u$ at $M=2048$, normalized readout versus standard): seed 0: 0.0059 vs 0.0045; seed 1: 0.0062 vs 0.0045; seed 2: 0.0043 vs 0.0027.
+\begin{table}[htbp]\centering\scriptsize
+\caption{Registered predictions (REFOCUS\_PLAN \S4.4) evaluated at $L^\ast=0.30$ on the original five widths and on the amended grid; $\rho$ = Spearman rank correlation across widths (or multipliers), one value per seed. P2's second clause compares $a_u$ at $M=2048$.}\label{tab:exp2_verdicts}
+\begin{tabular}{p{5.2cm}p{3.1cm}p{4.2cm}p{2.6cm}}\toprule criterion & grid & per-seed values & verdict \\ \midrule
+P1: standard param., $\rho(a_u,M)\le-0.8$ and $\rho(\text{rev},M)\le-0.8$ in every seed & original & $a_u$: -0.70, -1.00, -1.00; rev: -0.60, -0.90, -0.60 & not met (1/3 seeds) \\
+ & amended & $a_u$: -0.54, -1.00, -0.96; rev: -0.64, -0.96, -0.82 & not met \\
+P2a: normalized readout, $|\rho(\cdot,M)|<0.5$ in at least two seeds & original & $a_u$: +0.10, -0.90, -0.30; probe: -0.20, -0.90, -0.30; rev: -0.90, -0.70, -0.70 & alignment met; probe met; reversal not met \\
+ & amended & $a_u$: +0.25, -0.96, -0.54; rev: -0.89, -0.89, -0.89 & alignment not met; reversal not met \\
+P2b: $a_u(2048)$ normalized $>$ standard in every seed & paired seeds & 0.0059 vs 0.0045; 0.0062 vs 0.0045; 0.0043 vs 0.0027 & met \\
+P3: uninformative context, $a_u>0.25$ at every width and $|\rho(a_u,M)|<0.5$ & amended control widths $\{2,8,128,512\}$ & $a_u$ range 0.058--0.174; $\rho(a_u,M)$: -1.00, -1.00, -1.00; $\rho(\text{probe},M)$: -1.00, -1.00, -1.00 & cutoff not met; flatness not met (probe 0.936$\to$0.893) \\
+P4: readout multiplier, $a_u$ and reversal accuracy decrease with the multiplier in every seed & run multipliers $\{1/16,1/4,1,4,16\}$ (64 dropped) & $a_u$: -1.00, -1.00, -1.00; rev: +1.00, +1.00, +1.00 & $a_u$ met; reversal not met (opposite sign) \\
+P5: frozen encoder, reversal accuracy $<0.5$ at every width & amended widths & max 0.146 & met \\
+P6 (amendment 4.4b): whole-head $\kappa$, probe, $h_u$ and reversal accuracy increase as $\kappa$ decreases, $\rho\le-0.8$ in every seed & $\kappa\in\{1,1/16,1/256\}$, three seeds & probe: -1.00, -1.00, -1.00; $h_u$: -1.00, -1.00, -1.00; rev: -1.00, -1.00, -0.50 & probe and $h_u$ met; reversal not met (2/3 seeds) \\
+\bottomrule\end{tabular}\end{table}
