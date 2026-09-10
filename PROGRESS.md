@@ -1875,3 +1875,18 @@ ViT sweep:
   variance mechanism) or genuine late overfitting. Seed 0 only.
   Seed-0 set complete for all 7 matched arms at 23:30; seeds 1-2 running
   (ETA ~09:30).
+
+## 2026-09-10 (01:55) — two-seed interim (matched, h48; seeds 0/1)
+
+  arm                 s0 best/final5     s1 best/final5
+  frozen_random_m     0.8371 / 0.6870    0.8377 / 0.6453
+  joint_linear_m      0.8640 / 0.7138    0.8064 / 0.7372
+  frozen_pretrained_m 0.8355 / 0.6531    0.8764 / 0.7185
+  finetune_real_m     0.8607 / 0.6505    0.8625 / 0.7354
+- Seed 1 flips two seed-0 signs: joint_linear best-val now BELOW
+  frozen_random (-0.031) while final-5 stays above (+0.092);
+  frozen_pretrained best-val now ABOVE finetune_real (+0.014).
+  P1 at n=2: mixed (+0.025 / -0.014). Exactly the seed variance the
+  reviewers warned about — no conclusion before n=3 + paired CIs
+  (expect wide intervals; the honest statement will likely be
+  'no resolvable difference at n=3 under the matched protocol').
