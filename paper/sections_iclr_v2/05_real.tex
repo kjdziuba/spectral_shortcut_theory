@@ -23,11 +23,9 @@ class-mean contrast lies along the top principal directions; PCA
 whitening estimated on the training patients reduces the random-encoder
 probe to $0.54$ while the discriminant stays at $0.944$. We therefore run
 two regimes on the same pixels and labels, \emph{high} and \emph{low
-initial probe accessibility} (standardized and whitened inputs). They are
-an empirical analogue of the theorem's adaptation question, not instances
-of the theorem: a probe fitted on the encoder output does not measure the
-spectral contribution to a random head's margin, so neither regime is
-identified with a case of Theorem~\ref{thm:serial}.
+initial probe accessibility} (standardized and whitened inputs). Neither
+is an instance of the theorem: a probe on the encoder output does not
+measure the spectral contribution to a random head's margin.
 
 \paragraph{Construction.}
 Each patch is a real centre with eight real donor spectra drawn
@@ -61,11 +59,10 @@ necessary for failure.
 The probe starts at $0.56$--$0.60$. Among the $\gamma=30$
 informative-context arms the mean gain at $L^\ast$ is at most $0.046$,
 with substantial seed variation (up to $0.10$ in one run), against $0.35$
-for the uninformative-context comparator (probe $0.92$--$0.93$), which
-needs $15{,}000$--$17{,}000$ steps to reach $L^\ast$ where the informative
-arms need $59$--$226$; reversal accuracy is $0.07$ against the comparator's
-$0.91$--$0.93$, the frozen encoder giving $0.08$
-(Table~\ref{tab:exp3_unready}). Slowing the head over the tested range
+for the uninformative-context comparator (probe $0.92$--$0.93$;
+$15{,}000$--$17{,}000$ steps to $L^\ast$ against $59$--$226$); reversal
+accuracy is $0.07$ against the comparator's $0.91$--$0.93$, the frozen
+encoder giving $0.08$ (Table~\ref{tab:exp3_unready}). Slowing the head over the tested range
 gives only a small probe response (mean change $+0.014$ from $\kappa=1$ to
 $1/256$) and does not restore the comparator's accessibility. The saved
 checkpoints show where the adaptation went: for every seed and $\kappa$,
@@ -91,6 +88,17 @@ the cue span ($99.96$--$99.98\%$), so the variant shows an
 amplitude-dependent accessibility response, not the removal of contextual
 dominance.
 
+\paragraph{Results: what retraining recovers.}
+The recovery procedure of Section~\ref{sec:synthetic}, applied to these
+encoders, separates the regimes further (Table~\ref{tab:exp3_recovery}).
+With high accessibility a fresh head retrained on decorrelated context
+reaches reversal accuracy $0.90$--$0.96$ from every encoder, the random
+initialization included, although the original classifiers scored $0.08$:
+the spectral information was available throughout and simply unused. At
+$\gamma=30$ no encoder yields more than $0.45$--$0.56$; at $\gamma=10$ the
+slow-head encoders yield $0.55$--$0.70$ against $0.48$--$0.60$ after the
+fast head.
+
 \paragraph{Reading.}
 With measured spectra the outcome matches the synthetic experiment on
 reliance: at every width and rate evaluated the original predictor uses
@@ -99,8 +107,7 @@ of $0.83$--$0.84$ over the uninformative-context comparator at matched
 widths on validation patients. On adaptation it adds a scope condition:
 how much of the contrast the encoder learns before the fit depends on the
 head's relative speed and on the cue's amplitude, which are not
-interchangeable here; whether both act through the theorem's single
-parameter is a hypothesis these data do not decide.
+interchangeable here.
 
 \begin{figure}[t]
 \centering

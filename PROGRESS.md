@@ -2321,3 +2321,22 @@ ViT sweep:
   repairs (population-CE inference, toy table caption/horizon, "three
   orders", theorem title), criterion table + recovery table in App. C.
   Trimmed to fit 9 pages. exp3_recovery.py running (27 runs).
+
+## 2026-09-11 (08:40) — real-spectra recovery complete; O'Leary/Mosig framing question
+
+- exp3_recovery.py (27 runs) done: high accessibility -> retrained
+  reversal 0.90-0.96 from EVERY encoder incl. random init (original 0.08):
+  spectral information available throughout, unused by the joint model;
+  gamma=30 -> 0.45-0.56 for all encoders; gamma=10 -> 0.55-0.70 after the
+  slow head vs 0.48-0.60 after the fast head. Sec 5 paragraph + intro
+  bullet + appendix D table (tab:exp3_recovery).
+- Author asked whether the paper still addresses O'Leary 2026 / Mosig
+  group ("spectral dimension redundant; <=16 PCs suffice; all spatial").
+  Answer given: the paper refutes the INFERENCE (model is spatial =>
+  spectrum useless) via the theorem + equal-information experiments +
+  the high-accessibility recovery result; it does NOT show real spectra
+  carry information beyond 16 PCs or beyond natural context (constructed
+  context; readiness scan shows CancerEpi-vs-CAS lies in the top PCs).
+  Draft cites O'Leary only as the pipeline example; Mueller/Mosig not
+  cited (needs a verified reference); inference argument not yet
+  explicit -> proposed: 3 sentences in the intro + 1 in the conclusion.
