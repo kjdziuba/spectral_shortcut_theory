@@ -2010,3 +2010,34 @@ ViT sweep:
   questions for Astra to answer from the workspace meanwhile (Q6 matched-lane
   verdict fairness; Q7 contribution paragraph + weakest link; Q8 nine-page
   allocation). Full math reply (`claude_math_reply_02.md`) after audits.
+
+## 2026-09-10 (15:30) — math_02 round closed: all audits + deliverables done; reply 02 ready
+
+- AUDITS (no false statement anywhere in math_02): Theorem N correct as
+  stated (Fable; F1-F10 expository; cite Du et al. 2019 / Davis et al. 2020 /
+  Bolte-Pauwels 2021; (N3) dominated by head nonlinearity). Sections 2/4/6
+  correct (Opus, 9 fresh scripts): (A1) drops Thm 1.3's invariant-subspace
+  hypothesis; (A2) 1/16 = Tropp delta=1/2 simplified; isotropic corollary is
+  rho^-4-uniform; BN necessity counterexample IS (B3) with c=M^-1/2.
+  FOUR retractions of ours: only-infinite-horizon clause; Q2 limits (jointly
+  impossible); "concentration cannot remove kappa*^-2"; A1-E4 clipping (E3c
+  clips BEFORE momentum -> (4.6) holds with a_i; velocity form too).
+- PRODUCTION WITNESS v2 (exp1_8d, 3 seeds, 216 rows, JVP == GGN to 1.3e-5):
+  incoming Gram flat to 5 figures; lam_WW slope +0.61 train / +0.006
+  eval_head / +0.56 eval_bn1 / +0.57 eval_bn2 (either BN carries the trend);
+  BN1 pre-BN var 0.151/0.064/0.035 ~ 1/(M+K) (energy in skip channels, fan-in
+  grows) -> gain^2 ~ (M+K): Astra's (B4) premise MEASURED; bias JVP = 0
+  exactly in train mode; c^-2 scale law exact with eps co-scaled.
+  -> 08 Sec 8.3 new paragraph "What carries the width trend" (Astra's
+  wording verbatim + mechanism + van Laarhoven cite). 48 pp, compiles.
+- ISOTROPIC TOY: (I1)-(I5) vs full ODE 1.3e-11, 0 violations, (I6) within MC.
+- RESIDUAL EXPORT (round-1 row 4, exp1_2v5): cumulative theta share ~1/D
+  (0.29/0.062/0.012) but residual leaves coercive top of K_phi after ~75
+  steps; top-eigenvalue proxy a bound in neither direction; Thm 1.3 global
+  coercivity unusable (cond ~1e6). Frozen-arm zero_grad bug fixed.
+  -> Sec 7 paragraph in the 9-page restructure; Q9 (two-phase statement).
+- code/audits/: README + 17 scripts, seeds/commands/PASS-FAIL.
+- review_packet/astra/claude_math_reply_02.md (5.3k words, 7 sections,
+  Q9-Q11) READY TO RELAY; claude_interim_02.md updated (Q6-Q9).
+- Still waiting on the author: headline decision; ICLR vs TMLR posture;
+  relay of claude_math_reply_02.md.

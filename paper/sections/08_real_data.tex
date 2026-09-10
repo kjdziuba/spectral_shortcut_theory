@@ -168,7 +168,45 @@ $M$ is $0.38$ (breast) and $0.45$ (prostate), i.e.\ $115 \to 258$
 across an $8\times$ width increase, well short of the $\Omega(M)$
 growth of Lemma~\ref{lem:phi_scaling}. That $\Omega(M)$ floor is
 neither observed here nor, given the head hypothesis failure noted in
-Section~\ref{sec:real_setup}, guaranteed for this architecture. The
+Section~\ref{sec:real_setup}, guaranteed for this architecture.
+
+\paragraph{What carries the width trend.}
+The sublinear growth of $\lambda_{\max}(G_{\phip\phip})$ is measurable at
+initialization, and it is not the mechanism of
+Lemma~\ref{lem:phi_scaling}. In BlockViT-v2 the only downstream layer
+whose input dimension grows with $M$ is the first head convolution, and
+the second-moment matrix of the (patch-unfolded) features entering it is
+flat in $M$: its top eigenvalue is unchanged to four significant figures
+across $M \in \{48, 192, 384\}$ (3 seeds), with the leading direction
+inside the width-independent $K{=}64$ skip channels. At initialization,
+the positive width trend in the decoder's spatial GGN is sensitive to head
+batch normalization: using fixed initial statistics in the two head BNs
+removes the trend while preserving the incoming features (pooled log-log
+slope of the first-convolution block's top curvature: $+0.61$ with batch
+statistics, per seed $+0.35$ to $+0.79$; $+0.006$ with both head BNs at
+their initial running statistics, per seed $-0.11$ to $+0.18$; whole
+$\phip$ block $+0.40 \to -0.33$), and either BN alone carries it ($+0.56$
+and $+0.57$). The mechanism is a normalization gain on width-diluted
+activations. Under fan-in initialization the per-channel pre-BN variance
+of the first head BN falls as $1/(M{+}K)$ ($0.15, 0.064, 0.035$ at the
+three widths; medians over channels, 3 seeds), because the fan-in grows
+with $M$ while the incoming energy sits almost entirely in the
+width-independent skip channels; the BN's inverse-standard-deviation gain
+grows correspondingly ($2.6, 4.0, 5.4$), so a unit weight perturbation
+whose pre-BN energy is width-independent leaves the BN with energy growing
+roughly as $M^{1/2}$ (measured slopes $0.46$--$0.56$) and reaches the loss
+as $M^{0.6}$. A spatially constant bias perturbation is annihilated
+exactly. A function-preserving rescaling of that convolution (weights and
+bias by $c$, BN stabilizer by $c^2$) leaves every logit unchanged and
+scales the block's top curvature by exactly $c^{-2}$ (measured $1.0000$
+for $c \in \{\tfrac14, \tfrac12, 2, 4\}$), so the raw Euclidean curvature
+of a layer that feeds a batch normalization is a parameterization
+quantity, not an architectural one \citep{vanlaarhoven2017l2}. This sweep
+therefore does not validate the width-linear feature-Gram mechanism of our
+shallow theory, and we do not use it as architectural evidence. Slopes
+over three widths are descriptive; the interventions establish
+sensitivity, not a unique cause, since switching a BN to fixed statistics
+also changes its forward output and the gates downstream of it. The
 denominator, by contrast, we can diagnose directly.
 
 \paragraph{Diagnosis: rank-one input statistics.}
