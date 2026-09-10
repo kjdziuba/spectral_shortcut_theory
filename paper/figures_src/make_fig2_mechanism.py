@@ -105,7 +105,7 @@ for a0, v0 in PAIRS:
     ax2.plot(s["M"], s["gap_bound"], color=c, lw=0.9, ls="--", alpha=0.85, zorder=2)
     ax2.plot(s["M"], s["gap"], color=c, lw=0.8, marker="o", ms=2.4, zorder=3)
 ax2.set_yscale("log"); ax2.set_ylim(1.5e-3, 5e3)
-ax2.set_ylabel(r"$\sup_{0\le t\le T_m}(q_J-q_F)$")
+ax2.set_ylabel(r"$\sup_{0\leq t\leq T_m}(q_J-q_F)$")
 ax2.set_title("(b) joint$-$frozen gap on $[0,T_m]$", loc="left", fontsize=7)
 ax2.annotate(r"dashed: $C_0/(p_0Mv_0^2)$", xy=(0.03, 0.03), xycoords="axes fraction",
              ha="left", va="bottom", fontsize=6, color="0.25")

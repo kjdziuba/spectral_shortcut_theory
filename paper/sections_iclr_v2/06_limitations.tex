@@ -1,0 +1,65 @@
+\section{Limitations and conclusion}
+\label{sec:limitations}
+
+\paragraph{Conclusion.}
+%% [E2/E3] Replace the bracketed clause with the supported version once
+%% Experiments 2 and 3 report (Astra's sentence, conditional on support):
+%% "We prove this mechanism in a linear spectral--spatial model and find
+%% corresponding suppression and context-shift failures in the tested
+%% nonlinear architectures."
+We prove, in a serial linear-encoder model, that a contextual pathway
+trained faster than the spectral encoder suppresses the encoder's update
+at matched fit, that the fitted model then fails under contextual reversal
+while a spectral-only comparator does not, and that readout normalization
+removes the width dependence of this effect without removing the failure.
+[E2/E3: one sentence naming the architectures and conditions in which the
+corresponding suppression and shifted-risk excess were observed, and any in
+which they were not.]
+
+\paragraph{Limitations.}
+The theorem has a linear encoder, noiseless cues and a fixed spectral skip
+coefficient; the experiments add noisy cues and jointly learned routing, but
+keep a linear encoder and one head family each. The contextual cues are
+constructed, in the synthetic data by design and in the real-spectrum
+experiment explicitly, so neither experiment shows that natural tissue
+neighbourhoods produce the effect. Matched mean training loss is an
+experimental analogue of the theorem's matched margin, not the same
+stopping rule, and the fit threshold is a convention for comparison, not a
+training recipe. The initial accessibility asymmetry that the mechanism
+needs is set by the bottleneck and the input statistics: where a random
+encoder already exposes the spectral cue, as it does for one real class
+pair at bottleneck twelve (Section~\ref{sec:real}), the theorem's
+$a_0\ge m/2$ case applies and no failure is predicted. Plain gradient
+descent with one global rate is the only optimizer studied.
+
+\paragraph{What curvature diagnostics do not tell us.}
+On a production spectral--spatial segmentation model we measured the
+initialization curvature of the two parameter blocks and found the scalar
+ratio inverted ($0.46\pm0.21$ at width $192$) because the inputs are
+effectively rank one (effective rank $1.07$ of $942$), and found its growth
+with width to be a normalization-gain effect (first-head-convolution slope
+$+0.61$ with batch statistics against $+0.006$ with both head BatchNorm
+layers at fixed statistics), while the class-contrast direction carries
+$12$--$28\times$ less curvature than the dominant input direction
+(Appendix~\ref{app:scope}). Scalar curvature therefore does not identify
+the mechanism, and directional curvature is not a measurement of impaired
+learning; this is why the present paper measures learning outcomes under
+interventions rather than curvature.
+
+\paragraph{What a matched retraining study did not show.}
+At width $48$ and three seeds, an earlier apparent advantage of freezing
+the spectral encoder in that production model came from a comparison that
+confounded freezing with gradient-clipping scope and normalization-parameter
+treatment. Once those differences were removed, its nominal final-window
+advantage was absent, checkpoint selection reversed the ordering within the
+original runs, and neither the within-protocol freezing contrasts nor the
+change in their gap establishes a population effect (paired $90\%$
+intervals in Appendix~\ref{app:scope}). That study cannot identify an
+architectural shortcut and does not support a mitigation recommendation;
+we make none.
+
+\paragraph{Open problem.}
+Whether the mechanism operates in production pipelines trained from scratch
+with natural context statistics, where readiness, cue balance and
+optimizer all differ from the controlled settings here, is the question
+these results leave open.

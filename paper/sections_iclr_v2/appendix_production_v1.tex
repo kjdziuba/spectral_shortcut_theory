@@ -1,0 +1,586 @@
+\section{Production model details}
+\label{app:production}
+
+\subsection{Pipeline, capacities and data}
+\label{app:prod_setup}
+
+The data are $336 \times 336$ pixel tissue-microarray cores collected by
+quantum-cascade-laser infrared spectroscopy over the $1000$--$1800$~cm$^{-1}$
+fingerprint region, with per-pixel four-class tissue labels. Each pixel carries
+an $S = 942$ dimensional vector, obtained by stacking baseline-corrected
+absorbance with its first two derivatives. The compositional model is the Block
+Vision Transformer of \citet{oleary2026spatial}: a linear per-pixel
+$f_\thetap : \R^{942} \to \R^{K}$, then $16 \times 16$ patch tokenization, a
+12-layer, 12-head vision transformer of embedding width $M$, a
+transposed-convolution decoder and a convolutional segmentation head. Parameter
+counts in Table~\ref{tab:app_capacity} are read from the instantiated model.
+
+\begin{table}[htbp]
+\centering
+\caption{Module capacities of the production pipeline, counted from the
+instantiated model. $K$ is the spectral bottleneck width. The last row is the
+single-channel field-standard input convention, for comparison.}
+\label{tab:app_capacity}
+\begin{tabular}{lrrr}
+\toprule
+Configuration & $\Cf$ & $\Cg$ & $\Cg/\Cf$ \\
+\midrule
+$K = 64$, three-channel input  & $61{,}108$  & $18{,}271{,}540$ & $299$ \\
+$K = 128$, three-channel input & $121{,}588$ & $21{,}472{,}564$ & $177$ \\
+$K = 64$, single-channel input & $20{,}916$  & $18{,}271{,}540$ & $874$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Channel convention.} The published architecture operates on the
+second-derivative spectrum alone, the field-standard preprocessing in infrared
+histopathology. The models analysed here instead stack raw absorbance with its
+first two derivatives, following a companion tokenization study (anonymous,
+under review). The choice affects only $\Cf$, and the three-channel convention
+is the conservative one for the present purpose: under the field standard the
+capacity asymmetry is roughly three times larger. Within the spatial module the
+dominant blocks are the transformer ($5.34 \times 10^6$ parameters) and the
+transposed convolution ($9.44 \times 10^6$), both $\Theta(M^2)$ in the
+embedding width.
+
+\paragraph{The head hypothesis is structurally unmet.} The segmentation head is
+the chain $\mathrm{Conv}_{3\times3}(M{+}K \to 96) \to \mathrm{BN} \to
+\mathrm{ReLU} \to \mathrm{Conv}_{3\times3}(96 \to 48) \to \mathrm{BN} \to
+\mathrm{ReLU} \to \mathrm{Conv}_{3\times3}(48 \to 4)$, so the final affine
+classifier sees $48 \times 3 \times 3 = 432$ input features at every width we
+build ($M \in \{48, 192, 384\}$, $K \in \{64, 128\}$): the $\Theta(M)$ feature
+map is separated from the logits by two nonlinearities. The
+curvature-disparity theorem requires a dense classifier over penultimate
+features of dimension $\Theta(M)$ with no downstream nonlinearity, and that
+hypothesis is not satisfied here. Failing a hypothesis removes a guarantee; it
+does not reverse the conclusion.
+
+\subsection{Geometry at initialization}
+\label{app:prod_geometry}
+
+Gauss--Newton blocks of the instantiated pipeline were measured on real
+training batches at random initialization, by Lanczos with full
+reorthogonalization on matrix-free GGN block operators, validated to $10^{-12}$
+against dense computation, sweeping $M \in \{48, 96, 192, 384\}$ with three
+seeds and four batches per width. Table~\ref{tab:app_geom} collects the
+results.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Production geometry at initialization. Ratios are mean $\pm$ sd over
+three seeds and four batches per width. Slopes are log--log fits over the width
+sweep. Effective ranks are out of $S = 942$. Directional entries are measured
+at $M = 192$ over the nine measurements whose batch contains both classes
+(three seeds $\times$ three batches).}
+\label{tab:app_geom}
+\begin{tabular}{lcc}
+\toprule
+Quantity & Breast & Prostate \\
+\midrule
+$\Dcurv$ at $M = 48$ & $0.33 \pm 0.12$ & --- \\
+$\Dcurv$ at $M = 192$ & $0.46 \pm 0.21$ & --- \\
+$\Dcurv$ at $M = 384$ & $0.70 \pm 0.19$ & $1.09 \pm 0.52$ \\
+log--log slope of $\lambda_{\max}(G_{\thetap\thetap})$ vs $M$ & $-0.003$ & $-0.012$ \\
+log--log slope of $\lambda_{\max}(G_{\phip\phip})$ vs $M$ & $0.38$ ($115 \to 258$) & $0.45$ \\
+Effective rank of $\Sigma_X$, raw inputs & $1.07$ & $1.02$ \\
+Effective rank of $\Sigma_X$, post-normalization & $1.21$ & --- \\
+$|\cos|$ between $v_1$ and the mean spectrum (post-norm.\,/\,raw) & $>0.995$\,/\,$>0.9999$ & --- \\
+$\thetap$-block top eigenvector's norm fraction in the $v_1$-induced subspace & $0.954 \pm 0.017$ & --- \\
+Trace fraction in the top $40$ of $61{,}108$ spectral directions & $0.83 \pm 0.12$ & --- \\
+Curvature ratio, $v_1$ vs full class contrast ($|\cos(d,v_1)| = 0.45$) & $3.7\times$ ($2.6$--$4.8$) & --- \\
+Curvature ratio, $v_1$ vs $v_1$-orthogonalized contrast & $12$--$28\times$ & --- \\
+Squared-norm fraction of the contrast retained after orthogonalization & $76$--$84\%$ & --- \\
+Rank at which $\lambda_{\max}(G_{\phip\phip})$ overtakes the $\thetap$ spectrum & $2$--$5$ & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two controls bracket the denominator. Removing the spectral normalization
+deflates $\lambda_{\max}(G_{\thetap\thetap})$ by $2.4\times$ ($471 \to 194$ at
+$M = 192$) and pushes the ratio across parity ($1.18$ at $M = 192$, $1.31$ at
+$M = 384$). Input \emph{centering} changes nothing when the architecture
+contains internal batch normalization: $\Dcurv$ is identical to three decimals
+with and without centering, because a linear projection followed by
+normalization absorbs constant input shifts exactly. The near-rank-one input
+statistics make the cap side of the curvature-disparity bound uninformative at
+buildable widths independently of the head-hypothesis failure: the data
+concentrate almost all their second-moment mass in one direction, and that
+direction is the mean spectrum. The directional measurements establish an
+anisotropy, not its consequence for learning; whether it starves learning is a
+hypothesis, not a measurement.
+
+\subsection{What carries the width trend}
+\label{app:prod_width}
+
+The measurements in this subsection are made on the production model at random
+initialization, at three widths $M \in \{48, 192, 384\}$ and three seeds, on
+one core (the densest of the first $24$ breast fold-0 training cores, with
+$29{,}664$ labelled pixels of $112{,}896$), with cuDNN TF32 disabled. Four
+normalization modes are compared: \texttt{train} (both head batch
+normalizations using batch statistics), \texttt{eval\_bn1} and
+\texttt{eval\_bn2} (only the first or only the second head normalization at its
+initial running statistics) and \texttt{eval\_head} (both). Artifacts:
+\texttt{results/exp1\_8c\_interior\_witness.csv} and
+\texttt{results/exp1\_8d\_REPORT.md}.
+
+\paragraph{The incoming features are flat in width.} The only downstream layer
+whose input dimension grows with $M$ is the first head convolution. The top
+eigenvalue of the patch-unfolded second-moment matrix of the features entering
+it is unchanged to four significant figures across the three widths, at
+$356.3$, $403.7$ and $332.4$ for seeds $0$, $1$ and $2$ respectively; the
+leading direction sits inside the width-independent $K = 64$ skip channels.
+Table~\ref{tab:app_gram} also records a discrepancy that matters for any
+normalization argument: the same Gram computed over the full batch-normalization
+group (all positions, ignored pixels included) rather than over labelled pixels
+is substantially smaller, and the cosine between the two centered top
+eigenvectors is far from one.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Incoming $3\times3$-patch Gram of the first head convolution, top
+eigenvalue, from \texttt{results/exp1\_8d\_REPORT.md}. Values are identical
+across $M \in \{48, 192, 384\}$ and across all four normalization modes, so a
+single column suffices. \emph{labelled} uses the labelled-pixel mask;
+\emph{full group} uses the batch-normalization group. The last column is the
+cosine between the two centered top eigenvectors.}
+\label{tab:app_gram}
+\begin{tabular}{rrrrr}
+\toprule
+seed & labelled & labelled, centered & full group & $\cos$(labelled, full) \\
+\midrule
+$0$ & $356.3$ & $68.19$ & $263.3$ & $0.2793$ \\
+$1$ & $403.7$ & $54.60$ & $306.8$ & $0.5502$ \\
+$2$ & $332.4$ & $67.14$ & $253.0$ & $0.2176$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Normalization quantities.} Table~\ref{tab:app_bn} gives the
+per-channel batch statistics of the two head normalizations, measured over the
+group they actually normalize, together with the activation energy entering and
+leaving the first one. Under fan-in initialization the pre-normalization
+variance of the first head normalization falls roughly as $1/(M+K)$, and its
+inverse-standard-deviation gain grows correspondingly. The stabilizer
+$\varepsilon = 10^{-5}$ is never within three orders of magnitude of the
+variance: the fraction of channels with variance below $10\varepsilon$ is $0$
+in every row of both normalizations at every width, seed and mode.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Head normalization quantities at initialization, \texttt{train} mode,
+from \texttt{results/exp1\_8d\_REPORT.md} Table 1. Per-seed values are
+per-channel medians (variance, gain) or labelled-pixel energies; the
+\emph{mean} column is the mean of the three seed values, computed by us.
+$\mathrm{gain}_i = \gamma_i/\sqrt{\mathrm{var}_i + \varepsilon}$. The last row
+is the product of the mean variance with $M + K$, $K = 64$.}
+\label{tab:app_bn}
+\begin{tabular}{lrrrrr}
+\toprule
+Quantity & seed $0$ & seed $1$ & seed $2$ & mean & $M$ \\
+\midrule
+First head BN, median variance & $0.1470$ & $0.1467$ & $0.1587$ & $0.1508$ & $48$ \\
+                               & $0.0678$ & $0.0589$ & $0.0656$ & $0.0641$ & $192$ \\
+                               & $0.0346$ & $0.0310$ & $0.0398$ & $0.0351$ & $384$ \\
+First head BN, median gain     & $2.609$ & $2.611$ & $2.511$ & $2.577$ & $48$ \\
+                               & $3.842$ & $4.120$ & $3.905$ & $3.956$ & $192$ \\
+                               & $5.375$ & $5.682$ & $5.010$ & $5.356$ & $384$ \\
+Second head BN, median gain    & $2.892$ & $3.122$ & $3.039$ & $3.018$ & $48$ \\
+                               & $3.110$ & $3.177$ & $3.195$ & $3.161$ & $192$ \\
+                               & $2.966$ & $3.060$ & $3.121$ & $3.049$ & $384$ \\
+Pre-BN energy, labelled pixels & $25.64$ & $26.28$ & $23.91$ & $25.28$ & $48$ \\
+                               & $11.07$ & $10.67$ & $11.19$ & $10.98$ & $192$ \\
+                               & $5.765$ & $5.543$ & $6.015$ & $5.774$ & $384$ \\
+Post-BN energy, labelled pixels & $132.1$ & $130.8$ & $133.2$ & $132.0$ & $48$ \\
+                                & $130.4$ & $131.5$ & $132.5$ & $131.5$ & $192$ \\
+                                & $130.7$ & $128.5$ & $130.8$ & $130.0$ & $384$ \\
+\midrule
+Mean variance $\times\,(M{+}K)$ & --- & --- & --- & $16.9\,/\,16.4\,/\,15.7$ & $48\,/\,192\,/\,384$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Witness Jacobian-vector products.} A unit perturbation of the first
+head convolution is propagated by forward-mode differentiation through the
+actual head in the actual normalization mode, so that the train-mode derivative
+includes the dependence on the batch statistics. The final scalar
+$e_{\mathrm{final}} = N^{-1}\sum_n d_n^\top(\mathrm{diag}(p_n) - p_np_n^\top)d_n$
+is a lower-bound witness for $\lambda_{\max}(G_{\phip\phip})$ and is verified
+against the same matvec the eigensolver uses; all $216$ rows pass at relative
+discrepancy below $10^{-3}$, with a maximum of $1.269 \times 10^{-5}$ over the
+$198$ rows with nonzero curvature. Table~\ref{tab:app_jvp} gives the stage
+energies for two directions in two modes.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Witness JVP stage energies, mean over three seeds, from
+\texttt{results/exp1\_8d\_REPORT.md} Table 2a. \texttt{ggn\_top} is the full
+top GGN eigenvector of the convolution block; \texttt{s9cen} is the centered
+leading direction of the incoming patch Gram. $e_{\mathrm{pre}}$ is the
+perturbation energy before the first head normalization,
+$e_{\mathrm{logit}}$ is measured on labelled pixels.}
+\label{tab:app_jvp}
+\begin{tabular}{llrrrrrr}
+\toprule
+Mode & Direction & $M$ & $e_{\mathrm{pre}}$ & $e_{\mathrm{bn1}}$ & $e_{\mathrm{bn2}}$ & $e_{\mathrm{logit}}$ & $e_{\mathrm{final}}$ \\
+\midrule
+\texttt{train} & \texttt{ggn\_top} & $48$  & $260.6$ & $2875$ & $4453$ & $261.7$ & $60.73$ \\
+\texttt{train} & \texttt{ggn\_top} & $192$ & $259.4$ & $5905$ & $7553$ & $505.2$ & $118.5$ \\
+\texttt{train} & \texttt{ggn\_top} & $384$ & $256.8$ & $9168$ & $13810$ & $1018$ & $227.6$ \\
+\texttt{train} & \texttt{s9cen}    & $48$  & $76.53$ & $1538$ & $1224$ & $29.23$ & $5.761$ \\
+\texttt{train} & \texttt{s9cen}    & $192$ & $76.53$ & $2305$ & $1914$ & $50.83$ & $9.862$ \\
+\texttt{train} & \texttt{s9cen}    & $384$ & $76.53$ & $3997$ & $3906$ & $124.3$ & $21.95$ \\
+\midrule
+\texttt{eval\_head} & \texttt{ggn\_top} & $48$  & $261.9$ & $261.9$ & $42.42$ & $9.607$ & $2.366$ \\
+\texttt{eval\_head} & \texttt{ggn\_top} & $192$ & $262.8$ & $262.8$ & $42.18$ & $10.35$ & $2.487$ \\
+\texttt{eval\_head} & \texttt{ggn\_top} & $384$ & $262.5$ & $262.5$ & $46.53$ & $10.45$ & $2.372$ \\
+\texttt{eval\_head} & \texttt{s9cen}    & $48$  & $76.53$ & $76.53$ & $9.103$ & $0.4667$ & $0.1049$ \\
+\texttt{eval\_head} & \texttt{s9cen}    & $192$ & $76.53$ & $76.53$ & $8.460$ & $0.4613$ & $0.1013$ \\
+\texttt{eval\_head} & \texttt{s9cen}    & $384$ & $76.53$ & $76.53$ & $9.762$ & $0.4450$ & $0.1011$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A spatially constant bias perturbation $\Delta b = e_c$ is annihilated exactly
+by the immediately following train-mode normalization: in \texttt{train} and
+\texttt{eval\_bn2} modes, at every width and seed, all stage energies after the
+centering step are exactly zero and the quadratic form agrees with the matvec
+to at most $1.14\times10^{-17}$ in absolute value. In \texttt{eval\_head} the
+same perturbation gives $e_{\mathrm{final}}$ between $7.8\times10^{-4}$ and
+$2.0\times10^{-3}$, and in \texttt{eval\_bn1} between $0.0154$ and $0.0692$.
+
+\paragraph{Slopes and attribution.} Table~\ref{tab:app_slopes} gives the
+log--log slopes against $M$ per seed and pooled, together with the
+mode-to-mode ratios of levels.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Log--log slopes against $M$ over the three widths, per seed and
+pooled, and mode-to-mode ratios of the levels (each mode's value divided by its
+train-mode value at the same width and seed, then averaged over seeds and over
+the three widths), from
+\texttt{results/exp1\_8d\_REPORT.md}. $\lambda_{WW}$ is the top curvature of
+the first head convolution's weight block; $\lambda_\phip$ is the whole spatial
+block. Three-width slopes are descriptive, not asymptotic exponents.}
+\label{tab:app_slopes}
+\begin{tabular}{lrrrrrrr}
+\toprule
+& \multicolumn{4}{c}{slope of $\lambda_{WW}$} & \multicolumn{1}{c}{$\lambda_\phip$} & \multicolumn{2}{c}{level ratio vs \texttt{train}} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-6}\cmidrule(lr){7-8}
+Mode & seed $0$ & seed $1$ & seed $2$ & pooled & pooled slope & $\lambda_{WW}$ & $\lambda_\phip$ \\
+\midrule
+\texttt{train}     & $0.509$ & $0.785$ & $0.350$ & $+0.613$ & $+0.398$ & $1$ & $1$ \\
+\texttt{eval\_bn1} & $0.429$ & $0.634$ & $0.542$ & $+0.563$ & $+0.281$ & $0.903$ & $1.03$ \\
+\texttt{eval\_bn2} & $0.544$ & $0.632$ & $0.508$ & $+0.571$ & $+0.253$ & $0.156$ & $0.227$ \\
+\texttt{eval\_head} & $-0.112$ & $0.181$ & $-0.084$ & $+0.006$ & $-0.331$ & $0.026$ & $0.037$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three readings, and one non-reading. The positive width trend in the spatial
+block's curvature at initialization is sensitive to head batch normalization:
+holding both head normalizations at their initial running statistics removes it
+($+0.613 \to +0.006$ for the convolution block, $+0.398 \to -0.331$ for the
+whole spatial block) while leaving the incoming features unchanged. Either
+normalization alone preserves the trend ($+0.563$ and $+0.571$), which is
+evidence against attributing it uniquely to the first one, even though most of
+the drop in the \emph{level} attaches to the second. The mechanism this
+supports is a finite-range normalization gain acting on width-diluted
+activations, over the range of widths measured, and not the width-linear
+feature-Gram mechanism of the shallow theory. The non-reading: the
+\texttt{eval\_head} intervention changes the normalization derivative, the
+forward logits, the downstream gates and the cross-entropy metric at the same
+time, so a difference between modes establishes sensitivity to the
+intervention, not a unique cause; and the observation that the variance never
+approaches the stabilizer is a heuristic about the regime, not a guarantee.
+
+\paragraph{Parameterization control.} Table~\ref{tab:app_scale} scales the
+weights and bias of the first head convolution by $c$ and, in the exact
+invariance, the following stabilizer by $c^2$. The logits are unchanged and the
+block's top curvature scales by exactly $c^{-2}$: the raw Euclidean curvature
+of a layer feeding a normalization is a parameterization quantity, not an
+architectural one \citep{vanlaarhoven2017l2}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Function-preserving scale control at seed $0$, from
+\texttt{results/exp1\_8d\_REPORT.md} Table 3. \emph{ratio} is
+$c^2\lambda_{WW}(c)/\lambda_{WW}(1)$, which is $1$ under exact invariance.
+\emph{logit dev.} is $\max|\text{logits}(c) - \text{logits}(1)|$, reported both
+with the stabilizer co-scaled by $c^2$ and with it held fixed (the
+implementation's actual behaviour); $\lambda_{WW}$, \emph{ratio} and
+$\norm{W}_F^2$ are taken from the fixed-stabilizer variant, and the co-scaled
+variant differs from it by at most one unit in the fourth significant figure.}
+\label{tab:app_scale}
+\begin{tabular}{rrrrrrr}
+\toprule
+$M$ & $c$ & $\lambda_{WW}$ & ratio & logit dev.\ (co-scaled) & logit dev.\ (fixed $\varepsilon$) & $\norm{W}_F^2$ \\
+\midrule
+$48$  & $1/4$ & $719.4$ & $1.000$ & $0$ & $9.40\cdot10^{-4}$ & $2.003$ \\
+$48$  & $1/2$ & $179.8$ & $1.000$ & $0$ & $1.89\cdot10^{-4}$ & $8.014$ \\
+$48$  & $1$   & $44.96$ & $1.000$ & $0$ & $0$ & $32.06$ \\
+$48$  & $2$   & $11.24$ & $1.000$ & $0$ & $4.63\cdot10^{-5}$ & $128.2$ \\
+$48$  & $4$   & $2.810$ & $1.000$ & $0$ & $5.84\cdot10^{-5}$ & $512.9$ \\
+$192$ & $1/4$ & $1935$  & $0.9998$ & $0$ & $3.00\cdot10^{-3}$ & $2.002$ \\
+$192$ & $4$   & $7.560$ & $1.000$ & $0$ & $1.89\cdot10^{-4}$ & $512.6$ \\
+$384$ & $1/4$ & $1927$  & $0.9991$ & $0$ & $4.69\cdot10^{-3}$ & $1.999$ \\
+$384$ & $4$   & $7.535$ & $1.000$ & $0$ & $2.95\cdot10^{-4}$ & $511.8$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Eigensolver accuracy.} Every row of the width sweep terminates on
+the combined criterion (relative change of the Rayleigh quotient below
+tolerance \emph{and} residual below $10^{-3}$), never on the iteration or
+wall-clock budget. Over all $36$ (mode, width, seed) rows the relative residual
+$\norm{Gv - \lambda v}/\lambda$ is at most $3.81\times10^{-4}$ for the
+convolution weight block, at most $3.81\times10^{-4}$ for the weight--bias
+block and at most $9.97\times10^{-4}$ for the whole spatial block, and the
+Rayleigh quotient of the returned iterate agrees with the reported eigenvalue
+to the printed precision in every row.
+
+\subsection{Controlled retraining: original protocol}
+\label{app:prod_e3c}
+
+The pipeline was retrained on breast fold $0$ at reduced depth (six transformer
+layers) with full instrumentation. Two protocols were run and both are
+reported: the \emph{original} protocol ($39$ runs), which is the pre-registered
+one and whose joint-versus-frozen contrast an audit of the training code later
+showed to be confounded, and the \emph{matched} protocol ($21$ runs), which
+removes the confounds, saves the selected checkpoint and re-runs the
+pre-registered comparisons. Sixty logged runs in total. Per-step residuals,
+block gradient norms, per-epoch parameter displacements and input-Jacobian
+norms are recorded in both; the matched protocol additionally logs the
+per-step clipping coefficient and the per-block applied update norms.
+
+The original protocol comprises arms $\{$joint-linear, frozen-random,
+frozen-PCA, joint-MLP$\}$ $\times$ widths $M \in \{48, 192\}$ $\times$ three
+seeds under AdamW for $60$ epochs, plus a $\{$joint-linear, frozen-random$\}$
+$\times$ three-seed pair under momentum SGD at both widths and a frozen-PCA SGD
+triple at $M = 48$ as a positive control. The spectral parameters sit in a
+zero-weight-decay group in every arm, and frozen arms log counterfactual
+spectral gradients. Table~\ref{tab:app_e3c_orig} gives the AdamW arms.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Controlled study, original protocol, AdamW arms: validation macro-F1
+(mean $\pm$ sd over three seeds) under two checkpoint policies, and relative
+spectral displacement at end of training. \emph{Final-5} is the pre-registered
+metric. \emph{Best-val} is the maximum over the $60$ per-epoch evaluations on
+the same $28$ validation cores; no checkpoint was saved at that maximum and
+this study has no test set, so that column is exploratory and
+selection-optimistic. The two policies order the arms oppositely. These arms
+also differ in clip scope and in normalization-affine treatment, so this
+contrast is confounded.}
+\label{tab:app_e3c_orig}
+\begin{tabular}{lccccr}
+\toprule
+& \multicolumn{2}{c}{Final-5 (pre-registered)} & \multicolumn{2}{c}{Best-val (exploratory)} & \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Arm & $M{=}48$ & $M{=}192$ & $M{=}48$ & $M{=}192$ & $\norm{\Delta\thetap}/\norm{\thetap_0}$ \\
+\midrule
+Joint (linear) & $0.538 \pm 0.082$ & $0.646 \pm 0.050$ & $0.873 \pm 0.030$ & $0.858 \pm 0.056$ & $0.54$--$0.64$ \\
+Frozen random  & $0.648 \pm 0.063$ & $0.731 \pm 0.023$ & $0.840 \pm 0.025$ & $0.817 \pm 0.017$ & $0$ \\
+Frozen PCA     & $0.731 \pm 0.003$ & $0.726 \pm 0.012$ & $0.769 \pm 0.021$ & $0.862 \pm 0.068$ & $0$ \\
+Joint (MLP)    & $0.566 \pm 0.070$ & $0.575 \pm 0.184$ & $0.900 \pm 0.000$ & $0.897 \pm 0.001$ & $0.85$--$0.96$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the pre-registered final-window metric the joint-linear minus
+frozen-random gaps are $-0.110$ at $M = 48$ ($90\%$ paired-$t$ interval
+$[-0.333, +0.114]$) and $-0.085$ at $M = 192$ ($[-0.185, +0.015]$), neither
+resolvable at $n = 3$; against frozen-PCA they are $-0.193$
+($[-0.334, -0.052]$) and $-0.081$ ($[-0.175, +0.014]$). Taking each run's
+maximum over its $60$ evaluations reverses the ordering: joint minus
+frozen-random becomes $+0.033$ and $+0.041$, joint minus frozen-PCA $+0.104$
+and $-0.004$. The switch is an arithmetic identity --- the change in every gap
+equals the difference in peak-to-final degradation between the two arms ---
+and averaged over seeds that degradation is $0.335$ ($M = 48$) and $0.212$
+($M = 192$) for joint-linear against $0.192$ and $0.086$ for frozen-random.
+
+\paragraph{Three asymmetries.} First, gradient-norm clipping at $1.0$ was
+computed over the optimizer's parameters, that is over $\thetap + \phip$ in the
+joint arms but over $\phip$ alone in the frozen arms, so at identical gradients
+the frozen arm takes the larger $\phip$ step: the median extra clip factor paid
+by the joint arm is $1.10$--$1.12$ under SGD at $M = 48$ and $3.0$--$3.6$ under
+AdamW at $M = 192$. Second, the normalization following the spectral projection
+contributes $128$ affine parameters that are trained in joint-linear, frozen in
+frozen-random and structurally absent in frozen-PCA. Third, no checkpoint was
+saved during training, so the best-validation column is a post-hoc curve
+maximum that no saved model realizes, taken over $60$ evaluations of the same
+$28$ validation cores that define the comparison.
+
+\subsection{Momentum-SGD controls and normalization recalibration}
+\label{app:prod_sgd}
+
+The two optimizer families constitute an optimizer-family control; the SGD arm
+is not an instantiation of the two-timescale theorem's gradient flow. It uses
+momentum $0.9$; weight decay $0.01$ on $\phip$ and $0$ on $\thetap$;
+mini-batches of four cores with reshuffling; and global gradient-norm clipping
+at $1.0$, which binds on $73$--$89\%$ of steps. Logged gradient norms are
+recorded before clipping, so the plotted theory quantities are not the
+quantities the trajectory applied. Under momentum SGD the paired joint minus
+frozen-random gap is $+0.002$ at $M = 48$ and $+0.011$ at $M = 192$ on
+best-validation, with $90\%$ paired-$t$ intervals $[-0.008, +0.011]$ and
+$[-0.007, +0.030]$; on the final-window metric the same pairs give $+0.028$ and
+$-0.057$, with intervals $[-0.173, +0.228]$ and $[-0.124, +0.010]$ --- gaps
+that differ in sign between the widths, with intervals an order of magnitude
+wider than the effect they bracket. Both arms lose $0.12$--$0.22$ macro-F1
+between their peak and their final window. Descriptively, the spectral share of
+the summed squared gradient norms drops from about $0.94$ (AdamW joint) to
+about $0.26$ (SGD joint); momentum, clipping, weight decay and adaptivity all
+differ between the two families, so no single factor is isolated.
+
+\paragraph{Recalibration of normalization statistics.} On disposable copies of
+the final checkpoints, with all weights fixed, the normalization running
+statistics were re-estimated on training data only ($29$ batches) and the model
+re-evaluated. For this intervention and these checkpoints, the recovered
+fraction of the joint arms' peak-to-final drop is $0.17$ at $M = 48$ and
+$0.07$ at $M = 192$: recalibration recovers a nonzero part of the degradation
+but not most of it. What it does undo is the instability of the endpoint
+number: it repairs the two collapsed joint checkpoints ($+0.24$ and $+0.15$
+macro-F1) and shrinks the seed standard deviation by roughly $3.7\times$, while
+leaving the frozen arms essentially unchanged ($|\Delta| \le 0.02$, and
+$\le 0.006$ for frozen-PCA, whose spectral stage carries no normalization).
+
+\subsection{Matched protocol}
+\label{app:prod_matched}
+
+The matched protocol equalizes the three asymmetries and re-runs the
+pre-registered comparisons at $M = 48$: the reduction-stage normalization
+affine parameters are placed in $\phip$ and trained wherever that
+normalization exists; the clip norm at $1.0$ is computed over $\phip$ only
+under the same clipping rule and scope in every arm; and the best-validation
+checkpoint is saved. AdamW at learning rate $10^{-4}$, $60$ epochs, three
+seeds, flip and $90^\circ$-rotation augmentation on in all arms. The logged
+per-step clip coefficient averages $0.33$--$0.57$ across arms --- the
+coefficients and gradients differ by arm, which is an outcome of the matched
+rule --- and the logged applied update norms confirm that the spectral share of
+the applied update tracks the learning-rate multiplier ($0.02$, $0.17$ and
+$1.36$ times the $\phip$ update norm for $\times0.1$, $\times1$ and
+$\times10$). Table~\ref{tab:app_e3c_matched} gives all seven arms.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Controlled study, matched protocol ($M = 48$, AdamW, three seeds,
+mean $\pm$ sd). Identical normalization-affine treatment and the same
+$\phip$-only clipping rule and scope in every arm; best-validation checkpoints
+saved. \emph{Final-5} is the pre-registered metric; \emph{best-val} is the
+maximum over $60$ per-epoch evaluations on the $28$ fold-0 validation cores and
+is exploratory and selection-optimistic, since this study has no test set. The
+drift column is the relative spectral-parameter displacement at end of
+training; its standard deviations were computed by us from
+\texttt{results/e3c\_analysis\_runs.csv}. Rows $1$--$2$ and rows $3$--$4$ are
+the two matched pairs; see the text.}
+\label{tab:app_e3c_matched}
+\begin{tabular}{lccc}
+\toprule
+Arm & Final-5 (pre-registered) & Best-val (exploratory) & $\norm{\Delta\thetap}/\norm{\thetap_0}$ \\
+\midrule
+Frozen random                   & $0.684 \pm 0.037$ & $0.814 \pm 0.040$ & $0$ \\
+Joint (linear)                  & $0.694 \pm 0.056$ & $0.837 \pm 0.029$ & $0.566 \pm 0.026$ \\
+Frozen pretrained               & $0.690 \pm 0.033$ & $0.861 \pm 0.022$ & $0$ \\
+Fine-tuned pretrained           & $0.710 \pm 0.052$ & $0.857 \pm 0.009$ & $0.020 \pm 0.005$ \\
+Joint, spectral lr $\times 0.1$ & $0.626 \pm 0.055$ & $0.841 \pm 0.007$ & $0.083 \pm 0.006$ \\
+Joint, spectral lr $\times 10$  & $0.561 \pm 0.114$ & $0.886 \pm 0.037$ & $4.910 \pm 0.402$ \\
+Joint, cosine schedule          & $0.660 \pm 0.020$ & $0.825 \pm 0.033$ & $0.359 \pm 0.013$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Two matched pairs, not a single-factor design.} The four core arms
+do not all differ in one factor. Joint-linear and frozen-random use a linear
+reduction stage with normalization; frozen-pretrained and fine-tuned-pretrained
+use a pretrained multilayer spectral encoder without reduction-stage
+normalization. The clean freezing comparisons are therefore the two matched
+pairs, joint-linear against frozen-random and fine-tuned against
+frozen-pretrained. Comparing across the pairs --- frozen-pretrained against
+frozen-random, for instance --- changes architecture, initialization and
+training history, and validation selection, not only informativeness.
+
+\paragraph{Verdicts.} All comparisons in Table~\ref{tab:app_verdicts} are
+paired by seed with $90\%$ $t$-intervals ($t = 2.920$, $n = 3$), conditional on
+one validation split, and are descriptive seed summaries rather than a
+population or multi-factor causal analysis.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Matched protocol: paired differences with $90\%$ paired-$t$ intervals
+($n = 3$). The last two rows compare the two protocols and are reported as
+descriptive seed summaries; saving a checkpoint changes what is available to
+evaluate, not the final-window trajectory.}
+\label{tab:app_verdicts}
+\begin{tabular}{lcc}
+\toprule
+Contrast & Final-5 & Best-val \\
+\midrule
+Fine-tuned $-$ frozen-pretrained & $+0.021\ [-0.022, +0.063]$ & $-0.004\ [-0.048, +0.039]$ \\
+Joint-linear $-$ frozen-random & $+0.011\ [-0.142, +0.163]$ & $+0.023\ [-0.066, +0.112]$ \\
+Frozen-pretrained $-$ frozen-random & --- & $+0.047\ [-0.042, +0.136]$ \\
+Spectral lr $\times10 - \times1$ & $-0.133\ [-0.419, +0.152]$ & $+0.048\ [-0.016, +0.112]$ \\
+Spectral lr $\times0.1 - \times1$ & $-0.068\ [-0.173, +0.037]$ & $+0.004\ [-0.039, +0.046]$ \\
+\midrule
+Joint/frozen gap: matched $-$ original & $+0.120\ [-0.230, +0.470]$ & $-0.010\ [-0.105, +0.085]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The pre-registered prediction that fine-tuning a pretrained spectral encoder
+falls below leaving it frozen is not supported: neither difference is
+resolvable at $n = 3$, and the fine-tuned arm moved $\thetap$ by only $2\%$ of
+its initial norm. The logged applied update norms verify nonzero applied
+encoder updates under AdamW in that arm; this is a statement about the applied
+updates, not an attribution of the loss decrease. The pre-registered
+harmful-drift ordering $\times0.1 \ge \times1 \ge \times10$ is not observed: on
+best-validation the $\times10$ arm is above $\times1$ in $3/3$ seeds while its
+final-window endpoint is the lowest and most variable of any arm at $0.561$.
+Three multiplier means do not establish a systematic relation between
+displacement and peak score, and the intervals are wide. The cosine schedule
+improved neither mean endpoint ($0.825$ best-val and $0.660$ final-5 against
+$0.837$ and $0.694$ for the constant learning rate); one schedule that did not
+help does not rule out an excessive late learning rate.
+
+\paragraph{Disclosures.} Width $48$ only; $n = 3$; a single validation fold of
+$28$ fold-0 cores; no test set. The best-validation column is exploratory and
+the final-window column is the pre-specified metric. The pretrained encoders
+were selected by pixel validation macro-F1 on the \emph{same} fold-0 validation
+cores the runner later scores, which is a selection advantage for both
+pretrained arms, and were pretrained with weight decay $0.01$ on $\thetap$.
+Pixel pretraining used the unaugmented centre-crop protocol while subsequent
+training used random crop plus augmentation; this affects comparisons across
+the two pairs, not the frozen-versus-fine-tuned pair that starts from the same
+checkpoint. Augmentation is on in all arms. Finally, the summary artifact
+\texttt{results/e3c\_analysis\_runs.csv} does not expose per-run configuration
+hashes or data-order pairing, so before the pairs are described as completely
+matched a compact provenance manifest should accompany it, recording
+architecture, initial checkpoint hash, parameter-group membership, clipping and
+weight-decay settings, normalization mode and state, augmentation and
+data-order seed, scheduler and selection rule; identical seed labels alone do
+not establish bit-identical mini-batch order across different model
+constructions.
+
+\subsection{What is not certified on this pipeline}
+\label{app:prod_scope}
+
+The spatial module's input-Jacobian operator norm grows over training, from
+$3.2$ to $157$ on average for joint-linear (up to $414$) and from $1.7$ to
+$1.2\times10^{4}$ for joint-MLP, which rejects an initialization-scale
+stability approximation for the containment constant of the displacement
+theorem, though not the existence of a finite-horizon constant over the
+training window. The fitted per-step residual-envelope rate for joint-linear
+grows from $\hat\mu = 6.0\times10^{-4}$ ($M = 48$) to $1.9\times10^{-3}$
+($M = 192$), a factor $3.2$ for a $4\times$ width increase; the ratio is
+invariant to the step-clock-to-flow-time conversion, the absolute values are
+not, and two widths do not establish a trend.
+

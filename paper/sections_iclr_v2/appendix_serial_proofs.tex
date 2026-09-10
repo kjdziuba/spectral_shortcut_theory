@@ -1,0 +1,268 @@
+\subsection{The serial instance, its general initialization, and the normalized readout}
+\label{sec:astra_serial}
+\begin{proposition}[Information retained by a fitting serial encoder]
+\label{prop:astra_information}
+If the predictions depend on X only through $Z=f_\thetap(X)$ and a
+classifier $q_\phip(Y\mid Z)$ has population CE at most $\eta<\infty$,
+then $H(Y\mid Z)\le\eta$ and $I(Y;Z)\ge H(Y)-\eta$.
+The same statement holds for the empirical distribution with a fixed model.
+\end{proposition}
+\begin{proof}
+CE is conditional entropy plus the nonnegative expected conditional KL
+divergence. Suppression of a selected coordinate or failure under a
+specified shift is therefore different from absence of all training-label
+information in the serial representation.
+\end{proof}
+
+\begin{theorem}[Serial CE instance; review Theorem 5.1]
+\label{thm:astra_serial}
+Let $Y$ be uniform on $\{-1,1\}$ and let training inputs be
+$x_1=(S,0)$, $x_2=(0,C_{\rm ctx})$ with $S=C_{\rm ctx}=Y$.
+The shared linear encoder is $W=(a,v)$, giving $z_1=aS,z_2=vC_{\rm ctx}$.
+For integer $M\ge1$ define
+\[
+ F=z_1+\sum_{j=1}^M\beta_jz_2=aS+bvC_{\rm ctx},\quad
+ b=\sum_j\beta_j,\quad\thetap=(a,v),\quad\phip=\beta.
+\]
+All coordinates follow unit Euclidean gradient flow on the averaged
+binary CE $\loss=\E\log(1+e^{-YF})=\log(1+e^{-q})$, $q=a+bv$,
+from $a_0=0,v_0=1,\beta_0=0$, with no clipping, decay or momentum.
+Fix $0<\delta<1/2$, $m=\log((1-\delta)/\delta)$, and let $T_m$ be
+the first time q reaches m. Write $\varrho=(1+e^q)^{-1}$ and
+$\Psi(q)=q+e^q-1$. Then:
+\begin{align}
+ \dot a&=\varrho,&\dot v&=b\varrho,&\dot b&=Mv\varrho,\label{eq:astra_serial_ode}\\
+ v&=\cosh(\sqrt M a),&b&=\sqrt M\sinh(\sqrt M a),\label{eq:astra_serial_phase}\\
+ q&=a+\frac{\sqrt M}{2}\sinh(2\sqrt M a),&
+ \dot q&=(M+1+2b^2)\varrho.\label{eq:astra_serial_q}
+\end{align}
+The solution is global and reaches m in finite time, with
+\begin{equation}\label{eq:astra_serial_time}
+ \frac{\Psi(m)}{M+1+2m^2}\le T_m\le\frac{\Psi(m)}{M+1}.
+\end{equation}
+At that time, writing $a_M=a(T_m)$,
+\begin{gather}
+ 0<a_M\le\frac{m}{M+1},\qquad b(T_m)v(T_m)\ge\frac{Mm}{M+1},
+ \qquad Ma_M\longrightarrow m,\label{eq:astra_serial_update}\\
+ 0\le v(T_m)-1\le\frac{m^2}{2M},\qquad
+ \|W(T_m)-W_0\|\le
+ \sqrt{\frac{m^2}{(M+1)^2}+\frac{m^4}{4M^2}}.\label{eq:astra_serial_disp}
+\end{gather}
+For fixed m, $a_M$ decreases strictly with M; removing the contextual
+path entirely requires $a=m$ at the same fitting margin. Moreover,
+\begin{equation}\label{eq:astra_serial_envelope}
+ \varrho(t)\le\frac{1/2}{1+(M+1)t/4},\qquad t\ge0.
+\end{equation}
+In the stated parameter blocks and loss convention,
+\[
+ \lambda_{\max}(G_{\thetap\thetap})=\varrho(1-\varrho)(1+b^2),\quad
+ \lambda_{\max}(G_{\phip\phip})=M\varrho(1-\varrho)v^2,
+\]
+so at initialization they equal $1/4,M/4$ and the disparity is M.
+For the separately trained frozen encoder $W=(0,1)$, $\beta_F(0)=0$,
+its margin obeys $\Psi(q_F(t))=Mt$ and
+\begin{equation}\label{eq:astra_serial_gap}
+ 0\le q(t)-q_F(t)\le\frac{(1+2m^2)t}{2+Mt/2}
+ \le\frac{2(1+2m^2)}M,\qquad0\le t\le T_m.
+\end{equation}
+Under the specified reversal $S=Y,C_{\rm ctx}=-Y$, the joint model at
+$T_m$ has error one; the fitted spectral-only comparator has error zero.
+\end{theorem}
+\begin{proof}
+The training margin is the same on each example, so direct differentiation
+gives \eqref{eq:astra_serial_ode}. Divide by $\dot a=\varrho>0$ to get
+$dv/da=b$, $db/da=Mv$, which proves \eqref{eq:astra_serial_phase}.
+It implies $b^2=M(v^2-1)$ and \eqref{eq:astra_serial_q}.
+Since $0<\dot a\le1/2$, a stays finite on every finite time interval;
+the phase formula then gives global existence. The strictly increasing
+map $Q_M(a)=a+(\sqrt M/2)\sinh(2\sqrt M a)$ maps $[0,\infty)$
+onto itself and has a finite inverse at m. On this compact a interval,
+$\dot a\ge\delta>0$, so the hitting time is finite.
+
+$\sinh x\ge x$ gives $Q_M(a)\ge(M+1)a$, strictly for $a>0$.
+Before fitting, $v\ge1$, $0\le bv=q-a\le m$, hence $b\le m$.
+The invariant gives $v-1=b^2/[M(v+1)]\le m^2/(2M)$.
+For fixed positive a the contextual term increases strictly with M;
+invert to get strict decrease of $a_M$. Its upper bound implies
+$\sqrt M a_M\to0$, and the expansion
+$m=(M+1)a_M+O(M^2a_M^3)$ gives $Ma_M\to m$.
+
+$\dot\varrho=-(M+1+2b^2)\varrho^2(1-\varrho)$ and
+$\varrho\le1/2$ imply $(d/dt)(1/\varrho)\ge(M+1)/2$.
+Integrate from $\varrho(0)=1/2$ for the envelope.
+Since $\Psi'(q)=1/\varrho$, before fitting
+$\frac d{dt}\Psi(q)=M+1+2b^2\in[M+1,M+1+2m^2]$;
+integration proves \eqref{eq:astra_serial_time}.
+The margin gradients are $Y(1,b)$ and $Yv\boldsymbol1_M$;
+the scalar logistic Hessian is $\varrho(1-\varrho)$, giving the GGN.
+
+For the frozen system $\dot q_F=M/(1+e^{q_F})$. Thus
+$0\le\Psi(q)-\Psi(q_F)=\int_0^t(1+2b^2)ds\le(1+2m^2)t$.
+Convexity gives a lower bound $\Psi'(q_F)(q-q_F)$ for this difference.
+As $q_F\le e^{q_F}-1$,
+$Mt=\Psi(q_F)\le2(e^{q_F}-1)$, so
+$\Psi'(q_F)\ge2+Mt/2$, proving \eqref{eq:astra_serial_gap}.
+The shifted margin is $a-bv=2a_M-m<0$: for $M>1$ use
+\eqref{eq:astra_serial_update}, and for $M=1$ use the strict
+inequality $Q_1(a)>2a$. The spectral-only shifted margin is m.
+\end{proof}
+
+% [v2] The corollary instantiating the v1 displacement bound (Theorem 2 of the
+% frozen draft) is omitted here; it is not part of this paper.
+\begin{remark}[Embedding, head, and initialization conventions]
+For logits $(F,0)$, loss, residual norm and GGN agree, but the unprojected
+logit-Jacobian norm is $\sqrt{1+b^2}$; the symmetric embedding makes
+the norm-product bound exact. A freely trained dense two-row head is
+not the parameter block $\phip=\beta$: its initial head eigenvalue is
+$M/2$, not $M/4$, while the encoder eigenvalue remains $1/4$ at the
+same initial function. Labels need not be balanced for the training
+ODE; balance is used in the information/noisy-accuracy statement below.
+The initial encoder orientation in Theorem~\ref{thm:astra_serial} is
+explicitly asymmetric; the next corollary removes that choice for W,
+not the routing/readout asymmetry.
+\end{remark}
+
+\begin{proposition}[Readout normalization and representation interpretation]
+\label{prop:astra_serial_control}
+Replace the contextual readout by $\alpha_M\sum_j\gamma_jz_2$,
+$\gamma_j(0)=0$, at unit rates. Its reduced equation for
+$b=\alpha_M\sum_j\gamma_j$ is $\dot b=M\alpha_M^2v\varrho$.
+In particular $\alpha_M=M^{-1/2}$ gives exactly the $M=1$ dynamics
+for every M. At every finite M in the original theorem, the noiseless
+spectral coordinate $a_MS$ still determines Y. If it is instead
+observed as $Z_S=a_MY+\sigma\xi$, with $\xi\sim\mathcal N(0,1)$
+independent, $\sigma>0$ fixed, then Bayes accuracy is
+$\Phi(a_M/\sigma)$ and $I(Y;Z_S)\le a_M^2/(2\sigma^2)$.
+\end{proposition}
+\begin{proof}
+Differentiate each readout and sum. The Gaussian likelihood-ratio test
+is thresholding at zero, giving the accuracy. For
+$Q=\mathcal N(0,\sigma^2)$,
+$\E_Y\operatorname{KL}(P_{Z_S|Y}\|Q)=a_M^2/(2\sigma^2)
+=I(Y;Z_S)+\operatorname{KL}(P_{Z_S}\|Q)$.
+This noise is a specified observation perturbation, not training noise.
+\end{proof}
+
+\begin{corollary}[General and isotropic encoder initialization]
+\label{cor:astra_isotropic}
+In the serial model let $m>0$, $a_0<m$, $v_0\ne0$, and allow any
+readout initialization with $\sum_j\beta_{j0}=0$. Set
+$u=a-a_0$, $\Delta=m-a_0>0$. Then
+\begin{align}
+ v&=v_0\cosh(\sqrt M u),\quad b=\sqrt Mv_0\sinh(\sqrt M u),
+ \label{eq:astra_iso_phase}\\
+ q&=a_0+u+\frac{\sqrt Mv_0^2}{2}\sinh(2\sqrt M u),\notag\\
+ 0<u_M&\le\frac{\Delta}{1+Mv_0^2},\qquad
+ Mu_M\longrightarrow\frac{\Delta}{v_0^2},\qquad
+ \frac{a(T_m)-a_0}{m-a_0}\longrightarrow0.
+ \label{eq:astra_iso_update}
+\end{align}
+The fitting root decreases strictly with M and
+\begin{equation}\label{eq:astra_iso_disp}
+ |v(T_m)-v_0|\le\frac{\Delta^2}{2M|v_0|^3},\qquad
+ \|W(T_m)-W_0\|\le
+ \sqrt{\frac{\Delta^2}{(1+Mv_0^2)^2}+
+       \frac{\Delta^4}{4M^2|v_0|^6}}.
+\end{equation}
+With $\Psi_{a_0}(q)=q-a_0+e^q-e^{a_0}$,
+\[
+ \frac{\Psi_{a_0}(m)}{1+Mv_0^2+2\Delta^2/v_0^2}
+ \le T_m\le\frac{\Psi_{a_0}(m)}{1+Mv_0^2}.
+\]
+For a frozen encoder at $(a_0,v_0)$ and the same initial readouts,
+$\Psi_{a_0}(q_F)=Mv_0^2t$. If
+$p_0=e^{a_0}/(1+e^{a_0})$ and $C_0=1+2\Delta^2/v_0^2$, then
+\begin{equation}\label{eq:astra_iso_gap}
+ 0\le q_J-q_F\le\frac{C_0t}{1+e^{a_0}+p_0Mv_0^2t}
+ \le\frac{C_0}{p_0Mv_0^2},\qquad0\le t\le T_m.
+\end{equation}
+Under contextual reversal the fitted margin is $2a(T_m)-m$.
+For $a_0<m/2$, error is one for all sufficiently large M, with sufficient
+condition $Mv_0^2>m/(m-2a_0)$. For $m/2\le a_0<m$, the reversed
+classifier is correct at every width. If $a_0\ge m$, define fitting to
+stop immediately, in which case it is also correct.
+
+If $(a_0,v_0)\sim\mathcal N(0,\sigma^2 I_2)$, $\sigma>0$, then
+$v_0\ne0$ almost surely; use the preceding stopping convention.
+The expected reversal error satisfies
+\begin{equation}\label{eq:astra_iso_error}
+ \lim_{M\to\infty}\E_{W_0}\operatorname{Err}_{\rm reversal}
+ =\Phi\left(\frac{m}{2\sigma}\right).
+\end{equation}
+The same-threshold spectral-only comparator has zero reversal error.
+\end{corollary}
+\begin{proof}
+Dividing the ODE by $\dot a>0$ gives
+\eqref{eq:astra_iso_phase}; only the initial readout sum enters.
+Each $\beta_i-\beta_j$ is conserved, so equal initial readouts are not
+needed for closure. Positivity of the contextual margin
+$b v=(\sqrt Mv_0^2/2)\sinh(2\sqrt M u)$ and the sinh inequality
+prove \eqref{eq:astra_iso_update}; Taylor expansion at
+$\sqrt M u_M\to0$ gives the limit. The invariant is
+$b^2=M(v^2-v_0^2)$; v keeps its sign and $|v|\ge|v_0|$.
+Since $bv\le\Delta$, $|b|\le\Delta/|v_0|$ and
+\[
+ |v-v_0|=\frac{b^2}{M(|v|+|v_0|)}
+ \le\frac{\Delta^2}{2M|v_0|^3}.
+\]
+This finite-M inequality proves \eqref{eq:astra_iso_disp}.
+Now $\dot q=(1+Mv_0^2+2b^2)\varrho$ and
+$b^2\le\Delta^2/v_0^2$ on the fitting interval; integrate the
+transformed margin for the time bounds. Global existence follows as
+before from $\dot u\le1$ and the phase formula; every finite m is hit.
+
+The transformed joint/frozen difference lies between zero and $C_0t$.
+Also $q_F-a_0\le(e^{q_F}-e^{a_0})/e^{a_0}$ gives
+$\Psi'_{a_0}(q_F)\ge1+e^{a_0}+p_0Mv_0^2t$.
+Convexity proves \eqref{eq:astra_iso_gap}. For $a_0<m/2$, use
+$a(T_m)\le a_0+\Delta/(1+Mv_0^2)$ to get the finite-M reversal
+condition. For $a_0>m/2$ the classifier is correct at every fitted
+width, since $u_M>0$ gives $2a(T_m)-m>2a_0-m>0$; equality
+$a_0=m/2$ also gives a positive margin. Immediate stopping covers
+$a_0\ge m$. Almost surely the limiting error is
+$1_{\{a_0<m/2\}}$, apart from the zero-probability boundary and
+$v_0=0$ events. Dominated convergence gives \eqref{eq:astra_iso_error}.
+\end{proof}
+
+\begin{remark}[Confidence dependence and limiting quantity]
+For $a_0\ne0$, $a(T_m)/a_0\to1$ but $a(T_m)/m\to a_0/m$;
+the vanishing quantity is the \emph{update} fraction in
+\eqref{eq:astra_iso_update}. For $0<\rho<1$, a Gaussian tail and its
+maximum density give, with probability at least $1-\rho$,
+\[
+ |a_0|\le\sigma\sqrt{2\log(4/\rho)},\qquad
+ |v_0|\ge\frac{\rho\sigma}{2}\sqrt{\pi/2}.
+\]
+Substitute these bounds in the finite-M inequalities for uniform
+confidence bounds. The dependence is severe: for fixed
+$(\Delta,v_0)\in(0,\infty)\times(\R\setminus\{0\})$, expansion
+of the root yields
+\[
+ Mu_M=\frac{\Delta}{v_0^2}\left[
+ 1-\frac1{Mv_0^2}-\frac{2\Delta^2}{3Mv_0^4}+O(M^{-2})\right].
+\]
+Indeed substitute $u=A/M+B/M^2$ in the sinh equation and match its
+constant and $M^{-1}$ coefficients. The expansion's remainder is
+pointwise, not already uniform in rho. Its small-$|v_0|$ crossover
+requires control of $\Delta^2/(Mv_0^4)$; at the confidence cutoff this
+has scale $\Delta^2\rho^{-4}\sigma^{-4}/M$, a fourth power of
+$1/\rho$, not a second. A rigorous uniform remainder can instead be
+bounded from the sinh series on this controlled argument. Do not
+present this asymptotic crossover as a universal necessary width.
+\end{remark}
+
+\paragraph{Provenance and interpretation.}
+Architecture- and initialization-dependent implicit bias is established
+in linear-network analyses \citep{astra_yun2021,astra_moroshko2020};
+trajectory-level incremental learning is studied by
+\citet{astra_berthier2023}. Exact deep-linear dynamics
+\citep{astra_saxe2014} and conservation of layer-norm differences
+\citep{astra_du2018balance} supply the underlying tools. CE feature
+competition is central to \citet{pezeshki2021gradient}.
+The serial example instantiates a known optimization-metric mechanism
+with finite-margin formulas, an encoder-update comparison and a specified
+reversal distribution. Replication is equivalent to a rate M on b,
+and normalization removes it; the function class does not grow.
+These particular calculations are not a claim of a new general implicit-bias
+mechanism, and finite-time or serial composition alone is not a novelty claim.
+

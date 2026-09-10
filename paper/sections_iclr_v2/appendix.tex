@@ -1,0 +1,85 @@
+% Appendix of the v2 (refocused) paper. Section letters: A proofs, B exact-model
+% verification, C Experiment 2, D Experiment 3, E scope limitations from the
+% production model (v1 material), F verification record.
+
+\section{Proofs of Theorem~\ref{thm:serial}}
+\label{app:proofs}
+
+Theorem~\ref{thm:serial} combines three statements proved below in their
+original form: the serial instance at the special initialization
+(Theorem~\ref{thm:astra_serial}), its general and isotropic initialization
+(Corollary~\ref{cor:astra_isotropic}), and the readout normalization
+(Proposition~\ref{prop:astra_serial_control}). Part (a) of
+Theorem~\ref{thm:serial} is \eqref{eq:astra_iso_update} together with the
+finite-horizon gap \eqref{eq:astra_iso_gap}; part (b) is the reversal
+statement of Corollary~\ref{cor:astra_isotropic} including
+\eqref{eq:astra_iso_error}; part (c) is
+Proposition~\ref{prop:astra_serial_control} with $\alpha_M=M^{-1/2}$, whose
+proof applies to any zero-sum initialization of the normalized readouts
+because only the aggregate $b$ enters the flow. The rate-$\kappa$ variant
+quoted in Section~\ref{sec:theorem} follows by the same differentiation with
+$\dot\beta_j=\kappa v\varrho$. The special-initialization remark is
+\eqref{eq:astra_serial_time} and the GGN display of
+Theorem~\ref{thm:astra_serial}. Notation: $\varrho=(1+e^{q})^{-1}$ is the
+logistic residual, $\Psi(q)=q+e^q-1$, and $G_{\thetap\thetap}$,
+$G_{\phip\phip}$ are the Gauss--Newton blocks of the scalar-logit loss in
+the parameter blocks $\thetap=(a,v)$ and $\phip=\beta$.
+
+\begingroup
+\let\section\subsection
+\let\subsection\subsubsection
+\input{sections_iclr_v2/appendix_serial_proofs}
+\endgroup
+
+\section{Exact-model verification}
+\label{app:verification}
+
+The closed forms of Appendix~\ref{app:proofs} were checked against a full
+$(2+M)$-parameter integration of the gradient flow. The tables below are
+reproduced from the verification record of the earlier draft
+(\texttt{code/experiments/toy\_serial\_ce.py},
+\texttt{toy\_serial\_ce\_isotropic.py}); the maximum relative discrepancy over
+the four endpoint quantities in the $525$ non-trivial isotropic cases is
+$1.26\times10^{-11}$, the maximum trajectory-identity discrepancy is
+$1.5\times10^{-10}$, and no bound is violated in any case. The quantities and
+error conventions are those stated in each caption.
+
+\begingroup
+\let\section\subsection
+\let\subsection\subsubsection
+\input{sections_iclr_v2/appendix_toy_tables}
+\endgroup
+
+\section{Experiment 2 details}
+\label{app:exp2}
+\IfFileExists{sections_iclr_v2/appendix_exp2.tex}{\input{sections_iclr_v2/appendix_exp2}}{\emph{[Pending: generator, calibration, readiness, arms, thresholds, per-seed tables, pre-registered verdicts, trajectories, amendments.]}}
+
+\section{Experiment 3 details}
+\label{app:exp3}
+\IfFileExists{sections_iclr_v2/appendix_exp3.tex}{\input{sections_iclr_v2/appendix_exp3}}{\emph{[Pending: data, patch construction, patient split, readiness scan, calibration, arms, tables.]}}
+
+\section{Scope limitations from a production model}
+\label{app:scope}
+
+This appendix reproduces, from the earlier diagnostic draft of this work,
+the measurements on a production spectral--spatial segmentation model that
+are summarized in Section~\ref{sec:limitations}. They concern initialization
+curvature and a controlled retraining study; they do not measure the
+mechanism of Theorem~\ref{thm:serial} and are included to document why
+scalar curvature is not the diagnostic used in this paper and why the
+earlier apparent freezing advantage is not evidence for or against it. The
+data are breast-tissue QCL micro-array cores with a prostate QCL replication.
+Theorem and proposition numbers quoted inside this appendix refer to the
+earlier draft's framework and are retained only where the sentence is a
+scope statement about that framework.
+
+\begingroup
+\let\section\subsection
+\let\subsection\subsubsection
+\input{sections_iclr_v2/appendix_production_v1}
+\endgroup
+
+\section{Verification record}
+\label{app:audits}
+\emph{[Pending: the audit scripts actually used by statements in this paper
+(\texttt{code/audits/}), scoped to the checked statements and versions.]}

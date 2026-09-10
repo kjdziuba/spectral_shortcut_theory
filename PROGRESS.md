@@ -2180,3 +2180,38 @@ ViT sweep:
 - paper/REFOCUS_PLAN_2026-09-10.md: §4.4b (amendment + P6), §5 rewritten
   (3B primary, binary CancerEpi vs CAS proposed — author to confirm), §6a
   adopted items. paper/ICLR_SKELETON_v3.md written (refocused spec).
+
+## 2026-09-10 (23:15) — kappa pilot; Exp 3 readiness scan and two-regime design; v2 scaffold
+
+- Exp 2 kappa pilot (seed 0, M=32) at L*=0.30: kappa 1 / 1/16 / 1/256 ->
+  probe gain +0.028 / +0.107 / +0.223, h_u 0.079 / 0.177 / 0.475, reversal
+  0.128 / 0.129 / 0.152, context-random ~0.51. Spectral learning at matched
+  fit rises monotonically as the head slows; reversal does not respond in
+  this bracket (encoder exposes the cue; head still predicts from context;
+  theorem regime a(T_m) < m/2). Bracket extended downward for the reversal
+  outcome: kappa 1/4096, 1/32768 on seed 0 (REFOCUS_PLAN 4.4c), then frozen.
+- Exp 2 grid: relaunched 21:45 (3 processes); small-width runs go to 40k
+  steps and are launch-bound under contention (~5 min each); ETA overnight.
+- Exp 3 (real spectra): cache rebuilt with all four classes
+  (results/exp3/cache_fold0.npz: train 75,297 px / 79 cores; val 11,024 /
+  20; test 8,038 / 16). Readiness scan (results/exp3/readiness_scan.csv):
+  standardized inputs let a RANDOM K=12 encoder read CancerEpi vs CAS at
+  0.955 (oracle 0.969) and NormalStroma vs CancerEpi at 0.978 (oracle
+  0.989) because the contrasts lie along the top PCs (|cos(contrast,v1)|
+  0.50, 0.88); PCA whitening drops the random probe to chance (CancerEpi vs
+  CAS: 0.54 at K=12, oracle 0.944). Two-regime design adopted (REFOCUS_PLAN
+  §5): ready = standardized (theorem's a0 >= m/2 case: no failure
+  predicted); unready = whitened (a0 small: suppression + reversal-risk
+  excess predicted). Trainer code/experiments/exp3_train.py; calibration3:
+  ready gamma 46.7 tau 1.49 (centre oracle 0.969, val 0.959; context oracle
+  0.969; random-encoder centre 0.94/0.97/0.95); unready gamma 30 tau 1.74
+  (centre oracle 0.948, val 0.884; context 0.948; random-encoder centre
+  0.48/0.51/0.60, patch 0.95).
+- v2 paper: main_iclr_v2.tex + sections_iclr_v2/{02_model (Astra's
+  definition-of-failure verbatim), 03_theorem (Astra's thm:serial verbatim
+  + proof sketch + interpretation + numerical check), 06_limitations
+  (scope paragraphs), appendix.tex (A proofs = v1 serial section copied
+  with the dropped-bound corollary removed; B toy tables; C/D pending; E =
+  v1 production details verbatim with preface; F pending)}. Fig 2
+  mechanism rendered (figures/fig2_mechanism.pdf; three panels incl.
+  Gaussian reversal sweep). First compile: 17 pp, 0 errors.

@@ -256,6 +256,23 @@ runs are re-run identically):
   readiness values are the recorded 0.647/0.653/0.608 (spectral) vs
   0.910/0.914/0.905 (context), not "≈ 0.93".
 
+### 4.4c κ pilot outcome and bracket extension (seed 0, M = 32; recorded 23:10)
+
+At L* = 0.30: κ = 1 → step 1,671, probe gain +0.028, h_u 0.079, reversal
+0.128; κ = 1/16 → step 7,611, +0.107, 0.177, 0.129; κ = 1/256 → step
+22,708, +0.223, 0.475, 0.152 (context-random 0.51–0.52 throughout;
+spec-only 0.54 → 0.57 → 0.64). Spectral learning at matched fit increases
+monotonically as the head slows (P6's probe/h_u part), while reversal
+accuracy does not respond within this bracket: the encoder exposes the cue,
+the head still predicts from context — the theorem's regime a(T_m) < m/2,
+where reversal flips only once the spectral coefficient carries half the
+margin, i.e. κMv₀² < m/(m−2a₀). The protocol's extension rule (extend
+downward until the intervention reaches the regime of interest) is
+therefore applied for the REVERSAL outcome: κ ∈ {1/4096, 1/32768} added on
+seed 0 (runs may not reach L* within 40,000 steps; reported as such). The
+bracket is then frozen for seeds 1, 2. κ is not chosen by held-out
+reversal accuracy; the extension is fixed before those runs are read.
+
 ### 4.5 Known limitations to state
 Linear encoder (as in the theorem); one head family; full-batch GD; a
 constructed context cue; matched-fit stopping is the theorem's convention,
@@ -300,6 +317,32 @@ Decision (Astra refocus_01 §3, adopted): **3B primary, 3A secondary.**
   separately trained spectral-only comparator at the same threshold (nonzero
   on real spectra), not the theorem's zero/one dichotomy. Patient/seed
   variation is the replication unit.
+- **Readiness scan (run 2026-09-10 22:40, `results/exp3/readiness_scan.csv`,
+  fold-0 training cores split by core into fit/eval halves, three random
+  encoders):** with per-feature standardization, a random encoder already
+  exposes the epithelium-versus-stroma contrasts — CancerEpi vs CAS: oracle
+  0.969, random probe 0.73 (K=2), 0.80 (K=4), 0.955 (K=12), 0.968 (K=32);
+  NormalStroma vs CancerEpi: 0.989 vs 0.78/0.87/0.978/0.990 — because the
+  class contrast lies along the top principal directions (|cos(contrast,
+  v₁)| 0.50 and 0.88; top-10 PC fraction 1.00). With PCA whitening
+  (estimated on the training half) the random probe drops to chance while
+  the oracle stays high — CancerEpi vs CAS: oracle 0.944, random probe
+  0.50/0.49/0.54/0.59 for K = 2/4/12/32. NormalStroma vs CAS (standardized):
+  oracle 0.81, random probe 0.58–0.74. NormalEpi vs CancerEpi: oracle 0.76
+  (9k training pixels), weak task.
+  **Design decision (two regimes, same real spectra and labels, pair
+  CancerEpi vs CAS, K = 12):** *ready* = standardized inputs (random probe
+  0.955): the theorem's a₀ ≥ m/2 case — prediction: no suppression-driven
+  failure, the joint model's shifted risk does not exceed the spectral-only
+  comparator's at matched fit; *unready* = PCA-whitened inputs (random probe
+  0.54): the a₀ small case — prediction: suppression at matched fit,
+  reversal-risk excess over the comparator, modulated by the whole-head rate
+  κ. The constructed cue rides on the first principal coordinate in both
+  regimes (γ = 3√λ₁ standardized; γ = 30 in whitened units), with τ
+  calibrated per regime to match the centre-only oracle. Whitening is a
+  standard preprocessing choice; the pair is the clinically decisive one
+  used in the v1 anisotropy measurements. [Author to confirm the binary
+  pair; Astra to check the two-regime logic.]
 - **3A (secondary, if resources permit; result retained whatever it shows).**
   Astra's sentence: "We construct a contextual-shift benchmark from measured
   centre spectra and measured neighbour spectra, assigning neighbour classes

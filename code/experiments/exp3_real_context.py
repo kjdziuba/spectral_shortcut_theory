@@ -53,6 +53,8 @@ SPLITS = DATA_DIR / "splits_fold0.json"
 
 # ---- design constants (REFOCUS_PLAN §5) ----
 PAIR = {3: +1.0, 4: -1.0}          # CancerEpi -> +1, CAS -> -1   [author to confirm]
+CLASSES = {1: "NormalEpi", 2: "NormalStroma", 3: "CancerEpi", 4: "CAS"}
+CACHE_CLASSES = (1, 2, 3, 4)       # the cache holds all four classes; PAIR selects the task
 N_PER_CORE_CLASS = {"train": 600, "val": 300, "test": 300}
 S_FEAT = 942
 K = 12
@@ -79,7 +81,8 @@ def build_cache() -> None:
             z = np.load(f)
             y = z["y"]; mask = z["tissue_mask"].astype(bool)
             feats = None
-            for lab, sgn in PAIR.items():
+            n_core = 0
+            for lab in CACHE_CLASSES:
                 idx = np.argwhere((y == lab) & mask)
                 if len(idx) == 0:
                     continue
@@ -88,18 +91,84 @@ def build_cache() -> None:
                 if feats is None:
                     feats = np.concatenate([z["X_raw"], z["X_d1"], z["X_d2"]], axis=-1)  # (H, W, 942)
                 Xs.append(feats[sel[:, 0], sel[:, 1]].astype(np.float32))
-                ys.append(np.full(take, sgn, dtype=np.float32))
+                ys.append(np.full(take, lab, dtype=np.int16))          # ORIGINAL label 1..4
                 cores.append(np.full(take, cid))
                 sides.append(np.full(take, side))
-            print(f"[cache] {side} {cid}: {sum(len(a) for a in ys[-len(PAIR):]) if feats is not None else 0} px "
-                  f"({time.time() - t0:.0f}s)", flush=True)
-    X = np.concatenate(Xs); y = np.concatenate(ys); core = np.concatenate(cores); side = np.concatenate(sides)
+                n_core += take
+            print(f"[cache] {side} {cid}: {n_core} px ({time.time() - t0:.0f}s)", flush=True)
+    X = np.concatenate(Xs); lab = np.concatenate(ys); core = np.concatenate(cores); side = np.concatenate(sides)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(CACHE, X=X, y=y, core=core, side=side)
+    np.savez_compressed(CACHE, X=X, label=lab, core=core, side=side)
     for s in ("train", "val", "test"):
         m = side == s
-        print(f"[cache] {s}: {m.sum()} px, +1: {(y[m] > 0).sum()}, -1: {(y[m] < 0).sum()}, cores {len(np.unique(core[m]))}")
+        counts = {CLASSES[c]: int((lab[m] == c).sum()) for c in CACHE_CLASSES}
+        print(f"[cache] {s}: {m.sum()} px, {counts}, cores {len(np.unique(core[m]))}")
     print(f"[cache] wrote {CACHE} ({X.nbytes / 1e9:.2f} GB raw)")
+
+
+def load_pair(pair: dict):
+    """Cache -> (X float32 (n, 942), y in {-1,+1}, core, side) restricted to `pair`."""
+    z = np.load(CACHE, allow_pickle=True)
+    lab = z["label"]
+    keep = np.isin(lab, list(pair.keys()))
+    y = np.array([pair[int(l)] for l in lab[keep]], dtype=np.float32)
+    return z["X"][keep], y, z["core"][keep], z["side"][keep]
+
+
+def readiness_scan(device: torch.device) -> None:
+    """For several class pairs, bottleneck sizes K and preprocessing choices:
+    centre-only oracle (ridge LDA, 942-d), random-encoder centre probe (K-d), and
+    the alignment of the class contrast with the top principal directions.
+    Fit on training half A (cores), evaluate on half B. Writes results/exp3/readiness_scan.csv."""
+    import pandas as pd
+    pairs = {"CancerEpi-vs-CAS": {3: +1.0, 4: -1.0}, "NormalStroma-vs-CAS": {2: +1.0, 4: -1.0},
+             "NormalEpi-vs-CancerEpi": {1: +1.0, 3: -1.0}, "NormalStroma-vs-CancerEpi": {2: +1.0, 3: -1.0}}
+    rows = []
+    for pname, pair in pairs.items():
+        X, y, core, side = load_pair(pair)
+        tr = side == "train"
+        Xt = torch.from_numpy(X[tr]); yt = torch.from_numpy(y[tr])
+        mean = Xt.mean(0); std = Xt.std(0) + 1e-8
+        Xs = ((Xt - mean) / std).to(device); ys_ = yt.to(device)
+        tr_cores = np.unique(core[tr]); rng = np.random.default_rng(CAL_SEED); rng.shuffle(tr_cores)
+        half_a = set(tr_cores[: len(tr_cores) // 2])
+        in_a = torch.from_numpy(np.array([c in half_a for c in core[tr]])).to(device)
+        # PCA on half A (standardized) for whitening and contrast alignment
+        A = Xs[in_a].double(); A = A - A.mean(0)
+        U, Sv, Vh = torch.linalg.svd(A, full_matrices=False)
+        lam = (Sv ** 2) / (A.shape[0] - 1)
+        contrast = (Xs[in_a][ys_[in_a] > 0].mean(0) - Xs[in_a][ys_[in_a] < 0].mean(0)).double()
+        cos1 = float(abs(contrast @ Vh[0]) / contrast.norm())
+        top10 = float(((Vh[:10] @ contrast) ** 2).sum().sqrt() / contrast.norm())
+        for prep in ("standardized", "whitened"):
+            if prep == "standardized":
+                F = Xs.double()
+            else:
+                # PCA whitening on half-A statistics (ridge on small eigenvalues)
+                Fc = Xs.double() - A.mean(0) * 0 - Xs[in_a].double().mean(0)
+                scale = 1.0 / torch.sqrt(lam + 1e-3 * lam.mean())
+                F = (Fc @ Vh.T) * scale
+            Fa, ya = F[in_a], ys_[in_a]; Fb, yb = F[~in_a], ys_[~in_a]
+            w, thr = lda_fit(Fa, ya, RIDGE)
+            acc_oracle = lda_eval(w, thr, Fb, yb)
+            for Kb in (2, 4, 12, 32):
+                accs = []
+                for s in (0, 1, 2):
+                    torch.manual_seed(s)
+                    Wenc = torch.randn(Kb, F.shape[1], device=device, dtype=torch.float64) / math.sqrt(F.shape[1])
+                    wc, tc = lda_fit(Fa @ Wenc.T, ya, 1e-4)
+                    accs.append(lda_eval(wc, tc, Fb @ Wenc.T, yb))
+                rows.append(dict(pair=pname, n_train=int(tr.sum()), prep=prep, K=Kb, oracle=acc_oracle,
+                                 random_probe_mean=float(np.mean(accs)), random_probe_min=float(np.min(accs)),
+                                 random_probe_max=float(np.max(accs)), cos_contrast_v1=cos1,
+                                 contrast_frac_top10=top10, var_frac_v1=float(lam[0] / lam.sum())))
+                print(f"[scan] {pname:28s} {prep:12s} K={Kb:3d}: oracle {acc_oracle:.3f}  random probe "
+                      f"{np.mean(accs):.3f} [{np.min(accs):.3f}, {np.max(accs):.3f}]  |cos(contrast,v1)| {cos1:.2f}  "
+                      f"top10 frac {top10:.2f}", flush=True)
+    df = pd.DataFrame(rows)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    df.to_csv(OUT_DIR / "readiness_scan.csv", index=False)
+    print(f"[scan] wrote {OUT_DIR / 'readiness_scan.csv'}")
 
 
 # ------------------------------------------------------------------ helpers ---
@@ -128,8 +197,8 @@ def context_features(donors_v1: torch.Tensor, y_code: torch.Tensor, gamma: float
 
 
 def calibrate(device: torch.device) -> dict:
-    z = np.load(CACHE, allow_pickle=True)
-    X = torch.from_numpy(z["X"]); y = torch.from_numpy(z["y"]); side = z["side"]; core = z["core"]
+    Xn, yn, core, side = load_pair(PAIR)
+    X = torch.from_numpy(Xn); y = torch.from_numpy(yn)
     tr = torch.from_numpy(side == "train")
     Xtr = X[tr]
     mean = Xtr.mean(0); std = Xtr.std(0) + 1e-8
@@ -251,11 +320,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--build-cache", action="store_true")
     ap.add_argument("--calibrate", action="store_true")
+    ap.add_argument("--readiness-scan", action="store_true")
     args = ap.parse_args()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if args.build_cache:
         build_cache()
+    if args.readiness_scan:
+        readiness_scan(device)
     if args.calibrate:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         calibrate(device)
 
 

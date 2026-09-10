@@ -1,0 +1,126 @@
+\subsection{Solvable serial instance: numerical verification}
+\label{app:toy}
+
+\paragraph{Zero-context instance.} Table~\ref{tab:app_toy} verifies the closed
+forms and the bounds of the solvable serial cross-entropy instance at
+$a_0 = 0$, $v_0 = 1$ and margin $m = \log 19 = 2.944$, from
+\texttt{results/toy\_serial\_ce.csv}. The solver column is a stiff ODE
+integration of the full $(2+M)$-dimensional state; a separate explicit-Euler
+gradient-descent path, run at four step sizes, has observed convergence order
+$1.0000004$ and agrees with an independent numpy analytic-gradient
+implementation to $0$ relative error.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Solvable serial instance ($a_0 = 0$, $v_0 = 1$, $m = \log 19$):
+closed form against ODE solver, from \texttt{results/toy\_serial\_ce.csv}. The
+last block is the two-timescale displacement bound against the realised
+encoder displacement. Every relative discrepancy between closed form and
+solver in this table is at most $1.2\times10^{-13}$.}
+\label{tab:app_toy}
+\begin{tabular}{lrrrr}
+\toprule
+Quantity & $M = 16$ & $M = 64$ & $M = 256$ & $M = 1024$ \\
+\midrule
+$\lambda_\thetap(0)$ & $0.25$ & $0.25$ & $0.25$ & $0.25$ \\
+$\lambda_\phip(0)$ & $4.0$ & $16.0$ & $64.0$ & $256.0$ \\
+$\Dcurv(0)$ & $16.0$ & $64.0$ & $256.0$ & $1024.0$ \\
+\midrule
+$a(T_m)$ & $0.142325$ & $0.042094$ & $0.011216$ & $0.002857$ \\
+suppression $m/a_M$ & $20.688$ & $69.949$ & $262.53$ & $1030.7$ \\
+$M\,a_M$ (limit $m$) & $2.2772$ & $2.6940$ & $2.8712$ & $2.9253$ \\
+$T_m$ & $0.90784$ & $0.28680$ & $0.078763$ & $0.020252$ \\
+$T_m$ lower bound $\Psi(m)/(M{+}1{+}2m^2)$ & $0.60992$ & $0.25437$ & $0.076345$ & $0.020094$ \\
+$T_m$ upper bound $\Psi(m)/(M{+}1)$ & $1.2320$ & $0.32222$ & $0.081496$ & $0.020434$ \\
+\midrule
+$\sup_t\,(q_J - q_F)$ & $0.38232$ & $0.13813$ & $0.039802$ & $0.010376$ \\
+uniform gap bound & $11.297$ & $2.9547$ & $0.74729$ & $0.18737$ \\
+$(M{+}1)\times$ gap & $6.4994$ & $8.9787$ & $10.229$ & $10.635$ \\
+\midrule
+$\norm{W(T_m) - W(0)}_2$ & $0.219021$ & $0.071050$ & $0.019658$ & $0.005064$ \\
+displacement bound & $1.370601$ & $0.358465$ & $0.090662$ & $0.022732$ \\
+bound\,/\,displacement & $6.258$ & $5.045$ & $4.612$ & $4.489$ \\
+\midrule
+normalized-readout control: $a(T_m)$ & $1.026947$ & $1.026947$ & $1.026947$ & $1.026947$ \\
+normalized-readout control: $\norm{W(T_m){-}W(0)}$ & $1.177117$ & $1.177117$ & $1.177117$ & $1.177117$ \\
+\midrule
+residual envelope excess on $[0, 20T_m]$ & $0$ & $0$ & $0$ & $0$ \\
+readout spread $\max_j\beta_j - \min_j\beta_j$ at $T_m$ & $0$ & $0$ & $1.4\cdot10^{-17}$ & $0$ \\
+invariant $q = Q_M(a)$, max rel.\ error & $2.0\cdot10^{-11}$ & $6.7\cdot10^{-13}$ & $1.5\cdot10^{-13}$ & $6.8\cdot10^{-14}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The bound stays within $4.5$ to $6.3$ times the realised displacement across
+this width range while both fall by more than a factor of $40$. The
+normalized-readout control, in which the readout is $M^{-1/2}Uh$ with $O(1)$
+entries trained at unit rate, removes the width dependence exactly: the
+encoder's movement is the $M = 1$ value at every width, to $1.7\times10^{-14}$
+relative error. The eigenvalue constants $\lambda_\thetap(0) = 1/4$ and
+$\lambda_\phip(0) = M/4$ hold for the mean-over-examples binary cross-entropy
+with a unit-scaled scalar logit; summing instead of averaging, or rescaling the
+logit, multiplies both blocks equally and leaves $\Dcurv(0) = M$ unchanged.
+
+\paragraph{Isotropic extension.} Table~\ref{tab:app_toy_iso} collects the
+verification of the general-initialization version, in which $a(0) = a_0$,
+$v(0) = v_0 \neq 0$ and the readouts start unequal but sum to exactly zero.
+The grid is $M \in \{1, 4, 16, 64, 256, 1024, 4096\}$, $a_0 \in \{-1.5, -0.3,
+0, 0.4, 1.7\}$, $v_0 \in \{-1.3, -0.2, 0.05, 0.2, 1.0\}$ and $m \in \{2.0,
+2.9, 4.0\}$: $525$ non-trivial cases plus $54$ immediate-stop cases with
+$a_0 \geq m$, integrated with DOP853 at \texttt{rtol}~$10^{-10}$ and
+\texttt{atol}~$10^{-12}$ with a terminal event at $q = m$.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Isotropic serial instance: verification summary and worst-case bound
+slacks over the whole grid, from
+\texttt{results/toy\_serial\_ce\_isotropic\_REPORT.md} \S1--\S2. Slacks are
+$\text{bound} - \text{value}$ for upper bounds and $\text{value} -
+\text{bound}$ for lower bounds; a negative entry would be a violation, and
+there are none. $\Delta = m - a_0$.}
+\label{tab:app_toy_iso}
+\begin{tabular}{lr}
+\toprule
+Quantity & Value \\
+\midrule
+Max closed-form vs ODE relative error over $u$, $v(T_m)$, $b(T_m)$, $T_m$ (525 cases) & $1.260\times10^{-11}$ \\
+Max relative error of the conserved quantity along the whole trajectory & $1.518\times10^{-10}$ \\
+Max root accuracy $|Q_{\mathrm{iso}}(u_M) - m|$ & $3.553\times10^{-15}$ \\
+Max $|\sum_j \beta_j(0)|$ (zero-sum initialization is bitwise exact) & $0$ \\
+Max spread of $\beta_j(T_m) - \beta_j(0)$ & $7.772\times10^{-16}$ \\
+Max frozen-comparator ODE vs closed-form relative error & $5.993\times10^{-11}$ \\
+Max $M^{-1/2}$-readout control vs its $M = 1$ value & $1.335\times10^{-12}$ \\
+Bound violations, all cases and all bounds & $0$ \\
+\midrule
+Min slack, $u_M \le \Delta/(1 + Mv_0^2)$ & $2.221\times10^{-10}$ \\
+Min slack, $u_M > 0$ & $4.333\times10^{-5}$ \\
+Min slack, $|v(T_m) - v_0| \le \Delta^2/(2M|v_0|^3)$ & $1.493\times10^{-9}$ \\
+Min slack, encoder displacement bound & $3.918\times10^{-10}$ \\
+Min slack, $T_m \le \Psi_{a_0}(m)/(1 + Mv_0^2)$ & $1.748\times10^{-9}$ \\
+Min slack, $T_m \ge \Psi_{a_0}(m)/(1 + Mv_0^2 + 2\Delta^2/v_0^2)$ & $3.175\times10^{-9}$ \\
+Min slack, $q_J(t) \ge q_F(t)$ & $0$ \\
+Min slack, $\sup_t (q_J - q_F) \le C_0/(p_0 M v_0^2)$ & $1.495\times10^{-4}$ \\
+\midrule
+Reversal error at $\sigma = 1$, $m = 2$, $M = 64\,/\,1024\,/\,16384$ & $0.8207\,/\,0.8380\,/\,0.8397$ \\
+Monte-Carlo limit $\Phi(m/2\sigma)$ on the same $4000$ draws & $0.8413$ \\
+Draws disagreeing with the limit that satisfy $Mv_0^2 > m/(m - 2a_0)$ & $0$ of $48000$ \\
+Spectral-only comparator reversal error, every case & $0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The update fraction $(a(T_m) - a_0)/(m - a_0)$ falls towards zero in $M$ at
+every $(a_0, v_0)$ on the grid --- for instance $0.288$, $0.0423$, $0.000964$
+at $M = 1, 16, 1024$ with $a_0 = -1.5$, $v_0 = 1$, $m = 2.9$ --- while
+$a(T_m)/m$ and $a(T_m)/a_0$ converge to $a_0/m$ and to $1$ instead, so those
+two ratios are not the quantities that vanish. Under the $M^{-1/2}$ readout
+the suppression is $0.336399$ at every width, against $0.336$, $0.0472$ and
+$0.000969$ for the unnormalized readout at $M = 1$, $16$ and $1024$. Every
+Monte-Carlo draw that falls short of the reversal limit fails the sufficient
+finite-width condition, either because $|v_0|$ is small or because $a_0$ sits
+just below $m/2$, where the threshold diverges.
+
+
