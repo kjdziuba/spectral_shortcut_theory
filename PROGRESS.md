@@ -2244,3 +2244,26 @@ ViT sweep:
 - v2 draft: abstract/intro provisional, Sec 2-3 done, Sec 4 design, Sec 6,
   appendices A/B/C(design)/D(design)/E; Fig 1 schematic, Fig 2 mechanism,
   Fig 3/4 scripts (partial data). 23 pp, 0 errors.
+
+## 2026-09-11 (02:30) — Exp 2 registered verdicts; Sec 4 written; kappa confirmation seeds launched
+
+- Exp 2 grid 85/86 (mup M=2048 s2 pending). Registered verdicts at L*
+  (REFOCUS_PLAN 4.4d): P1 NOT MET (saturated regime; monotone in 2/3 seeds,
+  negligible magnitude), P2 NOT MET as stated, P3 literal cutoff NOT MET /
+  substance HOLDS (probe 0.89-0.94 with cause removed), P4 half (spectral
+  learning yes, reversal opposite sign, negligible), P5 MET, P6 probe part
+  MET on seed 0 / reversal part NOT MET. Secondary 0.15: width trend in
+  probe gain every seed; mup less suppressed at large M.
+- headlr seeds 1-2 (kappa 1, 1/16, 1/256) launched 02:15 (protocol:
+  confirm the frozen bracket on fresh seeds).
+- paper/sections_iclr_v2/04_synthetic.tex results written (suppression;
+  verdicts as registered; where width/speed dependence appears; reliance
+  does not follow speed; recoverability; amendments). Appendix C tables
+  generated (make_tables_exp2.py -> appendix_exp2_tables.tex). 26 pp, 0
+  errors.
+- Exp 3 unready (18/30): kappa=1/256 at M=32 still fits in 140 steps with
+  NO spectral learning (probe 0.584 = init): with the whitened context cue
+  at amplitude 30 the ENCODER learns the context cue itself (large-
+  amplitude input directions dominate its gradient), so the head's rate is
+  not the decisive knob there; amplitude ratio is. To be written up in
+  Sec 5 once ctxfree/frozen land.

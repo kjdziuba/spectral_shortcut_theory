@@ -273,6 +273,37 @@ seed 0 (runs may not reach L* within 40,000 steps; reported as such). The
 bracket is then frozen for seeds 1, 2. κ is not chosen by held-out
 reversal accuracy; the extension is fixed before those runs are read.
 
+### 4.4d Registered verdicts at L* = 0.30 (Exp 2 grid, 85/86 runs; recorded 2026-09-11 02:30)
+
+- **P1 (width, sp): NOT MET.** ρ(a_u, M) = −0.54 / −1.00 / −0.96 and
+  ρ(rev, M) = −0.64 / −0.96 / −0.82 by seed; seed 0 misses the −0.8
+  threshold and the magnitudes are negligible (probe gain 0.04 at M = 2 →
+  0.002 at M = 2048; reversal 0.134 → 0.117): the threshold sits in the
+  saturated regime at every width including M = 2.
+- **P2 (normalized readout flat): NOT MET as stated** (ρ(a_u, M) = +0.25 /
+  −0.94 / −0.89); second clause a_u(2048) mup > sp: seed 0 yes (0.0059 vs
+  0.0045), seeds 1–2 pending.
+- **P3 (ctxfree): literal cutoff NOT MET** (a_u 0.15/0.13/0.09/0.06 < 0.25;
+  ρ = −1.0 in every seed) **while its substance HOLDS** (probe 0.89–0.94,
+  reversal 0.88–0.90 at every width; the energy fraction spreads over more
+  head directions with M — Astra's warning in refocus_01 §2.3).
+- **P4 (readout multiplier): HALF MET** — a_u and probe decrease with the
+  multiplier in every seed (ρ = −1.0); reversal accuracy *increases* by
+  0.02 (ρ = +1.0), the opposite sign, negligible magnitude.
+- **P5 (frozen): MET** (reversal 0.12–0.14 at every width).
+- **P6 (κ, amendment 4.4b): probe/h_u part MET on seed 0** (probe gain
+  0.028/0.106/0.223; h_u 0.079/0.177/0.475; ρ = −1.0); **reversal part NOT
+  MET** (0.128/0.129/0.152; extension 1/4096, 1/32768 did not reach L*,
+  final reversal 0.184/0.208 with h_u 0.69/0.70). Seeds 1–2 running.
+- Secondary (0.15): width trend in probe gain in every seed (ρ = −0.86 /
+  −0.96 / −0.86); mup less suppressed at large M (0.104 vs 0.032 at 2048);
+  reversal flat 0.06–0.08. Reported as labelled secondary analysis.
+- Reading (for the paper and for Astra): the contextual pathway's speed
+  relative to the encoder controls how much spectral structure the encoder
+  learns before the fit; reliance at matched fit is governed by the head's
+  gain for the large-amplitude cue and is removed only by an uninformative
+  context; the probe measures recoverability by readout retraining.
+
 ### 4.5 Known limitations to state
 Linear encoder (as in the theorem); one head family; full-batch GD; a
 constructed context cue; matched-fit stopping is the theorem's convention,
