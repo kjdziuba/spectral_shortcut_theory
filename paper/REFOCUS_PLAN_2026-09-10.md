@@ -292,10 +292,12 @@ reversal accuracy; the extension is fixed before those runs are read.
   multiplier in every seed (ρ = −1.0); reversal accuracy *increases* by
   0.02 (ρ = +1.0), the opposite sign, negligible magnitude.
 - **P5 (frozen): MET** (reversal 0.12–0.14 at every width).
-- **P6 (κ, amendment 4.4b): probe/h_u part MET on seed 0** (probe gain
-  0.028/0.106/0.223; h_u 0.079/0.177/0.475; ρ = −1.0); **reversal part NOT
-  MET** (0.128/0.129/0.152; extension 1/4096, 1/32768 did not reach L*,
-  final reversal 0.184/0.208 with h_u 0.69/0.70). Seeds 1–2 running.
+- **P6 (κ, amendment 4.4b): probe/h_u part MET in every seed** (probe gain
+  means 0.022/0.087/0.210 for κ = 1, 1/16, 1/256; h_u 0.067/0.141/0.406;
+  ρ(probe gain, κ) = −1.0 in seeds 0, 1, 2); **reversal part NOT MET**
+  (means 0.121/0.123/0.143; ρ = −1.0, −1.0, −0.5; extension 1/4096,
+  1/32768 on seed 0 did not reach L*, final reversal 0.184/0.208 with h_u
+  0.69/0.70).
 - Secondary (0.15): width trend in probe gain in every seed (ρ = −0.86 /
   −0.96 / −0.86); mup less suppressed at large M (0.104 vs 0.032 at 2048);
   reversal flat 0.06–0.08. Reported as labelled secondary analysis.

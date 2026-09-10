@@ -2267,3 +2267,12 @@ ViT sweep:
   amplitude input directions dominate its gradient), so the head's rate is
   not the decisive knob there; amplitude ratio is. To be written up in
   Sec 5 once ctxfree/frozen land.
+
+## 2026-09-11 (03:40) — kappa confirmed on seeds 1-2; Exp 3 nearly done; unready10 running
+
+- Exp 2 headlr seeds 1-2 done: probe gain means 0.022/0.087/0.210 (kappa
+  1, 1/16, 1/256), h_u 0.067/0.141/0.406, monotone in every seed; reversal
+  0.121/0.123/0.143. P6 probe part MET (3/3 seeds), reversal part NOT MET.
+  Sec 4 text updated to three-seed means; Fig 3 + appendix C regenerated.
+- Exp 3: unready comparators 26/30; unready10 (gamma=10) 2/21 (first run
+  fits at step 528 vs ~100 at gamma=30; probe gain +0.02 at kappa=1).
