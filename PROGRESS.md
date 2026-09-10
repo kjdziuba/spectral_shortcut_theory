@@ -1953,3 +1953,22 @@ ViT sweep:
 - Committed 25bbfab (run CSVs/configs; best.pt/final.pt gitignored).
   Monitor stopped. Next: Section 8.4 rewrite around the matched table +
   pre-registered verdicts (drafting now; author review gate).
+
+## 2026-09-10 (09:30) — Section 8 complete for author review
+
+- 8.4/8.5 rewritten (83023d1) around the matched lane: original protocol
+  kept as pre-registered-but-confounded (three asymmetries named), BN
+  recalibration paragraph, matched table tab:e3c_matched (7 arms x 3
+  seeds, both metrics, drift), paired verdicts exactly as committed (P1
+  not supported; joint-vs-frozen no resolvable difference; LR ordering not
+  observed; cosine no help), disclosures (pretrain val-selection, wd 0.01
+  in pretraining, augmentation on, no test set, best-val exploratory).
+  Checker recomputed all 21 matched cells + 12 intervals (exact) and fixed
+  7 small numbers (clip 0.33-0.57; update ratio 1.36; SGD share 0.26;
+  BN-recal |d|<=0.006; proxy 2e4-2e5; envelope violations 19-28%;
+  EGR 0.6-0.8 -> 3-5). 47 pp, compiles clean.
+- Fig-8A panel (b) now three columns (mean / full contrast / orthogonal),
+  retitled 'directional curvature anisotropy' (8fe0a83, 8263bf8).
+- Fig-8C (matched arms, both metrics) being built (wf_47d8ee02).
+- Known follow-up: 09_discussion 9.1 still says 'stays near initialization'
+  — must become regime/protocol-resolved (P3; do with the 9-page rewrite).
