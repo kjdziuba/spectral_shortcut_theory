@@ -1,0 +1,100 @@
+\begin{table}[htbp]\centering\scriptsize
+\caption{Experiment 2 at the pre-registered threshold $L^\ast=0.30$: mean$\pm$sd over seeds (number of seeds). Probe gain is the discriminant accuracy on the encoder output minus its initial value (0.647, 0.653, 0.608 for seeds 0--2); $h_u=\|P_{\mathrm{row}(W)}u\|^2$ (0.055 at initialization).}\label{tab:exp2_star}
+\begin{tabular}{llccccc}\toprule
+arm & $M$ & probe gain & $h_u$ & reversed acc. & context-random acc. & spectral-only acc. \\ \midrule
+\texttt{sp} & 2 & 0.042$\pm$0.028 (3) & 0.086$\pm$0.037 (3) & 0.134$\pm$0.006 (3) & 0.503$\pm$0.005 (3) & 0.525$\pm$0.016 (3) \\
+\texttt{sp} & 4 & 0.021$\pm$0.010 (3) & 0.065$\pm$0.028 (3) & 0.125$\pm$0.008 (3) & 0.508$\pm$0.007 (3) & 0.525$\pm$0.021 (3) \\
+\texttt{sp} & 8 & 0.026$\pm$0.016 (3) & 0.067$\pm$0.021 (3) & 0.124$\pm$0.002 (3) & 0.507$\pm$0.005 (3) & 0.524$\pm$0.017 (3) \\
+\texttt{sp} & 32 & 0.022$\pm$0.007 (3) & 0.067$\pm$0.027 (3) & 0.121$\pm$0.008 (3) & 0.508$\pm$0.008 (3) & 0.531$\pm$0.022 (3) \\
+\texttt{sp} & 128 & 0.009$\pm$0.006 (3) & 0.055$\pm$0.022 (3) & 0.117$\pm$0.012 (3) & 0.507$\pm$0.008 (3) & 0.524$\pm$0.019 (3) \\
+\texttt{sp} & 512 & 0.005$\pm$0.001 (3) & 0.051$\pm$0.018 (3) & 0.115$\pm$0.007 (3) & 0.508$\pm$0.006 (3) & 0.525$\pm$0.022 (3) \\
+\texttt{sp} & 2048 & 0.002$\pm$0.000 (3) & 0.049$\pm$0.017 (3) & 0.117$\pm$0.005 (3) & 0.507$\pm$0.006 (3) & 0.522$\pm$0.017 (3) \\
+\midrule
+\texttt{mup} & 2 & 0.054$\pm$0.034 (3) & 0.098$\pm$0.042 (3) & 0.134$\pm$0.006 (3) & 0.504$\pm$0.004 (3) & 0.528$\pm$0.015 (3) \\
+\texttt{mup} & 4 & 0.036$\pm$0.019 (3) & 0.079$\pm$0.037 (3) & 0.126$\pm$0.011 (3) & 0.507$\pm$0.007 (3) & 0.530$\pm$0.026 (3) \\
+\texttt{mup} & 8 & 0.039$\pm$0.023 (3) & 0.080$\pm$0.034 (3) & 0.120$\pm$0.002 (3) & 0.506$\pm$0.006 (3) & 0.530$\pm$0.024 (3) \\
+\texttt{mup} & 32 & 0.044$\pm$0.014 (3) & 0.088$\pm$0.037 (3) & 0.115$\pm$0.009 (3) & 0.507$\pm$0.007 (3) & 0.539$\pm$0.026 (3) \\
+\texttt{mup} & 128 & 0.026$\pm$0.016 (3) & 0.070$\pm$0.031 (3) & 0.108$\pm$0.012 (3) & 0.505$\pm$0.008 (3) & 0.526$\pm$0.018 (3) \\
+\texttt{mup} & 512 & 0.026$\pm$0.019 (3) & 0.071$\pm$0.034 (3) & 0.112$\pm$0.008 (3) & 0.505$\pm$0.007 (3) & 0.526$\pm$0.022 (3) \\
+\texttt{mup} & 2048 & 0.024 (1) & 0.076 (1) & 0.110 (1) & 0.509 (1) & 0.524 (1) \\
+\midrule
+\texttt{ctxfree} & 2 & 0.296$\pm$0.019 (3) & 0.863$\pm$0.048 (3) & 0.877$\pm$0.002 (3) & 0.876$\pm$0.003 (3) & 0.877$\pm$0.002 (3) \\
+\texttt{ctxfree} & 8 & 0.281$\pm$0.022 (3) & 0.741$\pm$0.014 (3) & 0.893$\pm$0.001 (3) & 0.893$\pm$0.001 (3) & 0.899$\pm$0.002 (3) \\
+\texttt{ctxfree} & 128 & 0.268$\pm$0.023 (3) & 0.650$\pm$0.014 (3) & 0.896$\pm$0.001 (3) & 0.895$\pm$0.002 (3) & 0.903$\pm$0.004 (3) \\
+\texttt{ctxfree} & 512 & 0.253$\pm$0.025 (3) & 0.564$\pm$0.005 (3) & 0.886$\pm$0.002 (3) & 0.887$\pm$0.004 (3) & 0.891$\pm$0.004 (3) \\
+\midrule
+\texttt{frozen} & 2 & 0.000$\pm$0.000 (3) & 0.048$\pm$0.017 (3) & 0.139$\pm$0.009 (3) & 0.508$\pm$0.006 (3) & 0.521$\pm$0.018 (3) \\
+\texttt{frozen} & 8 & 0.000$\pm$0.000 (3) & 0.048$\pm$0.017 (3) & 0.134$\pm$0.006 (3) & 0.511$\pm$0.007 (3) & 0.524$\pm$0.019 (3) \\
+\texttt{frozen} & 128 & 0.000$\pm$0.000 (3) & 0.048$\pm$0.017 (3) & 0.127$\pm$0.008 (3) & 0.508$\pm$0.008 (3) & 0.524$\pm$0.021 (3) \\
+\texttt{frozen} & 512 & 0.000$\pm$0.000 (3) & 0.048$\pm$0.017 (3) & 0.120$\pm$0.006 (3) & 0.508$\pm$0.008 (3) & 0.526$\pm$0.019 (3) \\
+\bottomrule
+\end{tabular}\end{table}
+\begin{table}[htbp]\centering\scriptsize
+\caption{Experiment 2 at the secondary threshold 0.15 (labelled; not pre-registered): mean$\pm$sd over seeds that reached it.}\label{tab:exp2_015}
+\begin{tabular}{llcccc}\toprule
+arm & $M$ & probe gain & $h_u$ & reversed acc. & context-random acc. \\ \midrule
+\texttt{sp} & 2 & 0.219$\pm$0.039 (3) & 0.462$\pm$0.232 (3) & 0.131$\pm$0.088 (3) & 0.543$\pm$0.046 (3) \\
+\texttt{sp} & 4 & 0.094$\pm$0.019 (3) & 0.149$\pm$0.056 (3) & 0.070$\pm$0.006 (3) & 0.506$\pm$0.007 (3) \\
+\texttt{sp} & 8 & 0.121$\pm$0.020 (3) & 0.184$\pm$0.046 (3) & 0.073$\pm$0.007 (3) & 0.508$\pm$0.008 (3) \\
+\texttt{sp} & 32 & 0.094$\pm$0.014 (3) & 0.147$\pm$0.051 (3) & 0.072$\pm$0.008 (3) & 0.509$\pm$0.009 (3) \\
+\texttt{sp} & 128 & 0.060$\pm$0.022 (3) & 0.106$\pm$0.052 (3) & 0.070$\pm$0.009 (3) & 0.507$\pm$0.009 (3) \\
+\texttt{sp} & 512 & 0.041$\pm$0.012 (3) & 0.084$\pm$0.036 (3) & 0.071$\pm$0.011 (3) & 0.508$\pm$0.009 (3) \\
+\texttt{sp} & 2048 & 0.032$\pm$0.005 (3) & 0.073$\pm$0.026 (3) & 0.076$\pm$0.010 (3) & 0.509$\pm$0.010 (3) \\
+\midrule
+\texttt{mup} & 2 & 0.230$\pm$0.032 (3) & 0.499$\pm$0.216 (3) & 0.136$\pm$0.093 (3) & 0.546$\pm$0.051 (3) \\
+\texttt{mup} & 4 & 0.142$\pm$0.020 (3) & 0.233$\pm$0.079 (3) & 0.074$\pm$0.008 (3) & 0.508$\pm$0.006 (3) \\
+\texttt{mup} & 8 & 0.148$\pm$0.030 (3) & 0.241$\pm$0.090 (3) & 0.073$\pm$0.009 (3) & 0.509$\pm$0.008 (3) \\
+\texttt{mup} & 32 & 0.134$\pm$0.015 (3) & 0.213$\pm$0.068 (3) & 0.070$\pm$0.008 (3) & 0.507$\pm$0.008 (3) \\
+\texttt{mup} & 128 & 0.088$\pm$0.033 (3) & 0.146$\pm$0.070 (3) & 0.064$\pm$0.006 (3) & 0.505$\pm$0.008 (3) \\
+\texttt{mup} & 512 & 0.108$\pm$0.041 (3) & 0.178$\pm$0.104 (3) & 0.067$\pm$0.009 (3) & 0.506$\pm$0.007 (3) \\
+\texttt{mup} & 2048 & 0.104 (1) & 0.174 (1) & 0.068 (1) & 0.512 (1) \\
+\midrule
+\texttt{ctxfree} & 2 & 0.317$\pm$0.024 (2) & 0.990$\pm$0.000 (2) & 0.940$\pm$0.006 (2) & 0.940$\pm$0.007 (2) \\
+\texttt{ctxfree} & 8 & 0.308$\pm$0.023 (3) & 0.977$\pm$0.005 (3) & 0.937$\pm$0.002 (3) & 0.938$\pm$0.002 (3) \\
+\texttt{ctxfree} & 128 & 0.304$\pm$0.023 (3) & 0.937$\pm$0.002 (3) & 0.941$\pm$0.000 (3) & 0.941$\pm$0.000 (3) \\
+\texttt{ctxfree} & 512 & 0.302$\pm$0.023 (3) & 0.913$\pm$0.004 (3) & 0.940$\pm$0.001 (3) & 0.940$\pm$0.000 (3) \\
+\bottomrule
+\end{tabular}\end{table}
+\begin{table}[htbp]\centering\scriptsize
+\caption{Experiment 2 at the secondary threshold 0.1 (labelled; not pre-registered): mean$\pm$sd over seeds that reached it.}\label{tab:exp2_010}
+\begin{tabular}{llcccc}\toprule
+arm & $M$ & probe gain & $h_u$ & reversed acc. & context-random acc. \\ \midrule
+\texttt{sp} & 2 & 0.274$\pm$0.021 (2) & 0.629$\pm$0.021 (2) & 0.137$\pm$0.006 (2) & 0.555$\pm$0.008 (2) \\
+\texttt{sp} & 4 & 0.227$\pm$0.006 (3) & 0.462$\pm$0.055 (3) & 0.089$\pm$0.009 (3) & 0.525$\pm$0.007 (3) \\
+\texttt{sp} & 8 & 0.241$\pm$0.024 (3) & 0.514$\pm$0.028 (3) & 0.099$\pm$0.008 (3) & 0.531$\pm$0.008 (3) \\
+\texttt{sp} & 32 & 0.227$\pm$0.016 (3) & 0.459$\pm$0.044 (3) & 0.098$\pm$0.008 (3) & 0.530$\pm$0.007 (3) \\
+\texttt{sp} & 128 & 0.206$\pm$0.011 (3) & 0.383$\pm$0.044 (3) & 0.096$\pm$0.010 (3) & 0.528$\pm$0.009 (3) \\
+\texttt{sp} & 512 & 0.170$\pm$0.006 (3) & 0.282$\pm$0.047 (3) & 0.096$\pm$0.010 (3) & 0.528$\pm$0.009 (3) \\
+\texttt{sp} & 2048 & 0.142$\pm$0.007 (3) & 0.218$\pm$0.038 (3) & 0.106$\pm$0.013 (3) & 0.533$\pm$0.011 (3) \\
+\midrule
+\texttt{mup} & 2 & 0.281$\pm$0.023 (2) & 0.669$\pm$0.017 (2) & 0.138$\pm$0.003 (2) & 0.555$\pm$0.006 (2) \\
+\texttt{mup} & 4 & 0.250$\pm$0.008 (3) & 0.566$\pm$0.063 (3) & 0.095$\pm$0.011 (3) & 0.529$\pm$0.008 (3) \\
+\texttt{mup} & 8 & 0.248$\pm$0.003 (2) & 0.618$\pm$0.051 (2) & 0.102$\pm$0.014 (2) & 0.536$\pm$0.009 (2) \\
+\texttt{mup} & 32 & 0.243$\pm$0.002 (2) & 0.591$\pm$0.024 (2) & 0.089$\pm$0.000 (2) & 0.528$\pm$0.001 (2) \\
+\texttt{mup} & 128 & 0.237 (1) & 0.579 (1) & 0.084 (1) & 0.524 (1) \\
+\texttt{mup} & 512 & 0.242 (1) & 0.611 (1) & 0.086 (1) & 0.525 (1) \\
+\bottomrule
+\end{tabular}\end{table}
+\begin{table}[htbp]\centering\scriptsize
+\caption{Whole-head rate multiplier $\kappa$ at $M=32$ (arm \texttt{headlr}) at $L^\ast$; rows marked $\dagger$ never reached $L^\ast$ within 40,000 steps and show the final state (loss in parentheses).}\label{tab:exp2_kappa}
+\begin{tabular}{llrccccc}\toprule seed & $\kappa$ & step & probe gain & $h_u$ & reversed & context-random & spectral-only \\ \midrule
+0 & 3.05176e-05$\dagger$ & 40000 (0.347) & 0.267 & 0.701 & 0.208 & 0.528 & 0.689 \\
+0 & 0.000244141$\dagger$ & 40000 (0.320) & 0.266 & 0.693 & 0.184 & 0.529 & 0.697 \\
+0 & 0.00390625 & 22708 & 0.223 & 0.475 & 0.152 & 0.519 & 0.641 \\
+0 & 0.0625 & 7611 & 0.106 & 0.177 & 0.129 & 0.513 & 0.568 \\
+0 & 1 & 1671 & 0.028 & 0.079 & 0.128 & 0.515 & 0.536 \\
+\bottomrule\end{tabular}\end{table}
+\begin{table}[htbp]\centering\scriptsize
+\caption{Readout learning-rate multiplier at $M=32$ (arm \texttt{lrmult}) at $L^\ast$: mean$\pm$sd over three seeds.}\label{tab:exp2_lrmult}
+\begin{tabular}{lcccc}\toprule multiplier & probe gain & $h_u$ & reversed acc. & context-random acc. \\ \midrule
+0.0625 & 0.041$\pm$0.013 & 0.085$\pm$0.036 & 0.115$\pm$0.009 & 0.507$\pm$0.007 \\
+0.25 & 0.031$\pm$0.012 & 0.076$\pm$0.033 & 0.116$\pm$0.009 & 0.507$\pm$0.007 \\
+1 & 0.022$\pm$0.007 & 0.067$\pm$0.027 & 0.121$\pm$0.008 & 0.508$\pm$0.008 \\
+4 & 0.015$\pm$0.003 & 0.059$\pm$0.022 & 0.127$\pm$0.008 & 0.509$\pm$0.008 \\
+16 & 0.008$\pm$0.001 & 0.054$\pm$0.019 & 0.133$\pm$0.009 & 0.510$\pm$0.006 \\
+\bottomrule\end{tabular}\end{table}
+\paragraph{Runs that did not reach $L^\ast$.}
+The following runs ended at the step budget above $L^\ast$: \texttt{headlr} $M=32$, $\kappa=0.000244141$, seed 0 (final loss 0.320 at step 40000); \texttt{headlr} $M=32$, $\kappa=3.05176e-05$, seed 0 (final loss 0.347 at step 40000).
+\paragraph{Registered verdicts.}
+Spearman correlations across widths at $L^\ast$, per seed (P1--P3 as registered use $a_u$ and reversal accuracy): \texttt{sp} seed 0: $\rho(a_u,M)=-0.54$, $\rho(\text{probe},M)=-0.54$, $\rho(\text{rev},M)=-0.64$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{sp} seed 1: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=-0.96$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{sp} seed 2: $\rho(a_u,M)=-0.96$, $\rho(\text{probe},M)=-0.93$, $\rho(\text{rev},M)=-0.82$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{mup} seed 0: $\rho(a_u,M)=+0.25$, $\rho(\text{probe},M)=-0.04$, $\rho(\text{rev},M)=-0.89$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{mup} seed 1: $\rho(a_u,M)=-0.94$, $\rho(\text{probe},M)=-0.94$, $\rho(\text{rev},M)=-0.83$ over $M\in\{2,4,8,32,128,512\}$; \texttt{mup} seed 2: $\rho(a_u,M)=-0.89$, $\rho(\text{probe},M)=-0.77$, $\rho(\text{rev},M)=-0.94$ over $M\in\{2,4,8,32,128,512\}$; \texttt{ctxfree} seed 0: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{ctxfree} seed 1: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{ctxfree} seed 2: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 0: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 1: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 2: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$.
+P2's second clause ($a_u$ at $M=2048$, normalized readout versus standard): seed 0: 0.0059 vs 0.0045.
