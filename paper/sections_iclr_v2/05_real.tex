@@ -69,9 +69,15 @@ uninformative context it reaches $L^\ast$ only after $15{,}000$--$17{,}000$
 steps but with probe gain $+0.35$ (probe $0.92$--$0.93$), reversal
 accuracy $0.91$--$0.93$ and context-random accuracy $0.91$--$0.92$; the
 frozen encoder gives $0.08$. Excess shifted risk of the joint models over
-that comparator is $0.85$. [E3: the $\gamma=10$ variant, which tests
-whether the head's rate recovers its effect once the cue no longer
-dominates the encoder's gradient.]
+that comparator is $0.85$. A variant with the cue amplitude reduced to
+$\gamma=10$, the scale of Section~\ref{sec:synthetic}, tests whether the
+head's rate recovers its effect once the cue no longer dominates the
+encoder's gradient. [$\gamma=10$ runs in progress, 7 of 18 complete; interim:
+the fit takes $500$--$1{,}500$ steps instead of about $100$, the probe at
+$L^\ast$ rises with a slower head (seed 1: $0.73$ at $\kappa=1$, $0.77$ at
+$\kappa=1/16$; seed 0: $0.61$, $0.63$, reaching $0.77$ by the end of
+training), and reversal accuracy stays at $0.05$--$0.08$; final numbers and
+the $\kappa=1/256$, uninformative-context and frozen arms to follow.]
 
 \paragraph{Reading.}
 With measured spectra the outcome matches the synthetic experiment on

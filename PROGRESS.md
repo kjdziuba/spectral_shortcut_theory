@@ -2276,3 +2276,16 @@ ViT sweep:
   Sec 4 text updated to three-seed means; Fig 3 + appendix C regenerated.
 - Exp 3: unready comparators 26/30; unready10 (gamma=10) 2/21 (first run
   fits at step 528 vs ~100 at gamma=30; probe gain +0.02 at kappa=1).
+
+## 2026-09-11 (04:30) — v2 PDF handed to Astra for review (one sentence open)
+
+- Exp 3 whitened regime complete: joint models probe gain <= +0.05 at every
+  width/kappa, reversal 0.07; ctxfree comparator probe gain +0.35 (0.93)
+  after 15-17k steps, reversal 0.92; frozen 0.08; excess shifted risk 0.85.
+  unready10 (gamma=10) 7/18: kappa effect on the probe reappears (seed 1:
+  0.73 -> 0.77 for kappa 1 -> 1/16), reliance unchanged; interim bracketed
+  in Sec 5. Fig 4 + appendix D tables regenerated.
+- v2 draft complete: abstract v2 (registered version candidate), intro with
+  verdict bullets, Sec 2-6, appendices A-F (F = scoped verification
+  record); main text ends ~2/3 down page 9; 29 pp; 0 errors.
+- Handed to Astra: review_iclr_02 requested on main_iclr_v2.pdf.
