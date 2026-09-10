@@ -125,7 +125,7 @@ ax2.set_xticklabels(["mean-spectrum\ndirection", "full class\ncontrast",
 for tick, color in zip(ax2.get_xticklabels(), [C_MEAN, C_FULL, C_CONTRAST]):
     tick.set_color(color)
 ax2.set_ylabel(r"curvature along direction")
-ax2.set_title("(b) direction-wise starvation", loc="left")
+ax2.set_title("(b) directional curvature anisotropy", loc="left")
 
 fig.tight_layout()
 for ext in ("pdf", "png"):
