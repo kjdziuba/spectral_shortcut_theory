@@ -1972,3 +1972,41 @@ ViT sweep:
 - Fig-8C (matched arms, both metrics) being built (wf_47d8ee02).
 - Known follow-up: 09_discussion 9.1 still says 'stays near initialization'
   — must become regime/protocol-resolved (P3; do with the 9-page rewrite).
+
+## 2026-09-10 (11:30) — Astra math_02 received; audits + production witness v2 launched
+
+- `review_packet/astra/math_02.md` (5.6k words) + `math_02_checks.py` (runs
+  clean here: 800 attribution checks, 12 ODE solves, BN identities, 200 ReLU
+  tube checks). Content: (1) production interior-witness finding accepted as
+  REMOVING exp1_8's width sweep as support for the incoming-Gram width law,
+  but "BN is the sole source" REJECTED as unidentified (4 code discrepancies:
+  no directional JVP was run; bn_gain_rms is an energy ratio, not a BN
+  derivative gain; BN group != Gram mask; lam_Wb~lam_WW does not measure the
+  bias Jacobian). Replacement wording supplied (goes into 8.3 verbatim).
+  (2) NEW (A1): finite-horizon share bound int||grad_theta||^2/(L0-LT)
+  <= a/(a+kappa), sharp, no commutation — supersedes our "only
+  infinite-horizon" clause. (A2): truncated matrix-Chernoff threshold
+  M >= (16R/kappa*) log(N/eta) — our "cannot remove kappa*^-2" was too strong.
+  (3) NEW Theorem N: nonlinear joint-vs-frozen for the shallow biased-ReLU
+  model, squared loss, no 1/sqrt(M) readout: fitting time 1/M, encoder
+  displacement O(1/M), head O(M^-1/2), logit gap O(1/M), gate switching
+  controlled by a boundary-mass estimate (N7). Needs independent audit.
+  (4) Isotropic toy: exact solution for any (a0,v0); our proposed limits
+  a(Tm)/a0->1, a(Tm)/m->0 are FALSE at fixed m; correct statement is
+  (a(Tm)-a0)/(m-a0)->0 (I4); reversal error -> Phi(m/2sigma) (I6).
+  (5) Novelty: option (iii) + comparison table (Yun/Moroshko/Berthier/
+  Saxe/Du-Hu-Lee/Pezeshki); wording supplied; "cannot assign 90% odds".
+  (6) P3: BN derivative (B1)-(B2) upper bound only; necessity counterexample;
+  scale identity G_WW(cW)=c^-2 G_WW(W) (B3) — raw block curvature is a
+  parameterization effect; invariant ||W||_F^2 lam_WW; van Laarhoven cite.
+  (7) What to run: option (a) limited attribution; 4 init-time diagnostics
+  before any training rerun (BN quantities + one-layer controls; witness
+  JVP; scale control; eigensolver residuals). No GPU-days on (b).
+- Launched (agents): Theorem N proof audit (Fable); sections 2/4/6 audit
+  with fresh numerics (Opus); exp1_8d_witness_jvp.py implementing items 1-4
+  at 3 seeds (Opus); toy_serial_ce_isotropic.py + code/audits/ persistence
+  (Opus); exp1_2v5_residual_export.py = round-1 row 4, still owed (Opus).
+- `review_packet/astra/claude_interim_02.md` written: status + three
+  questions for Astra to answer from the workspace meanwhile (Q6 matched-lane
+  verdict fairness; Q7 contribution paragraph + weakest link; Q8 nine-page
+  allocation). Full math reply (`claude_math_reply_02.md`) after audits.
