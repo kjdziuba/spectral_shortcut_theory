@@ -2215,3 +2215,32 @@ ViT sweep:
   v1 production details verbatim with preface; F pending)}. Fig 2
   mechanism rendered (figures/fig2_mechanism.pdf; three panels incl.
   Gaussian reversal sweep). First compile: 17 pp, 0 errors.
+
+## 2026-09-11 (01:15) — interim results: suppression responds to speed, reliance does not
+
+- Exp 2 (partial; ctxfree/lrmult/frozen complete, headlr seed 0 incl.
+  extension): at L*=0.30 every joint model with informative context leaves
+  the probe at ~init (0.65) and reversal ~0.12; ctxfree probe 0.89-0.94,
+  reversal 0.88-0.90 (P3 holds); frozen reversal 0.12-0.15 (P5 holds).
+  headlr M=32 seed 0: probe gain +0.028/+0.107/+0.223 (kappa 1, 1/16,
+  1/256), h_u 0.079/0.177/0.475; kappa 1/4096 and 1/32768 never reached L*
+  (final loss 0.32/0.35 at 40k; h_u 0.69/0.70; probe 0.91); reversal
+  0.128/0.129/0.152/0.184/0.208 — barely moves. lrmult: same direction,
+  weak (probe 0.70->0.66 over x1/16..x16), monotone in all 3 seeds. At the
+  secondary threshold 0.15: strong width trend in probe gain (Spearman
+  -0.86/-0.96/-0.86); mup less suppressed at large M; reversal flat.
+- Exp 3 ready regime complete (30 runs): probe gain ~0 (already 0.91-0.94
+  at init); reversal 0.07-0.11 and context-random ~0.50 at every width
+  and kappa (fits in 70-230 steps); ctxfree reversal 0.93 / ctx-random
+  0.92. Head-level competition only; nothing for the encoder to learn.
+- Interpretation (review_packet/astra/claude_exp_interim_01.md): the
+  head's relative speed controls how much spectral structure the encoder
+  learns before the fit (theorem's mechanism transfers); reliance at
+  matched fit is set by the head's amplitude-driven gain ratio and is
+  removed only by an uninformative context. Proposal: report the probe as
+  RECOVERABILITY (readout retraining / DFR) — fast wide heads leave
+  0.65-0.75 recoverable, slow/small/normalized/ctxfree 0.87-0.94; ask
+  Astra how to restate the claim; optional recoverability arm.
+- v2 draft: abstract/intro provisional, Sec 2-3 done, Sec 4 design, Sec 6,
+  appendices A/B/C(design)/D(design)/E; Fig 1 schematic, Fig 2 mechanism,
+  Fig 3/4 scripts (partial data). 23 pp, 0 errors.
