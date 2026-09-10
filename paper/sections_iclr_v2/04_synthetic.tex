@@ -115,14 +115,12 @@ multiplier acts in the same direction but weakly
 \paragraph{Results: the original predictor stays context-reliant.}
 Across every matched informative-context run, accuracy under reversal at
 $L^\ast$ lies between $0.10$ and $0.15$ and accuracy with an uninformative
-context at chance, for every width, the normalized readout, the readout
-multiplier and the whole-head multiplier; the rate change that raises the
-probe by $0.19$ raises reversal accuracy by $0.02$ ($0.121\to0.143$). Among
-the tested interventions, only training without an informative context
-removes the reliance. The trained classifier's use of context and the
-encoder's accessibility thus respond very differently to the same
-intervention. We do not read a toy margin decomposition into the CNN; the
-measured outcomes suffice.
+context at chance, for every width, the normalized readout and both rate
+multipliers; the rate change that raises the probe by $0.19$ raises
+reversal accuracy by $0.02$ ($0.121\to0.143$). Among the tested
+interventions only training without an informative context removes the
+reliance: the classifier's use of context and the encoder's accessibility
+respond very differently to the same intervention.
 
 \paragraph{Results: what retraining recovers.}
 The recovery procedure makes the accessibility difference operational.

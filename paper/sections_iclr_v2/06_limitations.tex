@@ -37,10 +37,8 @@ patient split.
 
 \paragraph{What the production model showed and did not.}
 On a production segmentation model, initialization curvature is not the
-diagnostic used here: the scalar block ratio is inverted, coexisting with
-effectively rank-one inputs, its width trend is sensitive to the head's
-BatchNorm statistics, and the class contrast carries $2.6$--$4.8\times$
-less curvature than the dominant input direction, none of which measures
+diagnostic used here: its scalar block ratio is inverted and its width
+trend depends on the head's BatchNorm statistics, and neither measures
 impaired learning. A matched retraining study at width $48$ and three
 seeds found an earlier apparent freezing advantage to be
 protocol-confounded and unresolved once matched (Appendix~\ref{app:scope}).

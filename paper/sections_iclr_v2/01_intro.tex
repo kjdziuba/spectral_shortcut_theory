@@ -5,8 +5,7 @@ Infrared and quantum-cascade-laser histology classify tissue pixel by
 pixel from a spectrum of several hundred channels, and the models that do
 so are serial: a small encoder compresses each pixel's spectrum, and a much
 larger spatial network reads the encoded neighbourhood
-\citep{berisha2019deep,oleary2026spatial}. The same shape appears wherever
-a per-token encoder feeds a contextual model. Practitioners often pretrain
+\citep{berisha2019deep,oleary2026spatial}. Practitioners often pretrain
 or freeze the spectral stage, and a companion tokenization study
 (anonymous, under review) reports a frozen random encoder competing with a
 jointly trained one. Such comparisons do not settle whether joint training

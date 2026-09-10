@@ -52,17 +52,15 @@ probe), use of context by the original predictor, and performance after
 an explicit retraining procedure.
 
 \paragraph{Test conditions.}
-Every evaluation family is generated from the same labels and noise in
-several ways: \emph{iid} (context agrees with the label as in training),
-\emph{reversed} (the assigned context carries the opposite label) and
-\emph{context-random} (the assigned context carries an independent label,
-so context is present but uninformative). In the synthetic experiment the
-intervention changes the contextual feature field at every pixel while the
-target's spectral component, label and noise are shared; in the
-real-spectrum experiment each centre spectrum is held fixed and only its
-neighbours change. Accuracy under reversal measures reliance; accuracy
-under context-random measures what the original predictor does from the
-spectrum in the presence of context.
+Every evaluation family is generated from the same labels and noise as
+\emph{iid} (context agrees with the label), \emph{reversed} (the assigned
+context carries the opposite label) and \emph{context-random} (an
+independent label: context present but uninformative). In the synthetic
+experiment the intervention changes the contextual field at every pixel
+while the target's spectral component, label and noise are shared; in the
+real-spectrum experiment each centre spectrum is held fixed. Reversal
+measures reliance; context-random measures what the predictor does from
+the spectrum in the presence of context.
 
 \begin{figure}[t]
 \centering
