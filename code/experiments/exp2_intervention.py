@@ -548,6 +548,38 @@ def plot(df: pd.DataFrame) -> None:
     out = OUT_DIR / "fig_exp2_v1.png"
     fig.savefig(out, dpi=140); plt.close(fig)
     print(f"[plot] wrote {out}")
+    plot_traj()
+
+
+def plot_traj(seed: int = 0) -> None:
+    """Trajectories a_u(t) and train loss for sp/mup/ctxfree at several widths (one seed):
+    is the suppression transient (encoder aligns after the context fit) or persistent?"""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4.2))
+    cmap = plt.get_cmap("viridis")
+    for ax, arm in zip(axes, ("sp", "mup", "ctxfree")):
+        files = sorted(OUT_DIR.glob(f"traj_{arm}_M*_x1_s{seed}.csv"),
+                       key=lambda f: int(f.stem.split("_M")[1].split("_")[0]))
+        if not files:
+            continue
+        for i, f in enumerate(files):
+            Mv = int(f.stem.split("_M")[1].split("_")[0])
+            t = pd.read_csv(f)
+            c = cmap(i / max(1, len(files) - 1))
+            ax.plot(t["step"] + 1, t["align_u"], color=c, lw=1.8, label=f"M={Mv}")
+            ax.plot(t["step"] + 1, t["loss"], color=c, lw=0.9, ls="--")
+        ax.set_xscale("log"); ax.set_yscale("log")
+        ax.set_xlabel("GD step"); ax.set_title(f"{arm} (seed {seed}): a_u solid, train loss dashed")
+        ax.axhline(LOSS_STAR, color="k", ls=":", lw=1)
+        ax.grid(True, alpha=0.3); ax.legend(fontsize=8)
+    axes[0].set_ylabel("encoder energy on u  /  loss")
+    fig.tight_layout()
+    out = OUT_DIR / f"fig_exp2_v1_traj_s{seed}.png"
+    fig.savefig(out, dpi=140); plt.close(fig)
+    print(f"[plot] wrote {out}")
 
 
 # ---------------------------------------------------------------------------

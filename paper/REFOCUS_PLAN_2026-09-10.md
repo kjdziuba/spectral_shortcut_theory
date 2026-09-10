@@ -197,6 +197,11 @@ further run and applied uniformly:
   secondary analysis, at the lowest threshold the context cue alone can
   reach (0.15) and at 0.10 (beyond it), because the pilot shows the
   saturation floor at 0.30. The predictions' directions are unchanged.
+- Implementation: the head is computed as explicit matrix products with
+  torus rolls (identical to `nn.Conv2d` with circular padding to 1e-15 in
+  float64, `--selftest`), in full fp32; the pilot used cuDNN convolutions,
+  which PyTorch runs in TF32 by default. Pilot outputs are preserved in
+  `results/exp2_pilot/`; the grid overwrites `results/exp2/`.
 
 ### 4.5 Known limitations to state
 Linear encoder (as in the theorem); one head family; full-batch GD; a
