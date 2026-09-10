@@ -40,20 +40,16 @@ $\norm{\dot\thetap}\le B_T\norm{r}\le B_TC/(1+\mu t)$ almost everywhere;
 integrate, and use $1+\mu T_\delta\le C/\delta$.
 \end{proof}
 
-The bound is a product of factors with opposite capacity dependence: $B_T$
-is capped independently of $\Cg$, while $\mu$ is expected to grow with
-spatial capacity. That growth is a hypothesis, not a consequence of
-Theorem~\ref{thm:hessian}; the two theorems are logically independent.
-Discrete versions hold for gradient descent, momentum with gradient
-clipping before accumulation (the ordering our trainer uses), velocity
-clipping, and Adam with a positive stabilizer, with the flow-to-step
-dictionary $\mu_{\mathrm{step}}=\eta\mu$ and an additional term for
-decoupled weight decay on the encoder (Appendix~\ref{app:math},
-Lemmas~\ref{lem:astra_gd}--\ref{lem:astra_decay}). The hypothesis is not
-circular: it constrains the loss, and the theorem then caps the encoder on
-every trajectory consistent with that loss, including ones on which the
-encoder does part of the fitting. Read contrapositively, substantial
-spectral learning by the fitting time requires slow fitting.
+$B_T$ is capped independently of $\Cg$, while the growth of $\mu$ with
+spatial capacity is a hypothesis, not a consequence of
+Theorem~\ref{thm:hessian}. Discrete versions hold for gradient descent,
+momentum with clipping before accumulation (our trainer's ordering),
+velocity clipping and Adam, with $\mu_{\mathrm{step}}=\eta\mu$ and an extra
+term for decoupled encoder decay
+(Lemmas~\ref{lem:astra_gd}--\ref{lem:astra_decay}). The hypothesis
+constrains the loss, not the encoder, so it is not circular; read
+contrapositively, substantial spectral learning by the fitting time requires
+slow fitting.
 
 \begin{corollary}[Sharp finite-horizon attribution]
 \label{cor:attribution}

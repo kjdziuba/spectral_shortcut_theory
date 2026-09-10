@@ -54,16 +54,13 @@ conditional, and we say on what.
 
 \paragraph{What the measurements teach.}
 The theory is a set of sufficient conditions, and the production model
-violates or evades most of them in instructive ways. Its classifier head has a
-fixed input dimension, so the width-linear floor has no premise. Its inputs
-are effectively rank one, so the top-eigenvalue ratio the theory bounds is
-uninformative and the directional picture must replace it. The width growth
-of its downstream curvature is produced by normalization gains acting on
-width-diluted activations, which a function-preserving rescaling can move
+evades most of them instructively: its classifier head has a fixed input
+dimension, so the width-linear floor has no premise; its inputs are
+effectively rank one, so the top-eigenvalue ratio is uninformative and a
+directional picture must replace it; the width growth of its downstream
+curvature is a normalization gain that a function-preserving rescaling moves
 freely. On the shallow instance where the geometry is proved, the residual
 leaves the coercive part of the downstream kernel within a hundred steps, so
-curvature at initialization predicts only an early phase. And in training,
-three protocol asymmetries were enough to produce an apparent freezing
-effect that a matched protocol does not reproduce. The paper's practical
-content is therefore a set of measurements one must make before reading a
-shortcut into a curvature ratio or a training curve, not a recipe.
+initialization curvature predicts only an early phase. The paper's practical
+content is the set of measurements one must make before reading a shortcut
+into a curvature ratio or a training curve, not a recipe.

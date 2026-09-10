@@ -2041,3 +2041,38 @@ ViT sweep:
   Q9-Q11) READY TO RELAY; claude_interim_02.md updated (Q6-Q9).
 - Still waiting on the author: headline decision; ICLR vs TMLR posture;
   relay of claude_math_reply_02.md.
+
+## 2026-09-10 (17:00) — ICLR nine-page draft built (paper/main_iclr.tex)
+
+- Decisions (author): drop the freezing prescription; ICLR 2027 is the
+  target; Claude writes the main text, Astra writes the math appendix and
+  reviews the PDF.
+- Astra delivered reply_02.md (Q8 allocation adopted verbatim: 0.8/0.6/0.6/
+  1.1/1.3/1.1/3.0/0.5; three figures: serial instance, diagnostic composite,
+  matched paired differences; Q6 BLOCKING wording corrections for the
+  matched-protocol reading — applied; Q7 contribution paragraph — used as
+  the spine), math_03.md (phase-attribution proposition prop:astra_phase +
+  cor:astra_phase_width: cumulative O(1/M) share requires the late phase to
+  carry O(1/M) of the energy; conditional BN gain law prop:astra_bn_gain;
+  clipping lemmas keep the a_i in both recurrences; residual-report
+  corrections: gradient-energy fractions, probe vs minibatch, and the
+  isotropic reference must be recomputed in the class-contrast subspace of
+  dimension N(C-1) — "below isotropic" WITHDRAWN until then), and
+  appendix_math.tex (9k words; installed as sections_iclr/appendix_math.tex;
+  its 17 bib records merged into references.bib with 4 duplicates mapped to
+  existing keys).
+- paper/ICLR_SKELETON.md v2 = the spec. paper/main_iclr.tex on the official
+  ICLR 2027 style (vendored .sty/.bst). sections_iclr/00-09 written by
+  Claude (all Opus drafters died twice: session limit, then an
+  "identity verification required" API error on Opus). Figures: fig1_serial
+  (toy CSVs; bounds verified), fig2_diagnostics (anisotropy / BN modes /
+  residual), fig3_matched (paired differences reproduce Astra's intervals to
+  1e-5). Main text = 9.00 pages exactly (AI-use heading at top of p.10),
+  4,828 words; total 30 pp with Astra's appendix.
+- Pending: appendix scaffold (A proofs, C EGR, F audits, statements) and
+  appendix D/E experiment tables (agents running); lem:phi_scaling label
+  (referenced by appendix_math) must be defined in appendix A; Astra's
+  reviewer pass on main_iclr.pdf; long draft 08_real_data.tex §8.4 wording
+  still carries the pre-Q6 causal sentences (fix in P3); residual export
+  follow-ups: isotropic reference in the contrast subspace, λ_k, a
+  same-sequence gradient-energy phase export (Astra Q9).

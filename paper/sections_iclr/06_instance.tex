@@ -30,17 +30,16 @@ $\mathcal{O}(1)$ entries trained at unit rate, the $M$-dependence
 disappears.
 \end{theorem}
 
-The mechanism is a replication-induced effective learning rate: $M$ copies
-of the readout move the margin $M$ times faster than one, which the
-layer-balance invariant of gradient flow \citep{astra_du2018balance} makes
-exact. What is suppressed is the \emph{update} of the spectral coefficient
-as a fraction of the fitting task, not the coefficient itself, which can be
-informative at initialization and remain so. Theorem~\ref{thm:twoscale}'s
-displacement bound is within a factor $4.5$--$6.3$ of the realised
-displacement in this instance ($3.8$ with the true residual amplitude), and
-every displayed quantity agrees with the closed form to $10^{-11}$ against a
-full $(2+M)$-parameter integration over $579$ cases with zero bound
-violations (Appendix~\ref{app:synthetic}). We use a solvable serial CE
+The mechanism is a replication-induced effective learning rate, made exact
+by the layer-balance invariant of gradient flow
+\citep{astra_du2018balance}. What is suppressed is the \emph{update} of the
+spectral coefficient as a fraction of the fitting task, not the coefficient
+itself, which can be informative at initialization and remain so.
+Theorem~\ref{thm:twoscale}'s displacement bound is within a factor
+$4.5$--$6.3$ of the realised displacement here ($3.8$ with the true residual
+amplitude), and every displayed quantity agrees with the closed form to
+$10^{-11}$ against a full $(2+M)$-parameter integration over $579$ cases
+(Appendix~\ref{app:synthetic}). We use a solvable serial CE
 example to connect a known optimization-metric imbalance to a finite-margin
 encoder-update bound, a joint-versus-frozen trajectory comparison, and an
 explicit failure under contextual reversal. Replication changes the
@@ -50,7 +49,7 @@ it does not establish a new general mechanism of implicit bias.
 
 \begin{figure}[t]
 \centering
-\IfFileExists{figures/fig1_serial.pdf}{\includegraphics[width=\linewidth]{figures/fig1_serial.pdf}}{\fbox{\rule{0pt}{2.3in}\rule{0.97\linewidth}{0pt}}}
+\IfFileExists{figures/fig1_serial.pdf}{\includegraphics[width=0.92\linewidth]{figures/fig1_serial.pdf}}{\fbox{\rule{0pt}{2.3in}\rule{0.97\linewidth}{0pt}}}
 \caption{The serial instance. (a) Spectral update fraction
 $(a(T_m)-a_0)/(m-a_0)$ against width $M$ for several $(a_0,v_0)$, with the
 exact bound $1/(1+Mv_0^2)$ (dashed) and the normalized-readout control

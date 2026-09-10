@@ -74,6 +74,8 @@ Paper under double-blind review}
 \bibliographystyle{iclr2027_conference}
 
 \appendix
+\setcounter{theorem}{0}
+\renewcommand{\thetheorem}{\Alph{section}.\arabic{theorem}}
 \IfFileExists{sections_iclr/appendix.tex}{\input{sections_iclr/appendix}}{%
 \section{Proofs for Section 4}\label{app:proofs}\emph{[Appendix scaffold pending.]}
 \section{Additional theory}\label{app:math}\input{sections_iclr/appendix_math}

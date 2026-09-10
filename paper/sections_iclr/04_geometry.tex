@@ -41,24 +41,20 @@ $\lambda_{\max}(G_{\phip\phip})\ge\lambda_{\max}(S_h^p)$, and the head
 hypothesis supplies $\Omega(M)$; the cap follows from the chain rule
 $J_\thetap=(\partial\hat y/\partial Z)(\partial Z/\partial\thetap)$, whose
 second factor has squared operator norm exactly $\lambda_{\max}(\Sigma_X)$
-under linearity. The width-linear rate matches the mean-field law of
-\citet{karakida2019universal} in the model class where the latter applies.
+under linearity; the rate matches \citet{karakida2019universal} where that
+law applies.
 
 \paragraph{The hypothesis boundary.}
-The theorem measures the downstream module's \emph{readiness to move}, the
-curvature its parameters command at initialization, not the usefulness of
-its features: the width-linear spike exists before any feature is learned.
-It is a statement about the top of the spatial spectrum only, and it is not
-a dynamical claim; whether joint training pins the encoder requires the
-hypotheses of Section~\ref{sec:dynamics}. It is stated for the standard
-variance-scaled parameterization, and we do not claim it transfers to
-parameterizations that rescale layers with width \citep{yang2021tensor}. The
-head hypothesis is a cross-input correlation condition on $\Theta(M)$
-penultimate features. It is met by dense per-pixel heads on CNN and ViT
-backbones, and it is structurally \emph{unmet} by the production model of
-Section~\ref{sec:diagnostics}, whose classifier input has a fixed dimension
-at every width; there the theorem has no premise rather than a
-counterexample.
+The theorem measures the downstream module's \emph{readiness to move}, not
+the usefulness of its features: the width-linear spike exists before any
+feature is learned. It concerns the top of the spatial spectrum only, is not
+a dynamical claim, and is stated for the standard parameterization
+\citep{yang2021tensor}. The head hypothesis is a cross-input correlation
+condition on $\Theta(M)$ penultimate features: met by dense per-pixel heads
+on CNN and ViT backbones, and structurally \emph{unmet} by the production
+model of Section~\ref{sec:diagnostics}, whose classifier input has a fixed
+dimension at every width, so that the theorem has no premise there rather
+than a counterexample.
 
 \paragraph{Empirical check (Experiment 1.1).}
 We measure both blocks of $G$ by power iteration on a synthetic
@@ -73,11 +69,9 @@ $\Dcurv$ grows from $40$ to $2405$. Under the theorem's own initialization
 ($2.1\to442$) with $\lambda_{\max}(G_{\thetap\thetap})\approx0.6$ flat. A
 deeper head separates the two regimes sharply: over $M=16\to1024$ its
 spatial slope is $0.105$ under default initialization and $0.989$ under
-the theorem's, and the isolation arms give $0.924$ with a fixed bias
-variance alone, $0.696$ with He weights and a scaled bias, and $0.606$ with
-He weights and zero bias. The reading is causal in the sense of the proof:
-the width-linear floor survives when either the weight-variance or the
-bias-variance term of the head hypothesis is width-independent, and default
-fan-in initialization makes both vanish with width. Slopes are finite-range
-fits and are quoted with their levels; $\Dcurv$ is not used to attribute
-differences across arms, since its denominator differs between them.
+the theorem's, and isolation arms (fixed bias variance alone $0.924$; He
+weights with scaled or zero bias $0.696$, $0.606$) show that the floor
+survives when either variance term of the head hypothesis is
+width-independent, while default fan-in initialization makes both vanish
+with width. Slopes are finite-range fits quoted with their levels; $\Dcurv$
+is not used to attribute differences across arms, whose denominators differ.

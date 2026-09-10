@@ -27,16 +27,15 @@ breast and reaching $1.09\pm0.52$ at $384$ on prostate. The reason is the
 input: $\Sigma_X$ has effective rank $1.07$ (breast) and $1.02$ (prostate)
 out of $942$, and $1.21$ after the module's input normalization, so the cap
 $C_\thetap\propto\lambda_{\max}(\Sigma_X)$ is enormous and the top-ratio is
-uninformative. The informative statement is directional. Writing $v_1$ for
-the leading input direction, which is the mean spectrum
-($|\cos|>0.995$), the spectral block's top eigenvector places
-$0.954\pm0.017$ of its norm in the $K$-dimensional subspace induced by
-$v_1$, the top $40$ of $61{,}108$ spectral directions hold $0.83\pm0.12$
-of the trace, and along the clinically decisive CancerEpi--CAS class
-contrast the curvature is $3.7\times$ ($2.6$--$4.8$) smaller than along
-$v_1$; along the contrast's $v_1$-orthogonal part, which retains
-$76$--$84\%$ of its squared norm, it is $12$--$28\times$ smaller (three seeds
-$\times$ three batches; Figure~\ref{fig:diagnostics}a). The measurement is
+uninformative. The informative statement is directional. With $v_1$ the
+leading input direction, which is the mean spectrum ($|\cos|>0.995$), the
+spectral block's top eigenvector places $0.954\pm0.017$ of its norm in the
+$K$-dimensional subspace induced by $v_1$, the top $40$ of $61{,}108$
+directions hold $0.83\pm0.12$ of the trace, and along the clinically
+decisive CancerEpi--CAS contrast the curvature is $3.7\times$ ($2.6$--$4.8$)
+smaller than along $v_1$, or $12$--$28\times$ smaller along the contrast's
+$v_1$-orthogonal part, which retains $76$--$84\%$ of its squared norm
+(nine measurements; Figure~\ref{fig:diagnostics}a). The measurement is
 anisotropy; starvation along those directions is a hypothesis it motivates.
 
 \paragraph{What carries the width trend.}
@@ -48,28 +47,25 @@ to five significant figures across $M\in\{48,192,384\}$ (three seeds), with
 its leading direction inside the width-independent $K=64$ skip channels. The
 trend is instead carried by the two head BatchNorm layers. Using fixed
 initial statistics in both removes it while preserving the incoming features
-(first-convolution block, pooled slope $+0.61$ with batch statistics, per
-seed $+0.35$ to $+0.79$, versus $+0.006$ with both fixed, per seed $-0.11$
-to $+0.18$; whole spatial block $+0.40\to-0.33$), and either BatchNorm alone
-carries it ($+0.56$, $+0.57$), which argues against attributing it to one
-layer. The pre-BN per-channel variance of the first head BN falls as
-$1/(M{+}K)$ ($0.15$, $0.064$, $0.035$ at the three widths), because the
-fan-in grows with $M$ while the incoming energy sits in the width-independent
-skip channels, and the BN's inverse-standard-deviation gain grows
-accordingly ($2.6$, $4.0$, $5.4$); a directional forward-mode propagation of
-a unit weight perturbation through the actual head shows its energy
-width-independent before the BN and growing as $M^{0.46}$--$M^{0.56}$ after
-it, while a spatially constant bias perturbation is annihilated exactly. A
-function-preserving rescaling of that convolution (weights and bias by $c$,
-stabilizer by $c^2$) leaves every logit unchanged and scales the block's top
-curvature by exactly $c^{-2}$, so this curvature is a parameterization
-quantity \citep{vanlaarhoven2017l2}; the conditional gain law is recorded in
-Appendix~\ref{app:math} (Proposition~\ref{prop:astra_bn_gain}) and is not a
-new mechanism. This sweep therefore does not validate the width-linear
-feature-Gram mechanism of our shallow theory. Three-width slopes are
-descriptive, and fixing a BatchNorm's statistics also changes its forward
-output and the gates downstream, so the interventions establish sensitivity,
-not a unique cause.
+(first-convolution block, slope of the seed-averaged curvature $+0.61$
+with batch statistics, per seed $+0.35$ to $+0.79$, versus $+0.006$ with
+both fixed; whole spatial block $+0.40\to-0.33$), and either BatchNorm alone carries it ($+0.56$,
+$+0.57$), which argues against attributing it to one layer. The pre-BN
+per-channel variance of the first head BN falls as $1/(M{+}K)$ ($0.15$,
+$0.064$, $0.035$), because the fan-in grows with $M$ while the incoming
+energy sits in the width-independent skip channels, and the BN's gain grows
+accordingly ($2.6$, $4.0$, $5.4$); a forward-mode propagation of a unit
+weight perturbation through the actual head confirms the stage at which the
+energy grows, and a spatially constant bias perturbation is annihilated
+exactly. A function-preserving rescaling of that convolution (weights and
+bias by $c$, stabilizer by $c^2$) leaves every logit unchanged and scales
+the block's top curvature by exactly $c^{-2}$, so this curvature is a
+parameterization quantity \citep{vanlaarhoven2017l2}; the conditional gain
+law (Proposition~\ref{prop:astra_bn_gain}) is not a new mechanism. This
+sweep therefore does not validate the width-linear feature-Gram mechanism of
+our shallow theory. Three-width slopes are descriptive, and fixing a
+BatchNorm's statistics also changes its forward output and downstream gates,
+so the interventions establish sensitivity, not a unique cause.
 
 \subsection{Residual subspace along training of the shallow instance}
 \label{sec:residual}
@@ -101,16 +97,14 @@ understates the share in $85\%$ of checkpoints (median $2.7\times$) and
 overstates it by up to $11\times$ in the rest; the $\lambda_{\min}$ proxy is
 $0.9998$--$1.0000$ throughout. The diagnostic limitation illustrated by
 Proposition~\ref{prop:astra_top_counter} is observed: the coercivity
-Theorem~\ref{thm:bridge} needs is available on this run only as the measured
-quotient along the visited residual. In the language of
-Proposition~\ref{prop:astra_phase}, the early phase, in which the quotient
-scales with $D$, carries most of the energy, but a cumulative law of order
-$1/D$ would require the late phase's fraction to be of that order, which
-three widths do not establish. The same shallow architecture with CNN and
-ViT heads, trained jointly against a frozen random encoder, shows endpoint
-gaps of at most $0.04$ in test accuracy at every width, unresolved at three
-seeds, with indistinguishable peaks and a diverging joint test loss at the
-largest width (Appendix~\ref{app:synthetic}).
+Theorem~\ref{thm:bridge} needs is available here only as the measured
+quotient along the visited residual, and by
+Proposition~\ref{prop:astra_phase} a cumulative law of order $1/D$ would
+require the late phase's energy fraction to be of that order, which three
+widths do not establish. With CNN and ViT heads, joint training against a
+frozen random encoder gives endpoint gaps of at most $0.04$ in test accuracy,
+unresolved at three seeds, with indistinguishable peaks
+(Appendix~\ref{app:synthetic}).
 
 \begin{figure}[t]
 \centering
