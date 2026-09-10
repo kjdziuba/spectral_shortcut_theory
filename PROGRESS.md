@@ -2093,3 +2093,55 @@ ViT sweep:
   08_real_data.tex §8.4 wording (P3); Lim-Kim-Moon 2025 citation omitted
   (OpenReview blocked verification); zhang2022layers/zhang2024adam/
   kirichenko2023dfr entries to re-check at proof stage.
+
+## 2026-09-10 (19:45) — Astra review 4/10 → REFOCUS to one theorem + three experiments; Exp 2 pilot
+
+- Astra's reviewer pass on main_iclr.pdf: review_packet/astra/review_iclr_01.md
+  (4/10 lean reject, ~20% acceptance; W1 main statements drop hypotheses the
+  appendix needs; W2 central payoff undemonstrated; W3 pieces not one tested
+  explanation; W4 protocol study too long; W5 init interpretation overreaches;
+  W6 inconsistencies; 18 sentence-level checks incl. FTIR→QCL modality error,
+  sup over [0,T_m], general-init disparity Mv0^2, Papyan citation).
+- Author + Astra (16:19–16:30): rebuild around ONE claim (contextual training
+  speed suppresses spectral learning at matched fit → context reliance →
+  failure under context change), ONE theorem (serial CE + isotropic corollary
+  + normalization control), THREE experiments (exact model; synthetic
+  nonlinear intervention; real spectra with assigned neighbourhoods). Cut
+  from the submission (kept in repo): Thm 1/2/3, Theorem N, P4 lemmas,
+  residual-subspace/phase work. Production BN diagnostics + matched freezing
+  study → short limitation paragraphs.
+- Versioning rule (author): never delete; new versions as new files; tag at
+  decision points. Done: git tag iclr-v1-2026-09-10 (commit 2a496d8, review
+  included). v2 will live in main_iclr_v2.tex / sections_iclr_v2/ /
+  ICLR_SKELETON_v3.md. Memory: feedback_versioning_never_delete.md,
+  shortcut_theory_refocus_2026-09-10.md.
+- paper/REFOCUS_PLAN_2026-09-10.md: claim, three levels, page allocation,
+  disposition table for every v1 item, Exp 2 pre-registration (P1–P5 at
+  L*=0.30), Exp 3 design, schedule, Astra tasks.
+- Exp 2 built: code/synthetic/data_v2.py (own-pixel spectral cue alpha·y·u in
+  isotropic noise; eight neighbours carry y along eight orthogonal texture
+  directions v_d with context noise tau; conditions iid/reversed/ctx_random/
+  spec_only/ctx_only), code/experiments/exp2_intervention.py (linear encoder
+  S=256→K=12, ReLU CNN 3x3 head width M, single logit, full-batch GD, one
+  global lr, matched-fit snapshots at loss 0.6…0.10; arms sp/mup/ctxfree/
+  lrmult/frozen; LDA spectral probe; five test conditions).
+- Calibration (results/exp2/calibration.json, BEFORE any training): tau =
+  1.7023 gives oracle context acc 0.950 = oracle spectral acc 0.95 (alpha =
+  1.645); through a RANDOM encoder the context reads at 0.905–0.914 and the
+  spectral cue at 0.608–0.653 (seeds 0–2) — the (a0 small, v0 = O(1))
+  asymmetry realised. Stability check at M=2048: lr 1e-3 monotone over 300
+  steps (3e-3 jumps) → lr = 1e-3.
+- PILOT (seed 0, lr 1e-3): sp M=8 reaches L*=0.30 at step 2633 with align_u
+  0.0048 (init 0.0044), probe 0.655, acc_reversed 0.12, acc_ctx_random 0.51;
+  sp M=2048 reaches L* at step 80 with align_u 0.0045, probe 0.649,
+  acc_reversed 0.12; ctxfree M=8 reaches L* at step 10714 with align_u 0.127,
+  probe 0.921, acc_reversed 0.894 (P3 holds; spectral learning IS suppressed
+  by informative context at both widths). At loss 0.10 (beyond what context
+  alone reaches): M=8 align_u 0.055 / probe 0.873 vs M=2048 0.019 / 0.786 —
+  the wider head suppresses more at deeper fit. The pre-registered width
+  TREND at L*=0.30 is not visible because M=8 is already saturated (context
+  fit 4x faster than the encoder alignment seen in ctxfree): the sweep must
+  reach the O(1)-speed regime → amendment: widths 2, 4 added; readout
+  multipliers 1/16, 1/4 added (continuous version of the mup control).
+  Cost: 92 ms/step at M=2048 (fp32, circular padding) → speed-up needed
+  before the full grid.
