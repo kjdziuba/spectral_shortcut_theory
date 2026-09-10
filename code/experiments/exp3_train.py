@@ -103,17 +103,23 @@ class Preproc:
         U, Sv, Vh = torch.linalg.svd(sub, full_matrices=False)
         lam = (Sv ** 2) / (sub.shape[0] - 1)
         self.Vh = Vh.float(); self.lam = lam.float()
+        # Eight cue directions, one per neighbour offset (as in Exp 2, so that a random
+        # head's responses to the eight copies do not add coherently): the top eight
+        # principal coordinates. C: (8, S) unit rows; gamma: (8,) amplitudes.
         if regime == "ready":
-            self.c = self.Vh[0].clone()                      # v1 in standardized coordinates
-            self.c_std = float(torch.sqrt(self.lam[0]))
+            self.C = self.Vh[:8].clone()                                # v_1..v_8 (standardized coords)
+            self.c_std = torch.sqrt(self.lam[:8])                       # natural donor std along each
             self.gamma = G_AMP_STD * self.c_std
         elif regime == "unready":
             self.scale = 1.0 / torch.sqrt(self.lam + WHITEN_RIDGE * self.lam.mean())
-            self.c = torch.zeros(S_FEAT); self.c[0] = 1.0      # first whitened coordinate
-            self.c_std = 1.0
-            self.gamma = G_AMP_WHITE
+            self.C = torch.zeros(8, S_FEAT)
+            for d in range(8):
+                self.C[d, d] = 1.0                                      # e_1..e_8 (whitened coords)
+            self.c_std = torch.ones(8)
+            self.gamma = G_AMP_WHITE * torch.ones(8)
         else:
             raise ValueError(regime)
+        self.c = self.C[0]  # kept for backward compatibility of saved files
 
     def transform(self, X: torch.Tensor) -> torch.Tensor:
         Z = (X - self.mean) / self.std - self.mu
@@ -159,8 +165,8 @@ def make_patches(Fp: torch.Tensor, y: torch.Tensor, core: np.ndarray, centres: t
     donor_idx = pool[donors]                                                    # (n, 8) into Fp
     Xn = Fp[donor_idx.to(device)]                                               # (n, 8, S)
     if code is not None:
-        cue = pre.gamma * (code[:, None] + tau * eta)                           # (n, 8)
-        Xn = Xn + cue.to(device)[:, :, None] * pre.c.to(device)[None, None, :]
+        cue = pre.gamma[None, :] * (code[:, None] + tau * eta)                  # (n, 8): neighbour d on direction d
+        Xn = Xn + cue.to(device)[:, :, None] * pre.C.to(device)[None, :, :]
     Xc = Fp[centres.to(device)][:, None, :]
     return torch.cat([Xc, Xn], dim=1).contiguous(), yc.to(device)
 
@@ -216,7 +222,8 @@ def calibrate(device) -> dict:
         def ctx_oracle(tau):
             Ca, _ = make_patches(Fp, y, core, ia, ia, pre, tau, 11, "iid", device)
             Cb, _ = make_patches(Fp, y, core, ib, ib, pre, tau, 12, "iid", device)
-            pa = Ca[:, 1:, :] @ pre.c.to(device); pb = Cb[:, 1:, :] @ pre.c.to(device)   # (n, 8)
+            Cd = pre.C.to(device)
+            pa = torch.einsum("nds,ds->nd", Ca[:, 1:, :], Cd); pb = torch.einsum("nds,ds->nd", Cb[:, 1:, :], Cd)   # (n, 8)
             w2, t2 = lda_fit(pa, ya, 1e-6)
             return lda_eval(w2, t2, pb, yb)
         acc0 = ctx_oracle(0.0)
@@ -245,11 +252,11 @@ def calibrate(device) -> dict:
                 Qa = enc(Pa).reshape(len(ia), -1); Qb = enc(Pb).reshape(len(ib), -1)
             wp, tp = lda_fit(Qa, ya, 1e-4); acc_p = lda_eval(wp, tp, Qb, yb)
             readiness[s] = dict(centre=acc_c, patch=acc_p)
-        rec = dict(regime=regime, gamma=pre.gamma, tau=tau, c_std=pre.c_std,
+        rec = dict(regime=regime, gamma=[float(g) for g in pre.gamma], tau=tau, c_std=[float(s) for s in pre.c_std],
                    lambda_1=float(pre.lam[0]), var_frac_v1=float(pre.lam[0] / pre.lam.sum()),
                    centre_oracle=acc_centre, centre_oracle_val=acc_centre_val,
                    context_oracle=acc_ctx, context_oracle_tau0=acc0, readiness_by_seed=readiness)
-        print(f"[calib3] {regime}: gamma {pre.gamma:.2f} tau {tau:.4f}; centre oracle {acc_centre:.4f} (val {acc_centre_val:.4f}); "
+        print(f"[calib3] {regime}: gamma {[round(float(g), 2) for g in pre.gamma]} tau {tau:.4f}; centre oracle {acc_centre:.4f} (val {acc_centre_val:.4f}); "
               f"context oracle {acc_ctx:.4f} (tau=0: {acc0:.4f}); readiness {readiness}", flush=True)
         rec_all[regime] = rec
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -359,7 +366,7 @@ def run_one(regime: str, arm: str, width: int, head_mult: float, seed: int, tau:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(traj_rows).to_csv(OUT_DIR / f"traj_{tag}.csv", index=False)
     snaps.to_csv(OUT_DIR / f"snap_{tag}.csv", index=False)
-    np.savez_compressed(OUT_DIR / f"enc_{tag}.npz", W0=W0.cpu().numpy(), c=pre.c.numpy(), **W_snaps)
+    np.savez_compressed(OUT_DIR / f"enc_{tag}.npz", W0=W0.cpu().numpy(), C=pre.C.numpy(), **W_snaps)
     print(f"[{tag}] {status} at step {step}, {time.time() - t0:.1f}s", flush=True)
     return snaps
 

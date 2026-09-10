@@ -343,6 +343,33 @@ Decision (Astra refocus_01 §3, adopted): **3B primary, 3A secondary.**
   standard preprocessing choice; the pair is the clinically decisive one
   used in the v1 anisotropy measurements. [Author to confirm the binary
   pair; Astra to check the two-regime logic.]
+  **Refinement after the 300-step smoke runs (23:40):** eight cue
+  directions (top eight principal coordinates, one per neighbour offset, as
+  in Exp 2) replace the single direction, because a random head's responses
+  to one shared direction add coherently and the untrained model already
+  predicted from context (reversal 0.25 at step 0); with eight directions the
+  initial loss is 0.66–0.68 and initial reversal 0.38–0.39. Recalibrated:
+  ready γ_d = 3√λ_d (46.7 … 12.9), τ = 1.47, oracles 0.969/0.969, random-
+  encoder centre probe 0.94/0.97/0.95; unready γ = 30, τ = 1.74, oracles
+  0.948/0.948 (val 0.884), random-encoder centre probe 0.48/0.51/0.60,
+  patch 0.95. **Interpretation of the ready regime, corrected:** the
+  encoder there already exposes the spectral cue (probe 0.91 at
+  initialization), so there is no encoder learning to suppress; the smoke
+  run shows the head nevertheless predicts from context at loss 0.19
+  (context-random accuracy at chance) — head-level feature competition
+  between a large-amplitude cue and an O(1) cue, which the theorem does not
+  address. The ready regime is therefore a CONTROL that separates the two
+  levels: prediction = probe ≈ its initial value at every κ (no encoder
+  suppression to remove); reversal failure may persist and is not evidence
+  about the encoder mechanism. The unready (whitened) regime is the primary
+  test of the theorem's encoder-level mechanism: prediction = probe gain at
+  L* suppressed at κ = 1 relative to `ctxfree`, increasing as κ decreases.
+  Grid (launched 23:45): per regime sp M ∈ {8, 32, 128, 512}; headlr κ ∈
+  {1, 1/16, 1/256} at M = 32; ctxfree M ∈ {8, 128}; frozen M = 32; seeds
+  0–2; full-batch GD, η = 1e-3, 24,000 balanced training patches, probe fit
+  on 6,000 disjoint training pixels, evaluation on up to 6,000 val and
+  6,000 test centres (paired conditions iid / reversed / ctx_random /
+  spec_only).
 - **3A (secondary, if resources permit; result retained whatever it shows).**
   Astra's sentence: "We construct a contextual-shift benchmark from measured
   centre spectra and measured neighbour spectra, assigning neighbour classes

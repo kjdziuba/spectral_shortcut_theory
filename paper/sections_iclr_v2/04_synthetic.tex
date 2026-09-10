@@ -1,0 +1,83 @@
+\section{Exact-model check and synthetic intervention}
+\label{sec:synthetic}
+
+\paragraph{Experiment 1: the exact model.}
+The closed forms of Theorem~\ref{thm:serial} were checked against a full
+$(2+M)$-parameter integration of the flow over $525$ initialization--width--margin
+cases and a Gaussian initialization sweep (Section~\ref{sec:theorem},
+Appendix~\ref{app:verification}); every bound holds in every case. This is a
+check of the algebra. The question the rest of the paper asks is whether the
+mechanism survives when the cues are noisy, the routing is learned and the
+head is nonlinear.
+
+\paragraph{Experiment 2: design.}
+Pixels carry i.i.d.\ labels $y_p\in\{-1,+1\}$ on $16\times16$ images with
+$S=256$ spectral channels, so the spectral cue cannot be denoised by
+averaging neighbours. The spectral cue is $\alpha y_pu$ in the pixel's own
+spectrum, buried in isotropic noise of unit variance, with $u$ a fixed unit
+direction the encoder must discover. The contextual cue places $y_p$ in
+each of the eight neighbours of $p$, along eight fixed orthogonal
+directions $v_1,\dots,v_8\perp u$ of amplitude $\beta=5$ with context noise
+$\tau\eta$: the information about $y_p$ sits only in the neighbourhood,
+because $p$'s own $v$-coordinates carry its neighbours' labels. Equal
+information: $\alpha=1.645$ gives an oracle spectral accuracy of $0.95$,
+and $\tau=1.70$ is calibrated so that the oracle contextual accuracy (a
+linear discriminant on the $3\times3$ window of the eight projections) is
+$0.950$; both values are recorded before any training run
+(Appendix~\ref{app:exp2}). Readiness: through a random encoder
+$W\in\R^{12\times256}$ the same discriminant reads the contextual cue at
+$0.905$--$0.914$ and the spectral cue at $0.608$--$0.653$ (three seeds),
+because the random projection preserves the signal-to-noise ratio of a
+cue whose noise shares its direction and attenuates by about $\sqrt{K/S}$
+one whose noise is isotropic. This is the nonlinear analogue of
+$(a_0\ \text{small},\ v_0=O(1))$: the contextual cue is initially
+accessible to a trained readout; the spectral cue is not. The model is the
+linear encoder followed by a ReLU convolutional head
+($3\times3$ convolution to width $M$, ReLU, $3\times3$ convolution to one
+logit, circular padding), trained by full-batch gradient descent on
+$256$ images ($65{,}536$ pixels) with one learning rate $\eta=10^{-3}$ for
+every parameter, chosen as the largest rate with a monotone loss at the
+widest head. Runs are compared at the first step with training loss below
+$L^\ast=0.30$, with further snapshots at $0.6,0.5,0.4,0.2,0.15,0.10$.
+
+\paragraph{Arms and measures.}
+Standard parameterization at widths $M\in\{2,4,8,32,128,512,2048\}$; a
+normalized readout ($M^{-1/2}\gamma$ with $\gamma=O(1)$ and the same
+function at initialization, the control of Theorem~\ref{thm:serial}(c),
+which under plain gradient descent equals a readout trained at rate $1/M$);
+training with an uninformative context (the same cue carrying an
+independent label: the proposed cause removed) at $M\in\{2,8,128,512\}$;
+a readout learning-rate multiplier and, following the design review, a
+whole-head multiplier $\kappa\in\{1,1/16,1/256\}$ at $M=32$, which in the
+theorem gives the bound $1/(1+\kappa Mv_0^2)$; and a frozen encoder. Three
+seeds each. At every snapshot we record the encoder's linear accessibility
+of the spectral cue (a discriminant fitted on independent spectral-only
+data and evaluated on a disjoint set, reported as the gain over its initial
+value $0.647$), the exact population counterpart
+$h_u(W)=\|P_{\mathrm{row}(W)}u\|^2$ (the optimal probe has accuracy
+$\Phi(\alpha\sqrt{h_u})$; $h_u=0.055$ at initialization), the encoder's
+displacement, and accuracies on paired test sets that share labels and
+noise and differ only in the assigned context: iid, reversed,
+context-random, spectral-only, context-only.
+
+\paragraph{Results.}
+%% [E2] Fill from results/exp2/PREDICTIONS.md and results/exp2_summary.csv.
+%% Order: (1) suppression vs ctxfree at every width (the robust finding);
+%% (2) pre-registered P1-P5 at L* as registered, per-seed Spearman; (3) the
+%% labelled secondary thresholds 0.15 and 0.10; (4) the kappa sweep
+%% (probe/h_u vs kappa; reversal vs kappa incl. the downward extension);
+%% (5) trajectories: transient or persistent. State the amendment sentence.
+[E2 results pending: the full grid is running.]
+
+\begin{figure}[t]
+\centering
+\IfFileExists{figures/fig3_exp2.pdf}{\includegraphics[width=\linewidth]{figures/fig3_exp2.pdf}}{\fbox{\rule{0pt}{2.0in}\rule{0.97\linewidth}{0pt}}}
+\caption{Experiment 2 at matched fit $L^\ast=0.30$ (three seeds; points are
+seeds, lines are means). (a) Spectral probe gain over initialization against
+head width for the standard parameterization, the normalized readout, the
+uninformative-context control and the frozen encoder. (b) Accuracy under
+context reversal against width. (c) Whole-head rate multiplier $\kappa$ at
+$M=32$: probe gain and reversal accuracy. (d) Trajectories of $h_u$ for
+three widths with the fit thresholds marked.}
+\label{fig:exp2}
+\end{figure}
