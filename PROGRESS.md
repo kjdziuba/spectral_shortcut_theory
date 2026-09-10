@@ -1937,3 +1937,19 @@ ViT sweep:
   costs endpoint stability. Report all three points under both metrics;
   no binary mechanism verdict (Astra's branch 3).
 - Last run (joint_cos_m s2) finishing ~08:15; then analyze + commit.
+
+## 2026-09-10 (08:15) — laneM48 COMPLETE: 21/21, analysis regenerated (60 runs)
+
+  matched arm (h48, n=3)     best-val        final-5         theta drift
+  frozen_random_m            0.814 ± 0.040   0.684 ± 0.037   0
+  joint_linear_m             0.837 ± 0.029   0.694 ± 0.056   0.57
+  frozen_pretrained_m        0.861 ± 0.022   0.690 ± 0.033   0
+  finetune_real_m            0.857 ± 0.009   0.710 ± 0.052   0.02
+  joint_speclr0.1_m          0.841 ± 0.007   0.626 ± 0.055   0.08
+  joint_speclr10_m           0.886 ± 0.037   0.561 ± 0.114   4.91
+  joint_cos_m                0.825 ± 0.033   0.660 ± 0.020   0.36
+- Cosine schedule at n=3: worse than constant lr on both metrics — the
+  late decline is not a late-lr effect.
+- Committed 25bbfab (run CSVs/configs; best.pt/final.pt gitignored).
+  Monitor stopped. Next: Section 8.4 rewrite around the matched table +
+  pre-registered verdicts (drafting now; author review gate).
