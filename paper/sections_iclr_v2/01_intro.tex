@@ -1,0 +1,82 @@
+\section{Introduction}
+\label{sec:intro}
+
+Infrared and quantum-cascade-laser histology classify tissue pixel by
+pixel from a spectrum of several hundred channels, and the models that do
+so are serial: a small encoder compresses each pixel's spectrum, and a much
+larger spatial network reads the encoded neighbourhood
+\citep{berisha2019deep,oleary2026spatial}. The same shape appears wherever
+a per-token encoder feeds a contextual model. Practitioners often pretrain
+or freeze the spectral stage, and a companion tokenization study
+(anonymous, under review) reports a frozen random encoder competing with a
+jointly trained one. Whether joint training genuinely starves the encoder,
+and when that matters, is not settled by such comparisons: the spatial
+stage can predict the label from the neighbourhood, and a model that
+learns to do so may never need the spectrum.
+
+This paper makes one claim and tests it at three levels. \emph{In a serial
+spectral--spatial model, increasing the effective training speed of the
+contextual pathway suppresses learning of an equally predictive spectral
+cue; at matched training fit this produces greater reliance on context and
+failure when that context changes.} We prove it in a linear-encoder model
+with a replicated contextual readout (Section~\ref{sec:theorem}); we
+predict that it transfers to any serial model whose contextual pathway
+learns fast relative to the encoder, with head width in the standard
+parameterization and the head's learning rate as two speed controls and
+readout normalization as the control that removes the width dependence;
+and we test that prediction with interventions in a nonlinear
+convolutional model on synthetic data (Section~\ref{sec:synthetic}) and
+with measured tissue spectra in constructed neighbourhoods
+(Section~\ref{sec:real}), in each case with a control that removes the
+proposed cause.
+
+\paragraph{Contributions.}
+\begin{itemize}
+\item \textbf{Theorem~\ref{thm:serial}.} For the serial cross-entropy model
+  with $M$ replicated contextual readouts, gradient flow from general
+  initialization moves the spectral coefficient at the matched fitting
+  margin by at most a fraction $1/(1+Mv_0^2)$ of the update a spectral-only
+  model needs; the fitted model misclassifies every example under
+  contextual reversal when the initial spectral coefficient is below half
+  the margin, with expected error tending to $\Phi(m/2\sigma)$ over
+  isotropic Gaussian initialization; and a $M^{-1/2}$-normalized readout
+  removes the width dependence, though not the failure.
+\item \textbf{Synthetic intervention.} In a ReLU convolutional head over a
+  linear encoder, with two cues of equal oracle information but unequal
+  initial accessibility, [E2: state the supported verdict on suppression at
+  matched fit, its response to head width, head learning rate and readout
+  normalization, and its absence when the context is uninformative].
+\item \textbf{Real spectra.} With measured centre spectra and their
+  recorded labels in constructed neighbourhoods, in a regime where a random
+  encoder cannot read the spectral cue and in one where it can, [E3: state
+  the supported verdict].
+\item \textbf{Scope.} We report why scalar curvature on a production model
+  does not identify the mechanism and why an earlier apparent freezing
+  advantage was protocol-confounded (Section~\ref{sec:limitations},
+  Appendix~\ref{app:scope}); no mitigation is recommended.
+\end{itemize}
+
+\paragraph{Related work.}
+That one predictive feature can suppress the learning of another is
+gradient starvation \citep{pezeshki2021gradient}, and a preference for
+simpler features that fails under shift is simplicity bias
+%% [cite Shah et al. 2020, "The pitfalls of simplicity bias", once the entry is verified]
+; modality competition in multimodal training
+\citep{wang2020what,peng2022balanced,huang2022modality,du2023unimodal}
+studies the same imbalance between input streams. Our contribution is
+narrower and, we think, more specific: an explicit finite-fit account of
+selective \emph{encoder} learning in a \emph{serial} system, with a
+reversal failure and a normalization control, tested by interventions on
+training speed rather than inferred from accuracies. The mathematics uses
+the balance invariant of gradient flow in layered linear models
+\citep{astra_du2018balance,astra_saxe2014,astra_yun2021} and sits next to
+lazy-training analyses in which a wide component barely moves
+\citep{chizat2019lazy,yang2021tensor}; the width-dependent gain of a
+replicated readout is the mechanism, and the normalized readout is the
+corresponding parameterization control. Curvature and its growth with
+width and normalization \citep{karakida2019universal,vanlaarhoven2017l2}
+are the reason we measure learning outcomes rather than curvature
+(Appendix~\ref{app:scope}). Frozen or retrained feature extractors in
+practice \citep{kirichenko2023dfr,zhang2022layers,coil2025freezing} are the
+setting in which the question arises; we do not evaluate them as
+remedies.

@@ -1,0 +1,22 @@
+%% Provisional abstract (2026-09-10). [E2]/[E3] clauses are filled from the
+%% experiment artifacts only; the registered abstract (Sep 18) must match.
+Serial spectral--spatial models compress each pixel's spectrum with a small
+encoder and classify with a wide spatial network that reads the encoded
+neighbourhood. When the neighbourhood predicts the label, does joint
+training starve the encoder? We prove, in a linear-encoder cross-entropy
+model with $M$ replicated contextual readouts, that at a matched fitting
+margin the spectral coefficient moves by at most a fraction
+$1/(1+Mv_0^2)$ of the update a spectral-only model needs, that the fitted
+model then fails under contextual reversal when its initial spectral
+coefficient is below half the margin, with expected error tending to
+$\Phi(m/2\sigma)$ over isotropic initialization, and that a
+$M^{-1/2}$-normalized readout removes the width dependence without
+removing the failure. The relative training speed of the contextual
+pathway, not width as such, is the competition parameter. We test the
+prediction with interventions on that speed in a ReLU convolutional model
+with two cues of equal information but unequal initial accessibility [E2:
+verdict], and with measured tissue spectra in constructed neighbourhoods
+[E3: verdict], each with a control that removes the cause. On a production
+model, scalar curvature does not identify the mechanism and an earlier
+apparent freezing advantage was protocol-confounded; we recommend no
+mitigation.
