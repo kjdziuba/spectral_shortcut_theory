@@ -280,9 +280,10 @@ reversal accuracy; the extension is fixed before those runs are read.
   threshold and the magnitudes are negligible (probe gain 0.04 at M = 2 →
   0.002 at M = 2048; reversal 0.134 → 0.117): the threshold sits in the
   saturated regime at every width including M = 2.
-- **P2 (normalized readout flat): NOT MET as stated** (ρ(a_u, M) = +0.25 /
-  −0.94 / −0.89); second clause a_u(2048) mup > sp: seed 0 yes (0.0059 vs
-  0.0045), seeds 1–2 pending.
+- **P2 (normalized readout flat): NOT MET as stated** (final grid: ρ(a_u, M)
+  = +0.25 / −0.96 / −0.54, only one seed below 0.5 in magnitude); **second
+  clause MET** — a_u(2048) mup > sp in every seed (0.0059 vs 0.0045, 0.0062
+  vs 0.0045, 0.0043 vs 0.0027).
 - **P3 (ctxfree): literal cutoff NOT MET** (a_u 0.15/0.13/0.09/0.06 < 0.25;
   ρ = −1.0 in every seed) **while its substance HOLDS** (probe 0.89–0.94,
   reversal 0.88–0.90 at every width; the energy fraction spreads over more

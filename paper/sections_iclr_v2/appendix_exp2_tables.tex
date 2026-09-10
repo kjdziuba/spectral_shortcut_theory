@@ -16,7 +16,7 @@ arm & $M$ & probe gain & $h_u$ & reversed acc. & context-random acc. & spectral-
 \texttt{mup} & 32 & 0.044$\pm$0.014 (3) & 0.088$\pm$0.037 (3) & 0.115$\pm$0.009 (3) & 0.507$\pm$0.007 (3) & 0.539$\pm$0.026 (3) \\
 \texttt{mup} & 128 & 0.026$\pm$0.016 (3) & 0.070$\pm$0.031 (3) & 0.108$\pm$0.012 (3) & 0.505$\pm$0.008 (3) & 0.526$\pm$0.018 (3) \\
 \texttt{mup} & 512 & 0.026$\pm$0.019 (3) & 0.071$\pm$0.034 (3) & 0.112$\pm$0.008 (3) & 0.505$\pm$0.007 (3) & 0.526$\pm$0.022 (3) \\
-\texttt{mup} & 2048 & 0.024 (1) & 0.076 (1) & 0.110 (1) & 0.509 (1) & 0.524 (1) \\
+\texttt{mup} & 2048 & 0.028$\pm$0.004 (3) & 0.070$\pm$0.018 (3) & 0.104$\pm$0.005 (3) & 0.504$\pm$0.006 (3) & 0.523$\pm$0.010 (3) \\
 \midrule
 \texttt{ctxfree} & 2 & 0.296$\pm$0.019 (3) & 0.863$\pm$0.048 (3) & 0.877$\pm$0.002 (3) & 0.876$\pm$0.003 (3) & 0.877$\pm$0.002 (3) \\
 \texttt{ctxfree} & 8 & 0.281$\pm$0.022 (3) & 0.741$\pm$0.014 (3) & 0.893$\pm$0.001 (3) & 0.893$\pm$0.001 (3) & 0.899$\pm$0.002 (3) \\
@@ -47,7 +47,7 @@ arm & $M$ & probe gain & $h_u$ & reversed acc. & context-random acc. \\ \midrule
 \texttt{mup} & 32 & 0.134$\pm$0.015 (3) & 0.213$\pm$0.068 (3) & 0.070$\pm$0.008 (3) & 0.507$\pm$0.008 (3) \\
 \texttt{mup} & 128 & 0.088$\pm$0.033 (3) & 0.146$\pm$0.070 (3) & 0.064$\pm$0.006 (3) & 0.505$\pm$0.008 (3) \\
 \texttt{mup} & 512 & 0.108$\pm$0.041 (3) & 0.178$\pm$0.104 (3) & 0.067$\pm$0.009 (3) & 0.506$\pm$0.007 (3) \\
-\texttt{mup} & 2048 & 0.104 (1) & 0.174 (1) & 0.068 (1) & 0.512 (1) \\
+\texttt{mup} & 2048 & 0.100$\pm$0.006 (3) & 0.153$\pm$0.035 (3) & 0.065$\pm$0.003 (3) & 0.506$\pm$0.007 (3) \\
 \midrule
 \texttt{ctxfree} & 2 & 0.317$\pm$0.024 (2) & 0.990$\pm$0.000 (2) & 0.940$\pm$0.006 (2) & 0.940$\pm$0.007 (2) \\
 \texttt{ctxfree} & 8 & 0.308$\pm$0.023 (3) & 0.977$\pm$0.005 (3) & 0.937$\pm$0.002 (3) & 0.938$\pm$0.002 (3) \\
@@ -83,6 +83,9 @@ arm & $M$ & probe gain & $h_u$ & reversed acc. & context-random acc. \\ \midrule
 0 & 0.00390625 & 22708 & 0.223 & 0.475 & 0.152 & 0.519 & 0.641 \\
 0 & 0.0625 & 7611 & 0.106 & 0.177 & 0.129 & 0.513 & 0.568 \\
 0 & 1 & 1671 & 0.028 & 0.079 & 0.128 & 0.515 & 0.536 \\
+1 & 0.0625 & 8977 & 0.100 & 0.181 & 0.129 & 0.509 & 0.575 \\
+1 & 1 & 1580 & 0.025 & 0.085 & 0.121 & 0.511 & 0.551 \\
+2 & 1 & 1881 & 0.014 & 0.036 & 0.112 & 0.500 & 0.507 \\
 \bottomrule\end{tabular}\end{table}
 \begin{table}[htbp]\centering\scriptsize
 \caption{Readout learning-rate multiplier at $M=32$ (arm \texttt{lrmult}) at $L^\ast$: mean$\pm$sd over three seeds.}\label{tab:exp2_lrmult}
@@ -96,5 +99,5 @@ arm & $M$ & probe gain & $h_u$ & reversed acc. & context-random acc. \\ \midrule
 \paragraph{Runs that did not reach $L^\ast$.}
 The following runs ended at the step budget above $L^\ast$: \texttt{headlr} $M=32$, $\kappa=0.000244141$, seed 0 (final loss 0.320 at step 40000); \texttt{headlr} $M=32$, $\kappa=3.05176e-05$, seed 0 (final loss 0.347 at step 40000).
 \paragraph{Registered verdicts.}
-Spearman correlations across widths at $L^\ast$, per seed (P1--P3 as registered use $a_u$ and reversal accuracy): \texttt{sp} seed 0: $\rho(a_u,M)=-0.54$, $\rho(\text{probe},M)=-0.54$, $\rho(\text{rev},M)=-0.64$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{sp} seed 1: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=-0.96$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{sp} seed 2: $\rho(a_u,M)=-0.96$, $\rho(\text{probe},M)=-0.93$, $\rho(\text{rev},M)=-0.82$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{mup} seed 0: $\rho(a_u,M)=+0.25$, $\rho(\text{probe},M)=-0.04$, $\rho(\text{rev},M)=-0.89$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{mup} seed 1: $\rho(a_u,M)=-0.94$, $\rho(\text{probe},M)=-0.94$, $\rho(\text{rev},M)=-0.83$ over $M\in\{2,4,8,32,128,512\}$; \texttt{mup} seed 2: $\rho(a_u,M)=-0.89$, $\rho(\text{probe},M)=-0.77$, $\rho(\text{rev},M)=-0.94$ over $M\in\{2,4,8,32,128,512\}$; \texttt{ctxfree} seed 0: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{ctxfree} seed 1: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{ctxfree} seed 2: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 0: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 1: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 2: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$.
-P2's second clause ($a_u$ at $M=2048$, normalized readout versus standard): seed 0: 0.0059 vs 0.0045.
+Spearman correlations across widths at $L^\ast$, per seed (P1--P3 as registered use $a_u$ and reversal accuracy): \texttt{sp} seed 0: $\rho(a_u,M)=-0.54$, $\rho(\text{probe},M)=-0.54$, $\rho(\text{rev},M)=-0.64$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{sp} seed 1: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=-0.96$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{sp} seed 2: $\rho(a_u,M)=-0.96$, $\rho(\text{probe},M)=-0.93$, $\rho(\text{rev},M)=-0.82$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{mup} seed 0: $\rho(a_u,M)=+0.25$, $\rho(\text{probe},M)=-0.04$, $\rho(\text{rev},M)=-0.89$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{mup} seed 1: $\rho(a_u,M)=-0.96$, $\rho(\text{probe},M)=-0.96$, $\rho(\text{rev},M)=-0.89$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{mup} seed 2: $\rho(a_u,M)=-0.54$, $\rho(\text{probe},M)=-0.46$, $\rho(\text{rev},M)=-0.89$ over $M\in\{2,4,8,32,128,512,2048\}$; \texttt{ctxfree} seed 0: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{ctxfree} seed 1: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{ctxfree} seed 2: $\rho(a_u,M)=-1.00$, $\rho(\text{probe},M)=-1.00$, $\rho(\text{rev},M)=+0.40$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 0: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 1: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$; \texttt{frozen} seed 2: $\rho(a_u,M)=+nan$, $\rho(\text{probe},M)=+nan$, $\rho(\text{rev},M)=-1.00$ over $M\in\{2,8,128,512\}$.
+P2's second clause ($a_u$ at $M=2048$, normalized readout versus standard): seed 0: 0.0059 vs 0.0045; seed 1: 0.0062 vs 0.0045; seed 2: 0.0043 vs 0.0027.

@@ -77,7 +77,9 @@ width trend in encoder alignment and reversal accuracy is monotone in two
 seeds but not the third, and its magnitude is negligible, because $L^\ast$
 lies in a regime where the context fits before any spectral adaptation at
 every width, including $M=2$. P2 fails as stated (the normalized readout
-also shows a small trend in two seeds). P3 fails its literal cutoff on the
+also shows a small trend in two seeds), although its second clause holds:
+at $M=2048$ the normalized readout leaves more encoder energy on the
+spectral direction than the standard one in every seed. P3 fails its literal cutoff on the
 encoder's energy fraction while its substance holds: with the cause removed
 the encoder exposes the cue at every width (probe $0.89$--$0.94$), the
 energy fraction merely spreading over more head directions as $M$ grows.
