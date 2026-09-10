@@ -28,7 +28,8 @@ def ms(x, nd=3):
 
 
 star = df[df["threshold"].astype(str) == "0.3"]
-for regime, name in (("unready", "unready (whitened)"), ("ready", "ready (standardized)")):
+for regime, name in (("unready", "unready (whitened, $\\gamma=30$)"), ("unready10", "unready (whitened, $\\gamma=10$; amendment)"),
+                     ("ready", "ready (standardized)")):
     d = star[star["regime"] == regime]
     if d.empty:
         continue

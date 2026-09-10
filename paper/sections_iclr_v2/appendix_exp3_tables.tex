@@ -1,5 +1,5 @@
 \begin{table}[htbp]\centering\scriptsize
-\caption{Experiment 3, unready (whitened) regime, at $L^\ast=0.30$: mean$\pm$sd over seeds (number of seeds). Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; accuracies on validation (val) and test (test) patients under the paired conditions.}\label{tab:exp3_unready}
+\caption{Experiment 3, unready (whitened, $\gamma=30$) regime, at $L^\ast=0.30$: mean$\pm$sd over seeds (number of seeds). Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; accuracies on validation (val) and test (test) patients under the paired conditions.}\label{tab:exp3_unready}
 \begin{tabular}{llrcccccc}\toprule
 arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec.-only (val) & rev.\ (test) & ctx-rand.\ (test) \\ \midrule
 \texttt{sp} & 8 & 126$\pm$51 & 0.015$\pm$0.031 & 0.083$\pm$0.014 & 0.500$\pm$0.012 & 0.485$\pm$0.028 & 0.083$\pm$0.005 & 0.496$\pm$0.000 (3) \\
@@ -15,6 +15,21 @@ arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec
 \texttt{ctxfree} & 128 & 14954$\pm$488 & 0.336$\pm$0.014 & 0.911$\pm$0.030 & 0.908$\pm$0.029 & 0.926$\pm$0.028 & 0.930$\pm$0.014 & 0.928$\pm$0.009 (3) \\
 \midrule
 \texttt{frozen} & 32 & 395$\pm$95 & 0.000$\pm$0.000 & 0.076$\pm$0.006 & 0.500$\pm$0.009 & 0.515$\pm$0.008 & 0.076$\pm$0.002 & 0.496$\pm$0.002 (3) \\
+\bottomrule
+\end{tabular}\end{table}
+\begin{table}[htbp]\centering\scriptsize
+\caption{Experiment 3, unready (whitened, $\gamma=10$; amendment) regime, at $L^\ast=0.30$: mean$\pm$sd over seeds (number of seeds). Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; accuracies on validation (val) and test (test) patients under the paired conditions.}\label{tab:exp3_unready10}
+\begin{tabular}{llrcccccc}\toprule
+arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec.-only (val) & rev.\ (test) & ctx-rand.\ (test) \\ \midrule
+\texttt{sp} & 32 & 592$\pm$70 & 0.076$\pm$0.055 & 0.067$\pm$0.004 & 0.501$\pm$0.011 & 0.512$\pm$0.007 & 0.063$\pm$0.002 & 0.496$\pm$0.002 (3) \\
+\midrule
+\texttt{headlr} & 32 / 0.00390625 & 1579$\pm$318 & 0.134$\pm$0.072 & 0.066$\pm$0.010 & 0.501$\pm$0.011 & 0.508$\pm$0.015 & 0.065$\pm$0.005 & 0.496$\pm$0.001 (3) \\
+\texttt{headlr} & 32 / 0.0625 & 1337$\pm$227 & 0.124$\pm$0.068 & 0.065$\pm$0.009 & 0.501$\pm$0.011 & 0.508$\pm$0.013 & 0.065$\pm$0.003 & 0.496$\pm$0.001 (3) \\
+\texttt{headlr} & 32 & 592$\pm$70 & 0.076$\pm$0.055 & 0.067$\pm$0.004 & 0.501$\pm$0.011 & 0.512$\pm$0.007 & 0.063$\pm$0.002 & 0.496$\pm$0.002 (3) \\
+\midrule
+\texttt{ctxfree} & 32 & 16003$\pm$231 & 0.350$\pm$0.012 & 0.916$\pm$0.005 & 0.916$\pm$0.006 & 0.925$\pm$0.009 & 0.923$\pm$0.011 & 0.924$\pm$0.011 (3) \\
+\midrule
+\texttt{frozen} & 32 & 2006$\pm$310 & 0.000$\pm$0.000 & 0.080$\pm$0.008 & 0.502$\pm$0.011 & 0.511$\pm$0.007 & 0.073$\pm$0.004 & 0.495$\pm$0.001 (3) \\
 \bottomrule
 \end{tabular}\end{table}
 \begin{table}[htbp]\centering\scriptsize

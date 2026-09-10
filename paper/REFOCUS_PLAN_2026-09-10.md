@@ -416,6 +416,13 @@ Decision (Astra refocus_01 §3, adopted): **3B primary, 3A secondary.**
   Prediction: with the smaller amplitude the whole-head rate recovers its
   effect on spectral learning (probe gain increasing as κ decreases, as in
   Experiment 2); reliance is not expected to change.
+  **Outcome (2026-09-11 05:00, 18 runs at M = 32):** prediction MET — probe
+  gain at L* increases with a slower head in every seed (κ = 1 / 1/16 /
+  1/256: seed 0 0.021/0.046/0.051; seed 1 0.132/0.170/0.180; seed 2
+  0.076/0.155/0.170; means 0.076/0.124/0.134), fits take 530–1,800 steps
+  (vs ~100 at γ = 30); reversal 0.06–0.08 unchanged; ctxfree gain 0.35,
+  reversal 0.91–0.92; frozen 0.07–0.09. Kept in the main text as one
+  sentence (Sec 5) with its table in Appendix D.
 - **3A (secondary, if resources permit; result retained whatever it shows).**
   Astra's sentence: "We construct a contextual-shift benchmark from measured
   centre spectra and measured neighbour spectra, assigning neighbour classes
