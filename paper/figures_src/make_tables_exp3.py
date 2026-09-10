@@ -35,7 +35,7 @@ for regime, name in (("unready", "unready (whitened)"), ("ready", "ready (standa
     L.append("\\begin{table}[htbp]\\centering\\scriptsize")
     L.append(f"\\caption{{Experiment 3, {name} regime, at $L^\\ast=0.30$: mean$\\pm$sd over seeds (number of seeds). "
              "Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; "
-             "accuracies on validation (val) and test (test) patients under the paired conditions.}}"
+             "accuracies on validation (val) and test (test) patients under the paired conditions.}"
              f"\\label{{tab:exp3_{regime}}}")
     L.append("\\begin{tabular}{llrcccccc}\\toprule")
     L.append("arm & $M$ / $\\kappa$ & step & probe gain & rev.\\ (val) & ctx-rand.\\ (val) & spec.-only (val) & rev.\\ (test) & ctx-rand.\\ (test) \\\\ \\midrule")
