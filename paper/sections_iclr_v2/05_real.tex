@@ -63,10 +63,15 @@ help the encoder here because, at amplitude $30$, the contextual cue
 dominates the encoder's own gradient: the encoder learns the context
 directions before the whitened, high-dimensional class contrast, in the
 theorem's terms a large $v_0$ relative to $a_0$ at the encoder rather than
-a fast readout. [E3: the uninformative-context comparator and the frozen
-encoder in this regime.] [E3: the $\gamma=10$ variant, which tests whether
-the head's rate recovers its effect once the cue no longer dominates the
-encoder's gradient.]
+a fast readout. The comparators show what the encoder can do
+with the same real spectra when the cause is removed: trained with an
+uninformative context it reaches $L^\ast$ only after $15{,}000$--$17{,}000$
+steps but with probe gain $+0.35$ (probe $0.92$--$0.93$), reversal
+accuracy $0.91$--$0.93$ and context-random accuracy $0.91$--$0.92$; the
+frozen encoder gives $0.08$. Excess shifted risk of the joint models over
+that comparator is $0.85$. [E3: the $\gamma=10$ variant, which tests
+whether the head's rate recovers its effect once the cue no longer
+dominates the encoder's gradient.]
 
 \paragraph{Reading.}
 With measured spectra the outcome matches the synthetic experiment on
