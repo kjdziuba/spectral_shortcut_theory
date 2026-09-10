@@ -43,13 +43,22 @@ proposed cause.
   removes the width dependence, though not the failure.
 \item \textbf{Synthetic intervention.} In a ReLU convolutional head over a
   linear encoder, with two cues of equal oracle information but unequal
-  initial accessibility, [E2: state the supported verdict on suppression at
-  matched fit, its response to head width, head learning rate and readout
-  normalization, and its absence when the context is uninformative].
+  initial accessibility, an informative context suppresses the encoder's
+  spectral learning at matched fit at every width; slowing the whole head
+  restores it monotonically in every seed, a normalized readout reduces it
+  at large width, and an uninformative context removes it. The fitted
+  head's reliance on context does not respond to any of these controls:
+  the contextual pathway's speed sets how much spectral structure the
+  encoder retains, hence what readout retraining can recover, not whether
+  the shortcut is used.
 \item \textbf{Real spectra.} With measured centre spectra and their
-  recorded labels in constructed neighbourhoods, in a regime where a random
-  encoder cannot read the spectral cue and in one where it can, [E3: state
-  the supported verdict].
+  recorded labels in constructed neighbourhoods, the same reliance appears
+  in every arm; encoder suppression is complete in the regime where the
+  encoder must learn the contrast and, at the cue amplitude that makes the
+  context accessible, insensitive to the head's rate, while in the regime
+  where a random encoder already reads the contrast there is nothing to
+  suppress. A readiness scan of real class pairs is itself a result: which
+  regime a pipeline is in depends on preprocessing and bottleneck.
 \item \textbf{Scope.} We report why scalar curvature on a production model
   does not identify the mechanism and why an earlier apparent freezing
   advantage was protocol-confounded (Section~\ref{sec:limitations},

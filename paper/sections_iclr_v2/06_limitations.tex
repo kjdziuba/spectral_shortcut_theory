@@ -12,9 +12,16 @@ trained faster than the spectral encoder suppresses the encoder's update
 at matched fit, that the fitted model then fails under contextual reversal
 while a spectral-only comparator does not, and that readout normalization
 removes the width dependence of this effect without removing the failure.
-[E2/E3: one sentence naming the architectures and conditions in which the
-corresponding suppression and shifted-risk excess were observed, and any in
-which they were not.]
+In a ReLU convolutional head over a linear encoder on synthetic data, and
+with measured tissue spectra in constructed neighbourhoods, we find the
+corresponding suppression at every width and the corresponding failure
+under context shift whenever the context is informative, with excess
+shifted risk of about $0.75$ (synthetic) and $0.85$ (real spectra) over the
+uninformative-context comparator. What transfers with a qualification is
+the role of speed: the head's relative rate controls how much of the
+spectral cue the encoder learns before the fit, not whether the fitted head
+uses the shortcut, and where the contextual cue dominates the encoder's
+own gradient even that control disappears.
 
 \paragraph{Limitations.}
 The theorem has a linear encoder, noiseless cues and a fixed spectral skip

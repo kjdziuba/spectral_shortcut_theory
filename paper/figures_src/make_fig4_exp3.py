@@ -28,7 +28,8 @@ plt.rcParams.update({
     "legend.fontsize": 6, "xtick.labelsize": 6.5, "ytick.labelsize": 6.5,
     "axes.spines.top": False, "axes.spines.right": False, "figure.dpi": 200,
 })
-REG = {"unready": ("unready (whitened)", "#d62728"), "ready": ("ready (standardized)", "#1f77b4")}
+REG = {"unready": ("unready (whitened, $\\gamma=30$)", "#d62728"), "unready10": ("unready (whitened, $\\gamma=10$)", "#ff7f0e"),
+       "ready": ("ready (standardized)", "#1f77b4")}
 
 df = pd.read_csv(RES / "exp3_summary.csv")
 star = df[df["threshold"].astype(str) == str(L_STAR)].copy()
@@ -76,6 +77,8 @@ for regime, (label, col) in REG.items():
     print(f"(c) {regime} kappa: " + "; ".join(f"k={i:g}: gain {r.probe_val_gain:.3f}, rev {r.acc_reversed_val:.3f}"
                                              for i, r in m.iterrows()))
 ax_c.set_xscale("log", base=16); ax_c.invert_xaxis()
+kt = sorted(set(star[star["arm"] == "headlr"]["head_mult"]), reverse=True) or [1, 1 / 16, 1 / 256]
+ax_c.set_xticks(kt); ax_c.set_xticklabels(["1" if v == 1 else f"1/{round(1 / v)}" for v in kt]); ax_c.set_xticks([], minor=True)
 ax_c.set_xlabel(r"whole-head rate multiplier $\kappa$ ($M=32$; slower $\to$)"); ax_c.set_ylabel(r"value at $L^\ast$ (val.)")
 ax_c.set_title("(c) relative speed of the head", loc="left"); ax_c.axhline(0.5, color="k", ls=":", lw=0.8)
 ax_c.grid(True, alpha=0.25); ax_c.legend(frameon=False, loc="best")
