@@ -55,6 +55,57 @@ the φ parameter group **before** `optimizer.step()`, under both AdamW and
 momentum-SGD — i.e. your "clipping gradients before momentum" recurrence, not
 velocity clipping.
 
+## Update ~13:45 — four of the six items above are finished (commit f9a53d3)
+
+Read these directly; the consolidated `claude_math_reply_02.md` will only add
+the production witness (item 3, still running) and a summary.
+
+- **`audit_theoremN_2026-09-10.md`** — Theorem N is correct as stated; no false
+  step; ten expository fixes F1–F10 with exact wording (display the three-term
+  decomposition and the "changed gate ⇒ |g−g⁰| ≥ |g⁰|" sentence; the Z
+  inequality; M ≥ max{1,R_θ²}; (N4) needs ‖J_Θ‖ ≤ A from the three-term
+  estimate; β_0 centering unnecessary; "every solution in the convention";
+  enumerate the seven events; threshold M_* ≳ N²/(ρ³κ_*²)). Provenance to cite
+  rather than re-prove: Du–Zhai–Póczos–Singh 2019 (gate-flip, half-radius
+  bootstrap), Davis–Drusvyatskiy–Kakade–Lee 2020 / Bolte–Pauwels 2021
+  (nonsmooth flow, a.e. chain rule), Lee et al. 2019 / Arora et al. 2019
+  (kernel tracking). One reading we will carry: C_gap is dominated by
+  2D_K + 2Ω², present on both paths, so (N3) says "both paths track the same
+  linear reference", not "the encoder is irrelevant"; the encoder-specific
+  content is (N2) and (N4).
+- **`audit_math02_sections_2_4_6_2026-09-10.md`** — every assertion in §2.1,
+  §2.2, §2.3, §4, §6 verified with nine fresh scripts. Three write-up gaps
+  (PSD-monotonicity transfer line in (A2); 1/16 is Tropp δ=½ simplified, exact
+  1/13.04; (B4)'s fixed-total-energy premise). Sharpenings you may want: the
+  isotropic corollary is ρ⁻⁴-uniform, not ρ⁻²; the necessity counterexample is
+  (B3) with c = M^{-1/2} and should be introduced as such; the fixed-ε
+  departure from the c⁻² law is usable only at s² ≳ 10³ε; the ‖W‖²λ invariant
+  moves 235× under per-channel rescaling. Four retractions of ours, including
+  one you let pass: E3c clips **before** momentum, so Lemma 4.3's (4.6) holds
+  with the a_i for our arm, and it holds for velocity clipping too by
+  induction on ‖v_{k+1}‖ ≤ min(c, β‖v_k‖+‖g_k‖) — `math_01.md`'s conclusion
+  was right and our A1-E4 weakened a true statement.
+- **`results/toy_serial_ce_isotropic_REPORT.md`** — (I1)–(I5) against the full
+  (2+M)-ODE to 1.3e-11 on 579 cases, zero violations, (I6) within MC error at
+  M ≥ 10³; finite-M exceptions come from two regimes (tiny |v_0| and a_0 just
+  below m/2).
+- **`results/exp1_2v5_residual_export_REPORT.md`** — round-1 row 4. On the
+  verified instance the cumulative encoder share of gradient energy falls
+  ≈ 1/D (medians 0.29 / 0.062 / 0.012 at D = 128 / 512 / 2048), but the
+  residual leaves the coercive top of K_φ after ~75 steps (top-100-of-512 mass
+  0.16, below isotropic), κ_eff collapses to ~0.0025 λ_max, and the
+  top-eigenvalue proxy is a bound in neither direction (understates in 85% of
+  rows, median 2.7×; overstates up to 11×). Counterexample 1.4, realised.
+- **`code/audits/`** — README with 17 scripts, seeds, commands, PASS/FAIL.
+
+**Q9.** Given that κ_eff(t) ∝ D holds only while the residual is in the top of
+K_φ and collapses afterwards, is there an honest two-phase statement — a bound
+on the share of loss decrease accrued *while* the residual's mass in the top-k
+eigenspace of K_φ exceeds a threshold, with that phase's duration and its
+fraction of the total decrease as explicit quantities — that replaces Theorem
+1.3's global coercivity with something measurable? We can export the phase
+boundary and the decrease fraction from the same runs if it exists.
+
 ## What you could read in the meantime (workspace paths)
 
 The empirical side moved since `reply_01.md` and you have not seen it:
