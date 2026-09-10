@@ -1890,3 +1890,31 @@ ViT sweep:
   reviewers warned about — no conclusion before n=3 + paired CIs
   (expect wide intervals; the honest statement will likely be
   'no resolvable difference at n=3 under the matched protocol').
+
+## 2026-09-10 (06:15) — matched lane, core four arms at n=3: pre-registered verdicts
+
+  arm                  best-val (s0,s1,s2 | mean)          final-5 (mean)
+  frozen_random_m      0.837 0.838 0.768 | 0.814           0.684
+  joint_linear_m       0.864 0.806 0.842 | 0.837           0.694
+  frozen_pretrained_m  0.836 0.876 0.870 | 0.861           0.690
+  finetune_real_m      0.861 0.862 0.847 | 0.857           0.710
+  Paired by seed, 90% t-intervals (n=3):
+  P1 finetune_real - frozen_pretrained: best-val -0.004 [-0.048,+0.039];
+     final-5 +0.021 [-0.022,+0.063]  -> NOT SUPPORTED, not refuted:
+     no resolvable difference (commitment: report as 'prediction of
+     harmful fine-tuning not supported; fine-tuning with verified gradient
+     flow matched the frozen pretrained encoder within noise').
+  joint_linear - frozen_random: best-val +0.023 [-0.066,+0.112];
+     final-5 +0.011 [-0.142,+0.163] -> no resolvable difference. The old
+     protocol's h48 final-5 deficit (-0.110) is GONE under matched hygiene
+     (identical BN-affine, phi-only clipping): the 'frozen >= joint'
+     finding was protocol asymmetry, exactly Astra's M1.
+  frozen_pretrained - frozen_random: +0.047 [-0.042,+0.136] -> directional
+     benefit of pretraining, unresolved at n=3.
+- BIG PICTURE: under a fair protocol at h48, all four arms lie within noise
+  (best-val 0.81-0.86). This is Astra's 'all reasonably tuned methods
+  agree' branch: remove the practical freezing headline; the paper's
+  contribution is the conditional theory + constructive instance (Thm 5.1)
+  + the diagnostic-limits study + the demonstration that protocol
+  asymmetries (clip scope, BN affine, checkpoint policy) manufacture
+  apparent shortcut effects. LR arms + cosine seed 2 pending (~08:20).
