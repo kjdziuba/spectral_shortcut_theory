@@ -75,10 +75,13 @@ Paper under double-blind review}
 
 \appendix
 \makeatletter
-\@for\envname:=theorem,lemma,corollary,proposition,definition,assumption,remark\do{%
-  \setcounter{\envname}{0}%
-  \expandafter\renewcommand\csname the\envname\endcsname{\Alph{section}.\arabic{\envname}}%
-  \expandafter\@addtoreset\expandafter{\envname}{section}}
+\setcounter{theorem}{0}\renewcommand{\thetheorem}{\Alph{section}.\arabic{theorem}}\@addtoreset{theorem}{section}
+\setcounter{lemma}{0}\renewcommand{\thelemma}{\Alph{section}.\arabic{lemma}}\@addtoreset{lemma}{section}
+\setcounter{corollary}{0}\renewcommand{\thecorollary}{\Alph{section}.\arabic{corollary}}\@addtoreset{corollary}{section}
+\setcounter{proposition}{0}\renewcommand{\theproposition}{\Alph{section}.\arabic{proposition}}\@addtoreset{proposition}{section}
+\setcounter{definition}{0}\renewcommand{\thedefinition}{\Alph{section}.\arabic{definition}}\@addtoreset{definition}{section}
+\setcounter{assumption}{0}\renewcommand{\theassumption}{\Alph{section}.\arabic{assumption}}\@addtoreset{assumption}{section}
+\setcounter{remark}{0}\renewcommand{\theremark}{\Alph{section}.\arabic{remark}}\@addtoreset{remark}{section}
 \makeatother
 \IfFileExists{sections_iclr/appendix.tex}{\input{sections_iclr/appendix}}{%
 \section{Proofs for Section 4}\label{app:proofs}\emph{[Appendix scaffold pending.]}
