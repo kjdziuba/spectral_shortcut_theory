@@ -402,6 +402,18 @@ Decision (Astra refocus_01 §3, adopted): **3B primary, 3A secondary.**
   on 6,000 disjoint training pixels, evaluation on up to 6,000 val and
   6,000 test centres (paired conditions iid / reversed / ctx_random /
   spec_only).
+- **Amendment (2026-09-11 03:00, before the runs): regime `unready10`.**
+  The whitened regime at γ = 30 shows absolute encoder suppression at
+  every width and every κ (probe gain ≤ +0.05 against an initial 0.56–0.60;
+  reversal 0.07; fits in 69–185 steps even at κ = 1/256), because the cue's
+  amplitude makes it dominate the encoder's own gradient. To test the
+  amplitude-ratio reading on real spectra, a third regime repeats the
+  whitened construction with γ = 10 (Experiment 2's amplitude scale; τ
+  recalibrated to equal oracles), arms sp M ∈ {32, 512}, headlr κ ∈
+  {1, 1/16, 1/256} at M = 32, ctxfree M = 8, frozen M = 32, three seeds.
+  Prediction: with the smaller amplitude the whole-head rate recovers its
+  effect on spectral learning (probe gain increasing as κ decreases, as in
+  Experiment 2); reliance is not expected to change.
 - **3A (secondary, if resources permit; result retained whatever it shows).**
   Astra's sentence: "We construct a contextual-shift benchmark from measured
   centre spectra and measured neighbour spectra, assigning neighbour classes
