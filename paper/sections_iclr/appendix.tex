@@ -1,0 +1,1138 @@
+% Appendix scaffold for main_iclr.tex.
+% Order: A proofs for Section 4; B additional theory (appendix_math.tex,
+% reproduced verbatim, not edited); C the effective gradient ratio;
+% D/E experiment details (separate file when it exists); F verification record.
+
+\section{Proofs for Section 4}
+\label{app:proofs}
+
+Theorem~\ref{thm:hessian} bounds a ratio of two top eigenvalues, and its
+proof separates cleanly into a lower bound on the numerator and an upper
+bound on the denominator. Appendix~\ref{app:witness} proves the first by
+an explicit witness direction in the classifier head; Appendix~\ref{app:cap}
+proves the second, which is Lemma~\ref{lem:opcap} of the main text;
+Appendix~\ref{app:instance} exhibits a concrete architecture for which
+\emph{both} structural hypotheses are theorems rather than assumptions, so
+that the disparity law itself is proved outright for at least one member of
+each side of the pipeline; Appendix~\ref{app:thm1} assembles the two bounds.
+Appendix~\ref{app:classical} records how the disparity relates to the
+classical causes of ill-conditioning, and Appendix~\ref{app:thm2_open} states
+what remains open around Theorem~\ref{thm:twoscale}. Throughout, Grams are
+normalized as empirical means over the $N := N_{\mathrm{data}} HW$ pixel
+positions; the unnormalized (summed) Grams differ by the fixed factor $N$,
+which does not affect any statement in $M$.
+
+\subsection{The spatial block: an explicit witness}
+\label{app:witness}
+
+\begin{lemma}[Spatial block scaling]
+\label{lem:phi_scaling}
+Let $M$ denote the characteristic width of $g_\phip$ (channel count for a
+CNN, embedding dimension for a ViT, hidden layer width for an MLP), let
+$N_{\mathrm{cls}} \geq 2$, and suppose $g_\phip$ ends in a dense classifier
+head over penultimate features $h_n \in \mathbb{R}^{M_h}$ with
+$M_h = \Theta(M)$ whose softmax-weighted mean feature Gram
+\begin{equation}
+\label{eq:feature_gram}
+    S_h^{p} \;:=\; \frac{1}{N} \sum_{n=1}^{N}
+        p^{(n)}_{\min}\, h_n h_n^\top,
+    \qquad
+    p^{(n)}_{\min} := \min_i p^{(n)}_i ,
+\end{equation}
+satisfies $\lambda_{\max}(S_h^{p}) \geq q_h M_h$ with probability at least
+$1 - \delta_h$ over the random initialization, for constants $q_h > 0$ and
+$\delta_h < 1$ independent of $M$ (the \emph{head hypothesis}: the features
+carry a common direction of $\Theta(M)$ energy across inputs, on pixels
+whose initial predictions are non-degenerate). Then the spatial
+Gauss--Newton block of~\eqref{eq:ggn} satisfies
+\[
+    \lambda_{\max}(G_{\phip\phip}) \;=\; \Omega(M)
+\]
+in expectation over random Kaiming (variance-scaled Gaussian)
+initialization. The logit Gram $J_\phip^\top J_\phip \succeq G_{\phip\phip}$
+inherits the bound unconditionally; the residual Gram
+$J_\phip^{\mathrm{res}\top} J_\phip^{\mathrm{res}}$ satisfies it under the
+analogous hypothesis on the $p^2$-weighted Gram $S_h^{p^2}$. For
+architecture families with $\Cg = \Theta(M^2)$ (fixed depth with at least
+two consecutive width-proportional layers), equivalently
+$\lambda_{\max}(G_{\phip\phip}) = \Omega(\sqrt{\Cg})$.
+\end{lemma}
+
+The proof has three steps: (1)~context---the exact width-linear law of
+Karakida et al.~\citep{karakida2019universal} for the top Fisher
+eigenvalue in their model class, which we use as the asymptotic benchmark
+but do \emph{not} invoke directly; (2)~an exact spectral lower bound on the
+softmax inner matrix at initialization; (3)~an elementary explicit witness
+direction in the head weights that yields $\Omega(M)$ self-containedly.
+
+\begin{proof}
+\emph{Step 1: The width-linear law of Karakida et al.\ (context).}
+Karakida, Akaho, and Amari~\citep{karakida2019universal} analyze fully
+connected networks of depth $L \geq 2$ with layer widths
+$M_\ell = \alpha_\ell M$, linear outputs, and variance-scaled Gaussian
+(Kaiming-type) initialization
+$W^\ell_{ij} \sim \mathcal{N}(0, \sigma_w^2 / M_{\ell-1})$,
+$b^\ell_i \sim \mathcal{N}(0, \sigma_b^2)$. For the empirical Fisher
+information of the squared-loss model,
+$F = \tfrac{1}{T} \sum_{t=1}^{T} \sum_{k} \nabla f_k(x_t) \nabla
+f_k(x_t)^\top$ (the empirical-mean Gram of the output Jacobian), their
+Theorem~4 gives, in the limit $M \gg 1$,
+\[
+    \lambda_{\max}(F)
+    \;=\; \alpha \left( \tfrac{T-1}{T}\,\kappa_2
+        + \tfrac{1}{T}\,\kappa_1 \right) M
+    \;=\; \Theta(M),
+\]
+where $\kappa_1, \kappa_2 = \Theta(1)$ are macroscopic constants computed
+from the layer-wise signal-propagation recursions and
+$\alpha = \sum_\ell \alpha_\ell \alpha_{\ell - 1}$. Their Theorem~1
+simultaneously shows the \emph{mean} eigenvalue is
+$m_\lambda = C \kappa_1 / M = \mathcal{O}(1/M)$: as the network widens, the
+spectrum becomes extremely skewed---almost all directions flatten while the
+top eigenvalue grows linearly in width. We record two cautions. First,
+Theorem~4 fixes the \emph{output} layer at $C = \mathcal{O}(1)$ but requires
+the input and hidden widths to scale proportionally with $M$; a classifier
+reading a fixed bottleneck $K$ violates the input-side requirement (its
+coefficient $\alpha$ degenerates there), so the theorem cannot be applied
+verbatim to the spatial modules considered here. Second, both statements are
+asymptotic mean-field equalities with no finite-$M$ rate. Steps~2--3
+therefore prove the $\Omega(M)$ bound self-containedly; Karakida's law
+serves as the sharp benchmark within its model class, validated numerically
+in their Figure~1.
+
+\emph{Step 2: The softmax inner matrix at initialization.}
+The loss is softmax cross-entropy, not squared loss, so the spatial
+Gauss--Newton block carries the softmax inner matrix
+\[
+    G_{\phip\phip}
+    \;=\; \frac{1}{N} \sum_{n=1}^{N}
+        J^{(n)\top} H_\tau^{(n)} J^{(n)},
+    \qquad
+    H_\tau \;:=\; \mathrm{diag}(p) - p p^\top,
+\]
+where $J^{(n)} := \partial \hat{y}^{(n)} / \partial \phip$ is the per-pixel
+logit Jacobian and $p = \mathrm{softmax}(\hat{y})$. For any
+$v \in \mathbb{R}^{N_{\mathrm{cls}}}$, the quadratic form is a variance:
+$v^\top H_\tau v = \sum_i p_i v_i^2 - (\sum_i p_i v_i)^2 =
+\mathrm{Var}_{i \sim p}(v_i) \geq p_{\min} \sum_i (v_i - \bar{v}_p)^2
+\geq p_{\min} \norm{P_\perp v}^2$, where $p_{\min} := \min_i p_i$,
+$\bar{v}_p := \sum_i p_i v_i$, the last inequality uses that the unweighted
+mean minimizes the sum of squared deviations, and
+$P_\perp := I - \tfrac{1}{N_{\mathrm{cls}}} \mathbf{1}\mathbf{1}^\top$
+projects onto the mean-zero subspace $\mathbf{1}^\perp$. Hence
+\[
+    H_\tau \;\succeq\; p_{\min} \, P_\perp .
+\]
+The bound is used per pixel in Step~3; no minimum over pixels is taken, so
+no uniform-over-pixels lower bound on $p_{\min}$ is needed anywhere in the
+proof. (For orientation: at Kaiming initialization the logits are
+$\mathcal{O}(1)$ uniformly in $M$, so $p^{(n)}_{\min}$ is of order
+$1/N_{\mathrm{cls}}$ for typical $n$.)
+
+\emph{Step 3: An explicit witness direction.}
+Write the classifier head of $g_\phip$ as $\hat{y}_n = W h_n + b$ with
+penultimate features $h_n = h(x_n) \in \mathbb{R}^{M_h}$,
+$M_h = \Theta(M)$. A perturbation of the head weights is a matrix
+$V \in \mathbb{R}^{N_{\mathrm{cls}} \times M_h}$; it is a unit vector in
+parameter space precisely when $\norm{V}_F = 1$, under any vectorization
+convention, and the logit perturbation it induces at pixel $n$ is $V h_n$.
+Let $u$ be a top unit eigenvector of $S_h^{p}$ in~\eqref{eq:feature_gram},
+and fix a unit contrast $c \in \mathbb{R}^{N_{\mathrm{cls}}}$ with
+$c \perp \mathbf{1}$ (possible since $N_{\mathrm{cls}} \geq 2$); by Step~2,
+at every pixel
+\[
+    c^\top H_\tau^{(n)} c
+    \;=\; \mathrm{Var}_{i \sim p^{(n)}}(c_i)
+    \;\geq\; p^{(n)}_{\min} \norm{P_\perp c}^2
+    \;=\; p^{(n)}_{\min}.
+\]
+Take the rank-one witness $V := c\, u^\top$, for which
+$\norm{V}_F = \norm{c}\norm{u} = 1$ and $V h_n = (h_n^\top u)\, c$. Then
+\begin{equation}
+\label{eq:witness_bound}
+\begin{aligned}
+    \lambda_{\max}(G_{\phip\phip})
+    &\;\geq\; \frac{1}{N} \sum_{n=1}^{N}
+        (V h_n)^\top H_\tau^{(n)} (V h_n)
+    \;=\; \frac{1}{N} \sum_{n=1}^{N}
+        (h_n^\top u)^2\, c^\top H_\tau^{(n)} c\\
+    &\;\geq\; u^\top S_h^{p} u
+    \;=\; \lambda_{\max}(S_h^{p}).
+\end{aligned}
+\end{equation}
+Note what~\eqref{eq:witness_bound} is: a deterministic, hypothesis-free
+inequality---one identity and one application of Step~2---valid at every
+parameter value. All $N$ pixels contribute, and no minimum over pixels is
+taken, so no union bound and no factor of $N$ enters.
+
+The head hypothesis is exactly $\lambda_{\max}(S_h^{p}) \geq q_h M_h$ with
+probability at least $1 - \delta_h$. On that event
+$\lambda_{\max}(G_{\phip\phip}) \geq q_h M_h = \Omega(M)$; since
+$\lambda_{\max} \geq 0$ always,
+\[
+    \E\!\left[\lambda_{\max}(G_{\phip\phip})\right]
+    \;\geq\; (1 - \delta_h)\, q_h M_h
+    \;=\; \Omega(M),
+\]
+which is the claim.
+
+\emph{The other two conventions.}
+The bound just proved is for the Gauss--Newton block
+$G_{\phip\phip} = J_\phip^\top H_\tau J_\phip$ of~\eqref{eq:ggn}, the object
+appearing in Definition~\ref{def:dcurv}. Two neighbouring matrices inherit
+it. For the \emph{logit} Gram, $H_\tau \preceq I$ gives
+$J_\phip^\top J_\phip \succeq G_{\phip\phip}$, so
+$\lambda_{\max}(J_\phip^\top J_\phip) \geq \lambda_{\max}(G_{\phip\phip}) =
+\Omega(M)$ immediately. For the \emph{residual} Gram
+$J_\phip^{\mathrm{res}\top} J_\phip^{\mathrm{res}} = J_\phip^\top H_\tau^2
+J_\phip$, note that $H_\tau$ is symmetric with $H_\tau \mathbf{1} = 0$, so
+$\mathbf{1}^\perp$ is invariant and, by Step~2,
+$H_\tau^{(n)} \succeq p^{(n)}_{\min} I$ there; squaring the eigenvalues on
+that subspace gives $(H_\tau^{(n)})^2 \succeq (p^{(n)}_{\min})^2 P_\perp$,
+so the identical witness argument runs with the weights
+$(p^{(n)}_{\min})^2$ in place of $p^{(n)}_{\min}$ and yields
+$\lambda_{\max}(J_\phip^{\mathrm{res}\top} J_\phip^{\mathrm{res}}) \geq
+\lambda_{\max}(S_h^{p^2}) = \Omega(M)$ under the corresponding head
+hypothesis.
+\end{proof}
+
+\paragraph{On the head hypothesis, and its counterpart in Karakida et al.}
+Write $S_h := N^{-1} \sum_n h_n h_n^\top$ for the unweighted mean feature
+Gram. The hypothesis $\lambda_{\max}(S_h^{p}) = \Omega(M_h)$ asks two things
+at once: that the penultimate features carry a common direction of
+$\Theta(M_h)$ energy across inputs ($\lambda_{\max}(S_h) = \Omega(M_h)$),
+and that the initial predictions are non-degenerate on the pixels supplying
+that energy. The second is mild at initialization---the logits are
+$\mathcal{O}(1)$ uniformly in $M$, since the head weights have variance
+$\Theta(1/M_h)$ against $\norm{h_n}^2 = \mathcal{O}(M_h)$, so
+$p^{(n)}_{\min}$ is bounded below by a constant of order
+$1/N_{\mathrm{cls}}$ on all but a small fraction of pixels, and $S_h^{p}$
+dominates that constant times the unweighted Gram restricted to those
+pixels. (Proposition~\ref{prop:verified_instance} below turns this sketch
+into a proof for a concrete head.) The first is the substantive condition.
+It is implied by $\norm{\bar{h}}^2 \geq q M_h$ on the \emph{mean} feature
+vector $\bar{h} := N^{-1}\sum_n h_n$: for $\bar{u} =
+\bar{h}/\norm{\bar{h}}$,
+\[
+    \lambda_{\max}(S_h)
+    \;\geq\; \bar{u}^\top S_h \bar{u}
+    \;=\; \frac{1}{\norm{\bar{h}}^2} \cdot
+        \frac{1}{N}\sum_n (h_n^\top \bar{h})^2
+    \;\geq\; \frac{1}{\norm{\bar{h}}^2}
+        \left( \frac{1}{N}\sum_n h_n^\top \bar{h} \right)^{\!2}
+    \;=\; \frac{\norm{\bar{h}}^4}{\norm{\bar{h}}^2}
+    \;=\; \norm{\bar{h}}^2,
+\]
+the middle step being Jensen's inequality (the mean of squares dominates the
+square of the mean). At variance-scaled initialization each entry of $h_n$
+has $\Theta(1)$ second moment (the signal-propagation recursions of
+Karakida et al.~\citep{karakida2019universal}, Eq.~(9)), so the condition
+holds whenever the activations are correlated across inputs---in particular
+for any nonnegative or nonzero-mean activation (ReLU and its variants), and
+for odd activations whenever the bias variance $\sigma_b^2 > 0$ or the
+inputs are themselves correlated.
+
+Per-entry second moments alone are \emph{not} enough:
+$\norm{h_n}^2 = \Theta(M_h)$ for every $n$ gives only
+$\mathrm{tr}(S_h) = \Theta(M_h)$, hence
+$\lambda_{\max}(S_h) \geq \Theta(M_h)/\min(N, M_h)$, which is weaker by a
+factor of $N$. Cross-input correlation, not per-vector norm, is what makes
+the top eigenvalue grow. The same quantity carries the width-linear term in
+Karakida et al.'s Theorem~4: their $\kappa_2$ is built from the cross-input
+activation correlations $\hat{q}_{st}$. Their footnote notes that odd
+activations with $\sigma_b = 0$ give $\hat{q}_{st} = 0$ and $\kappa_2 = 0$,
+and is explicit that this exceptional case falls outside their analysis:
+``In such exceptional cases, we need to evaluate the lower order terms of
+$s_\lambda$ and $\lambda_{\max}$ (outside the scope of this study).'' We
+therefore attribute no finite-$T$ claim to their theorem in the degenerate
+case. Our hypothesis has the parallel structure, and its degenerate
+behaviour \emph{can} be evaluated directly: for odd activations with
+$\sigma_b = 0$ and uncorrelated inputs the features lose their common
+direction, and the per-vector norms alone give only
+$\lambda_{\max}(S_h) \geq \mathrm{tr}(S_h)/\min(N, M_h)$. In our regime
+$N \gg M_h$, so this floor is $\Theta(1)$---\emph{no} width scaling.
+Width-linear growth in the degenerate case would require a separate
+argument, which we do not attempt.
+
+\begin{remark}[Scope, and the role of the mean-field law]
+\label{rem:meanfield_scope}
+The witness argument uses only: (a)~a dense classifier head over penultimate
+features of dimension $\Theta(M)$; (b)~the head hypothesis
+$\lambda_{\max}(S_h^{p}) \geq q_h M_h$ at initialization---a
+\emph{cross-input correlation} condition, which variance-scaled
+initialization does not by itself deliver (see the per-vector-norm
+counterexample above) but which holds for the standard activation choices
+discussed there; and (c)~softmax cross-entropy with
+$N_{\mathrm{cls}} \geq 2$. Given (b), the inequality
+$\lambda_{\max}(G_{\phip\phip}) \geq \lambda_{\max}(S_h^{p})$ is
+deterministic and architecture-agnostic, so the argument applies to
+per-pixel dense heads on MLP, CNN (channel count $M$), and ViT (embedding
+dimension $M$) spatial modules alike. For fully connected modules (b)
+follows from standard signal propagation at Kaiming initialization; for CNN
+and ViT heads it is an explicit assumption, to be checked. No i.i.d.\
+Gaussian input assumption is required. Karakida et al.'s Theorem~4 plays the
+role of the sharp asymptotic benchmark: within its model class (fully
+connected, input and hidden widths proportional to $M$, output fixed at
+$C = \mathcal{O}(1)$, squared loss), it upgrades the witness lower bound to
+an exact width-linear law with explicit constant, and their Theorem~1
+supplies the complementary fact that the \emph{mean} eigenvalue shrinks as
+$\mathcal{O}(1/M)$, so curvature concentrates in a vanishing fraction of
+directions as the module widens. The loss transfer from squared loss to
+cross-entropy is handled exactly at initialization by Step~2, at the cost of
+the constant $p_{\min}$.
+\end{remark}
+
+\begin{remark}[Empirical status, and width versus parameter count]
+\label{rem:phi_scaling_empirical}
+Karakida et al.'s own numerical validation (their Figure~1, right column)
+confirms $\lambda_{\max}$ growing linearly in $M$, matching the exact
+constant of their Theorem~4, for tanh, ReLU, and linear fully connected
+networks. The theorem's native variable is width, not parameter count: for
+architecture families with $\Cg = \Theta(M^2)$ the equivalent
+parameter-count statement is $\lambda_{\max} = \Omega(\sqrt{\Cg})$
+(log--log slope $0.5$ against $\Cg$), whereas the shallow family measured in
+Section~4 has $\Cg = \Theta(M)$, for which the width-linear law predicts
+slope $1.0$ against $\Cg$ as well as against $M$. The two parameter-count
+forms must not be conflated. The measured slopes, their dependence on the
+initialization scheme---which controls whether either variance term of the
+head hypothesis is width-independent---and the levels that accompany them
+are reported in Section~4 and Appendix~\ref{app:synthetic}; we quote slope
+and level together, and read finite-range fits as finite-range fits.
+\end{remark}
+
+\subsection{The spectral block: an operator-norm cap}
+\label{app:cap}
+
+The proof of Lemma~\ref{lem:opcap} factors the spectral Jacobian via the
+chain rule and bounds each factor's operator norm using
+Assumptions~\ref{ass:linear}, \ref{ass:subg}, and~\ref{ass:inputlip}. We
+bound the \emph{logit} Jacobian $J_\thetap = \partial \hat{y}/\partial
+\thetap$ of~\eqref{eq:jacobians}; the Gauss--Newton block and the residual
+Jacobian then inherit the bound, since both insert factors of $H_\tau$ with
+$0 \preceq H_\tau \preceq I$.
+
+\begin{proof}[Proof of Lemma~\ref{lem:opcap}]
+\emph{Step 1: Chain-rule factorisation.}
+With $Z = f_\thetap(X)$ and $\hat{y} = g_\phip(Z)$, the chain rule gives, in
+the normalization of~\eqref{eq:jacobians} (the $N^{-1/2}$ riding on the
+right-hand factor),
+\[
+    J_\thetap
+    \;=\; J_Z \cdot \frac{\partial Z}{\partial \thetap},
+    \qquad J_Z := \partial g_\phip / \partial Z ,
+\]
+where $J_Z$ is unnormalized---the object Assumption~\ref{ass:inputlip}
+bounds. Since $g_\phip$ acts on one image at a time, the dataset-stacked
+$J_Z$ is block diagonal across images, so its operator norm is the maximum
+over per-image blocks and Assumption~\ref{ass:inputlip} applies to the stack
+with the same constant $\widetilde{L}$. (For the residual map
+$r(\thetap,\phip) = \tau(g_\phip(Z))$ with $\tau(\hat{y}) =
+\mathrm{softmax}(\hat{y}) - y_{\mathrm{onehot}}$, the same computation
+carries the extra left factor $J_\tau := \partial \tau / \partial \hat{y} =
+\mathrm{diag}(p) - p p^\top = H_\tau$, the softmax Jacobian, which satisfies
+$\|H_\tau\|_{\mathrm{op}} \leq 1$; see Botev, Ritter, and
+Barber~\citep{botev2017practical}.)
+
+\emph{Step 2: Operator-norm inequality.}
+Sub-multiplicativity of the operator norm gives
+\[
+    \|J_\thetap\|_{\mathrm{op}}
+    \;\leq\; \|J_Z\|_{\mathrm{op}}
+             \cdot \left\| \frac{\partial Z}{\partial \thetap}
+             \right\|_{\mathrm{op}}
+    \;\leq\; \widetilde{L} \cdot
+             \left\| \frac{\partial Z}{\partial \thetap}
+             \right\|_{\mathrm{op}},
+\]
+using Assumption~\ref{ass:inputlip} on the first factor.
+
+\emph{Step 3: The input-Jacobian factor, exactly.}
+Under Assumption~\ref{ass:linear}, $Z_n = W^\top x_n$ with
+$\thetap = \mathrm{vec}(W)$, $W \in \mathbb{R}^{S \times K}$. The per-pixel
+Jacobian is $\partial Z_n / \partial \mathrm{vec}(W) = I_K \otimes x_n^\top$
+(Magnus and Neudecker~\citep{magnus1988matrix}, Ch.~9). Stacking over the
+$N$ pixel positions with the $N^{-1/2}$ normalization
+of~\eqref{eq:jacobians} gives
+$\partial Z / \partial \thetap \in \mathbb{R}^{NK \times SK}$ with
+\[
+    \left( \frac{\partial Z}{\partial \thetap} \right)^{\!\top}
+    \frac{\partial Z}{\partial \thetap}
+    \;=\; \frac{1}{N}\sum_{n=1}^{N} \left( I_K \otimes x_n \right)
+          \left( I_K \otimes x_n^\top \right)
+    \;=\; I_K \otimes \Sigma_X ,
+\]
+hence, \emph{exactly},
+\[
+    \left\| \frac{\partial Z}{\partial \thetap} \right\|_{\mathrm{op}}^{2}
+    \;=\; \lambda_{\max}(I_K \otimes \Sigma_X)
+    \;=\; \lambda_{\max}(\Sigma_X),
+\]
+with $\Sigma_X := N^{-1}\sum_{n=1}^{N} x_n x_n^\top$ the mean per-pixel input
+Gram of the main text;
+Assumption~\ref{ass:subg} bounds $\lambda_{\max}(\Sigma_X) \leq \Lambda_X$
+uniformly in the dataset size $N$. No factor of $K$ appears: the Kronecker
+structure replicates the same spectrum $K$ times rather than accumulating
+it.
+
+\emph{Step 4: Assembling.}
+Combining Steps~2 and~3,
+\[
+    \|J_\thetap\|_{\mathrm{op}}^{2}
+    \;\leq\; \widetilde{L}^{2} \cdot \lambda_{\max}(\Sigma_X)
+    \;=:\; C_\thetap .
+\]
+For the Gauss--Newton block, $G_{\thetap\thetap} = J_\thetap^\top H_\tau
+J_\thetap \preceq J_\thetap^\top J_\thetap$ since $H_\tau \preceq I$, so
+$\lambda_{\max}(G_{\thetap\thetap}) \leq C_\thetap$; for the residual
+Jacobian, $\|H_\tau J_\thetap\|_{\mathrm{op}} \leq
+\|J_\thetap\|_{\mathrm{op}}$ gives the same cap. The constant $C_\thetap$
+depends on the classifier's input Lipschitz constant $\widetilde{L}$ (which
+may grow with the depth of $g_\phip$ but not with its width $M$) and the top
+eigenvalue of the mean input Gram $\lambda_{\max}(\Sigma_X)$. It does not
+depend on $M$, on the spatial parameter count $\Cg$, or on the dataset size
+$N$.
+\end{proof}
+
+\begin{remark}[Why an operator-norm cap suffices]
+\label{rem:opcap_route}
+An alternative route via the smallest positive eigenvalue
+$\lambda_{\min}^{+}(J_\thetap^\top J_\thetap)$ requires either an exact
+Kronecker factorisation (valid only for per-pixel classifiers) or a
+trace-over-rank argument via the softmax residual dimension---both of which
+need additional structural assumptions on $g_\phip$. The operator-norm bound
+above is significantly simpler, applies to general nonlinear spatial
+classifiers (CNN, ViT), and is exactly what Theorem~\ref{thm:hessian} needs:
+a $\Cg$-independent cap on the spectral block's \emph{top} eigenvalue, so
+that $\Dcurv = \lambda_{\max}(G_{\phip\phip})/
+\lambda_{\max}(G_{\thetap\thetap}) \geq \Omega(M)/C_\thetap$.
+\end{remark}
+
+\begin{remark}[Softmax Jacobian bound]
+\label{rem:softmax_jac}
+The bound $\|\mathrm{diag}(p) - p p^\top\|_{\mathrm{op}} \leq 1$ is
+standard: $\mathrm{diag}(p) - p p^\top$ is the covariance matrix of the
+categorical distribution with parameter $p$ (equivalently, the Jacobian of
+the softmax map), hence positive semi-definite with
+$\lambda_{\max} \leq \max_i p_i \leq 1$. See Botev, Ritter, and
+Barber~\citep{botev2017practical} for its role in Gauss--Newton
+computations.
+\end{remark}
+
+\subsection{A fully proved instance}
+\label{app:instance}
+
+For general heads, the head hypothesis of Lemma~\ref{lem:phi_scaling} and
+the uniform input-Jacobian cap of Assumption~\ref{ass:inputlip} are
+hypotheses. For one concrete architecture they are both theorems, and the
+disparity law follows outright.
+
+\begin{proposition}[A fully proved instance]
+\label{prop:verified_instance}
+Fix bottleneck features $z_1, \dots, z_N \in \mathbb{R}^K$ with
+$\norm{z_n} \leq R$, and let the spatial module's head be the two-layer
+ReLU network
+\[
+    h_n = \mathrm{ReLU}(W_1 z_n + b_1),
+    \qquad
+    \hat{y}_n = W_2 h_n + b_2,
+\]
+with Kaiming Gaussian initialization: entries of
+$W_1 \in \mathbb{R}^{M_h \times K}$ i.i.d.\
+$\mathcal{N}(0, \sigma_w^2/K)$, entries of
+$W_2 \in \mathbb{R}^{N_{\mathrm{cls}} \times M_h}$ i.i.d.\
+$\mathcal{N}(0, \sigma_w^2/M_h)$, biases i.i.d.\
+$\mathcal{N}(0, \sigma_b^2)$ with $\sigma_b > 0$, and
+$N_{\mathrm{cls}} \geq 2$. Let the spectral module be the linear per-pixel
+$f_\thetap$ of Assumption~\ref{ass:linear} with inputs satisfying
+Assumption~\ref{ass:subg}. Then there exist constants $q_h > 0$,
+$M_0 < \infty$, and $C_G < \infty$, depending only on
+$\sigma_w, \sigma_b, R, K, N_{\mathrm{cls}}$, and
+$\mathrm{tr}(\Sigma_X)$---not on $M_h$ or $N$---such that for all
+$M_h \geq M_0$, at initialization:
+\begin{enumerate}
+    \item[(i)] (head hypothesis)
+    $\lambda_{\max}(S_h^{p}) \geq q_h M_h$ with probability at least
+    $1/2$; consequently
+    $\E[\lambda_{\max}(G_{\phip\phip})] \geq \tfrac{1}{2} q_h M_h$;
+    \item[(ii)] (spectral-block cap, trace form)
+    $\E[\lambda_{\max}(G_{\thetap\thetap})]
+    \leq \E[\mathrm{tr}(G_{\thetap\thetap})] \leq C_G :=
+    N_{\mathrm{cls}}\, \sigma_w^4\, \mathrm{tr}(\Sigma_X)$,
+    uniformly in $M_h$ and $N$;
+    \item[(iii)] (instance-level disparity law) with probability at least
+    $3/8$, $\Dcurv \geq \left( q_h / (8 C_G) \right) M_h$; consequently
+    $\E[\Dcurv] \geq \tfrac{3}{64} (q_h / C_G)\, M_h = \Omega(M)$.
+\end{enumerate}
+For this architecture, the disparity law of Theorem~\ref{thm:hessian}---not
+merely its hypotheses---is proved outright at initialization. What remains
+assumption-level in general is the uniform-over-inputs, during-training form
+of Assumption~\ref{ass:inputlip}: a per-input Jacobian cap at initialization
+follows from the computation in Step~D below, but a supremum over all inputs
+by the natural union route would cost a $\sqrt{\log N}$ factor, and
+training-time persistence is exactly what Assumption~\ref{ass:inputlip}
+postulates. The trace-form cap~(ii) bypasses both issues for the instance.
+\end{proposition}
+
+\begin{proof}
+\emph{Step A (mean feature vector).} Write
+$g_{n,i} = w_i^\top z_n + b_{1,i}$ for the pre-activations, so
+$g_{n,i} \sim \mathcal{N}(0, s_n^2)$ with
+$s_n^2 = \sigma_w^2 \norm{z_n}^2 / K + \sigma_b^2 \in
+[\sigma_b^2,\, s_{\max}^2]$, $s_{\max}^2 := \sigma_w^2 R^2/K + \sigma_b^2$.
+Since $\E\,\mathrm{ReLU}(\mathcal{N}(0, s^2)) = s/\sqrt{2\pi}$, each
+coordinate of the mean feature vector $\bar{h} = N^{-1} \sum_n h_n$ has
+expectation
+\[
+    m \;:=\; \E[\bar{h}_i]
+    \;=\; \frac{1}{N} \sum_n \frac{s_n}{\sqrt{2\pi}}
+    \;\geq\; \frac{\sigma_b}{\sqrt{2\pi}} \;>\; 0 .
+\]
+To obtain constants free of the data and of $N$, we use throughout only the
+uniform floor $m \geq m_0 := \sigma_b/\sqrt{2\pi}$. The rows
+$(w_i, b_{1,i})$ are i.i.d.\ across $i$, so the coordinates $\bar{h}_i$ are
+i.i.d.\ with $\E[\bar{h}_i^2] \leq N^{-1}\sum_n
+\E[\mathrm{ReLU}(g_{n,i})^2] \leq s_{\max}^2$ and (being averages of
+sub-Gaussian variables) finite fourth moment bounded by a constant
+$C_4(s_{\max})$. By Chebyshev's inequality applied to the i.i.d.\ sum
+$\norm{\bar{h}}^2 = \sum_i \bar{h}_i^2$, whose mean is at least
+$m^2 M_h \geq m_0^2 M_h$,
+\[
+    \Pr\!\left[ \norm{\bar{h}}^2 < \tfrac{1}{2} m_0^2 M_h \right]
+    \;\leq\; \frac{4\, C_4(s_{\max})}{m_0^4\, M_h}
+    \;\xrightarrow[M_h \to \infty]{}\; 0 .
+\]
+On the complementary event $E_A$, the Jensen step above gives
+$\lambda_{\max}(S_h) \geq \norm{\bar{h}}^2 \geq \tfrac{1}{2} m_0^2 M_h$, and
+moreover the witness direction $\bar{u} = \bar{h}/\norm{\bar{h}}$ certifies
+$A := N^{-1} \sum_n (h_n^\top \bar{u})^2 \geq \tfrac{1}{2} m_0^2 M_h$.
+
+\emph{Step B (softmax weights).} Condition on
+$\mathcal{F}_1 = \sigma(W_1, b_1)$, which fixes the features $h_n$, the
+direction $\bar{u}$, and the energies $a_n := (h_n^\top \bar{u})^2$; the
+head randomness $(W_2, b_2)$ is independent of $\mathcal{F}_1$. Call pixel
+$n$ \emph{tame} if $\norm{h_n}^2 \leq 2 s_{\max}^2 M_h$. For a tame pixel,
+the logits $\hat{y}_n \,|\, \mathcal{F}_1$ have i.i.d.\ Gaussian entries
+with variance $\sigma_w^2 \norm{h_n}^2/M_h + \sigma_b^2 \leq
+2\sigma_w^2 s_{\max}^2 + \sigma_b^2 =: s_*^2$, so by a Gaussian tail bound
+on the logit range, there are constants $c_p(s_*, N_{\mathrm{cls}}) > 0$ and
+$\delta_0 \leq 1/16$ with
+$\Pr[\, p^{(n)}_{\min} < c_p \mid \mathcal{F}_1 \,] \leq \delta_0$ for every
+tame pixel. Untame pixels are exponentially rare: $\norm{h_n}^2/M_h$ is an
+average of $M_h$ i.i.d.\ sub-exponential variables with mean
+$\leq s_{\max}^2/2$, so $\Pr[\text{$n$ untame}] \leq e^{-c M_h}$
+(Bernstein's inequality; Vershynin~\citep{vershynin2018high},
+Thm.~2.8.1), and by Cauchy--Schwarz with
+$\E\norm{h_n}^4 \leq 3 s_{\max}^4 M_h^2$ (i.i.d.\ coordinates), the
+$\mathcal{F}_1$-measurable untame energy
+$U := N^{-1} \sum_n a_n \mathbf{1}[\text{$n$ untame}]$ satisfies
+\[
+    \E[U]
+    \;\leq\; \max_n \sqrt{\E\norm{h_n}^4}
+        \sqrt{\Pr[\text{$n$ untame}]}
+    \;\leq\; \sqrt{3}\, s_{\max}^2 M_h\, e^{-c M_h / 2}
+    \;=:\; \varepsilon(M_h)\, M_h ,
+\]
+with $\varepsilon(M_h) \to 0$ exponentially (we used
+$a_n \leq \norm{h_n}^2$, valid since $\bar{u}$ is a unit vector).
+
+\emph{Step C (assembly).} We control the two bad masses by separate
+arguments, respecting which randomness each depends on. The untame energy
+$U$ is $\mathcal{F}_1$-measurable; by (unconditional) Markov, the event
+$E_U := \{ U \leq 16\, \varepsilon(M_h) M_h \}$ has $\Pr[E_U] \geq 15/16$,
+and for $M_h \geq M_0$ large enough that
+$16\, \varepsilon(M_h) \leq m_0^2/8$, on $E_A \cap E_U$ we have
+$U \leq \tfrac{1}{8} m_0^2 M_h \leq \tfrac{1}{4} A$. The $p$-degenerate mass
+over \emph{tame} pixels,
+$P := N^{-1} \sum_{n\ \mathrm{tame}} a_n
+\mathbf{1}[p^{(n)}_{\min} < c_p]$, is $(W_2, b_2)$-random given
+$\mathcal{F}_1$, with $\E[P \mid \mathcal{F}_1] \leq \delta_0 A$ by Step~B;
+conditional Markov with $\delta_0 \leq 1/16$ gives
+$\Pr[\, P > \tfrac{1}{4} A \mid \mathcal{F}_1 \,] \leq 4\delta_0 \leq 1/4$.
+On the intersection of the three events---probability at least
+$1 - 4 C_4/(m_0^4 M_h) - 1/16 - 1/4 > 1/2$ for $M_h \geq M_0$---the total
+bad mass is $P + U \leq \tfrac{1}{2} A$, and
+\[
+    \lambda_{\max}(S_h^{p})
+    \;\geq\; \bar{u}^\top S_h^{p} \bar{u}
+    \;\geq\; c_p \left( A - P - U \right)
+    \;\geq\; \frac{c_p}{2}\, A
+    \;\geq\; \frac{c_p m_0^2}{4}\, M_h .
+\]
+Take $q_h := c_p m_0^2 / 4 = c_p \sigma_b^2 / (8\pi)$, manifestly free of
+the data and of $N$. The in-expectation clause follows from
+$\lambda_{\max} \geq 0$ and~\eqref{eq:witness_bound}. This proves~(i).
+
+\emph{Step D (spectral-block cap, trace form).} At any input $z$, the head's
+input Jacobian is $\partial \hat{y}/\partial z = W_2 D_z W_1$ with
+$D_z = \mathrm{diag}(\mathbf{1}[W_1 z + b_1 > 0])$. Conditioning on
+$(W_1, b_1)$ (which fixes $D_z$) and using that the rows of $W_2$ are
+i.i.d.\ $\mathcal{N}(0, (\sigma_w^2/M_h) I)$,
+\[
+    \E \norm{W_2 D_z W_1}_F^2
+    \;=\; N_{\mathrm{cls}} \cdot \frac{\sigma_w^2}{M_h}
+        \cdot \E \norm{D_z W_1}_F^2
+    \;\leq\; N_{\mathrm{cls}} \cdot \frac{\sigma_w^2}{M_h}
+        \cdot \E \norm{W_1}_F^2
+    \;=\; N_{\mathrm{cls}}\, \sigma_w^4 ,
+\]
+using $\E\norm{W_1}_F^2 = M_h K \cdot \sigma_w^2/K = M_h \sigma_w^2$---%
+uniformly over inputs $z$. (The naive product bound
+$\norm{W_2}_{\mathrm{op}} \norm{W_1}_{\mathrm{op}}$ would grow like
+$\sqrt{M_h/K}$; the composition is $O(1)$ because the top directions of the
+two random factors are generically misaligned---which the Frobenius
+computation captures without any alignment analysis.) Now bound the spectral
+block. With $J_\thetap^{(n)} = (W_2 D_{z_n} W_1)(I_K \otimes x_n^\top)$ the
+per-pixel spectral logit Jacobian (Appendix~\ref{app:cap}, Step~3) and
+$H_\tau \preceq I$,
+\[
+\begin{aligned}
+    \E\,\mathrm{tr}(G_{\thetap\thetap})
+    &\;\leq\; \frac{1}{N} \sum_{n=1}^{N}
+        \E \norm{J_\thetap^{(n)}}_F^2
+    \;\leq\; \frac{1}{N} \sum_{n=1}^{N}
+        \E \norm{W_2 D_{z_n} W_1}_F^2 \cdot \norm{x_n}^2\\
+    &\;\leq\; N_{\mathrm{cls}}\, \sigma_w^4 \cdot
+        \frac{1}{N} \sum_n \norm{x_n}^2
+    \;=\; N_{\mathrm{cls}}\, \sigma_w^4\, \mathrm{tr}(\Sigma_X),
+\end{aligned}
+\]
+using $\norm{AB}_F \leq \norm{A}_F \norm{B}_{\mathrm{op}}$ and
+$\norm{I_K \otimes x_n^\top}_{\mathrm{op}} = \norm{x_n}$. Since
+$\lambda_{\max} \leq \mathrm{tr}$ for positive semidefinite matrices,~(ii)
+follows with $C_G = N_{\mathrm{cls}} \sigma_w^4 \mathrm{tr}(\Sigma_X)$, free
+of $M_h$ and $N$.
+
+\emph{Step E (combining).} If $C_G = 0$ then $\Sigma_X = 0$, the spectral
+block vanishes almost surely, and $\Dcurv = +\infty$ by the convention of
+Definition~\ref{def:dcurv}; assume $C_G > 0$ below. Let $E_1$ be the event
+of~(i) ($\Pr \geq 1/2$) and
+$E_2 := \{ \lambda_{\max}(G_{\thetap\thetap}) \leq 8 C_G \}$, which by~(ii)
+and Markov has $\Pr[E_2] \geq 7/8$. On $E_1 \cap E_2$ (probability at least
+$1 - 1/2 - 1/8 = 3/8$), the witness bound~\eqref{eq:witness_bound} gives
+\[
+    \Dcurv
+    \;=\; \frac{\lambda_{\max}(G_{\phip\phip})}
+               {\lambda_{\max}(G_{\thetap\thetap})}
+    \;\geq\; \frac{q_h M_h}{8 C_G},
+\]
+and since $\Dcurv \geq 0$, $\E[\Dcurv] \geq \tfrac{3}{8} \cdot
+q_h M_h / (8 C_G) = \tfrac{3}{64} (q_h/C_G) M_h$. This proves~(iii).
+\end{proof}
+
+\begin{remark}[Minimality]
+\label{rem:instance_minimal}
+Proposition~\ref{prop:verified_instance} is deliberately minimal: one hidden
+layer, ReLU, bias variance $\sigma_b^2 > 0$ (which guarantees activation
+correlation across inputs; cf.\ the $\kappa_2$ discussion above). Its role
+is to certify that the two structural hypotheses of
+Theorem~\ref{thm:hessian} are \emph{theorems}, not merely assumptions, for
+at least one concrete member of each side of the pipeline---so the disparity
+law has a fully verified instance. For deeper heads and attention-based
+modules the hypotheses revert to assumption status, argued by signal
+propagation and checked empirically.
+\end{remark}
+
+\begin{remark}[What the instance shows---and what it does not]
+\label{rem:instance_interpretation}
+The mechanism of Proposition~\ref{prop:verified_instance} deserves a candid
+reading. The width-linear spike is generated by the \emph{mean feature
+direction}: with $\sigma_b > 0$, every hidden unit has positive mean
+activation, so the features of all inputs share a common direction of
+$\Theta(M_h)$ energy. This requires no information in the features at all.
+Take every bottleneck feature $z_n = 0$, so that all inputs are
+indistinguishable: the features $h_n = \mathrm{ReLU}(b_1)$ are identical
+across pixels, carry no sample-specific structure whatsoever, and the
+proposition applies verbatim. Width-linear downstream curvature is therefore
+\emph{not} evidence that the spatial module has found, or will find, useful
+structure: $\Dcurv$ measures the downstream module's readiness to
+move---the loss curvature its parameters command at initialization---not
+the value of what it computes. It is the counterpart, on the spatial side,
+of an ambiguity on the spectral side: small spectral curvature cannot by
+itself distinguish a direction that is irrelevant to the task from one whose
+learning signal is buried behind the bottleneck; here, large spatial
+curvature cannot distinguish signal from capacity. It is also why we read
+the geometry as a hazard rather than as a mechanism: the capacity advantage
+is in place before the data has spoken, so whatever the spatial module can
+most easily fit is what the geometry favours. Whether it in fact fits it
+first is the separate dynamical question of Theorem~\ref{thm:twoscale} and
+of the residual-excitation results of Appendix~\ref{app:math}.
+\end{remark}
+
+\begin{remark}[Smoothness scope]
+\label{rem:relu_scope}
+ReLU is not twice differentiable, but no smoothness enters
+Proposition~\ref{prop:verified_instance}: the Gauss--Newton blocks involve
+only first-order Jacobians, which at Gaussian initialization exist almost
+surely (every preactivation is a.s.\ nonzero). Assumption~\ref{ass:reg}
+plays no role here---its function is the well-posedness of the gradient flow
+of Theorem~\ref{thm:twoscale}, whose statements are formulated for
+absolutely continuous trajectories satisfying the flow almost everywhere and
+therefore accommodate piecewise-smooth models.
+\end{remark}
+
+\subsection{Proof of Theorem~\ref{thm:hessian}}
+\label{app:thm1}
+
+\begin{proof}[Proof of Theorem~\ref{thm:hessian}]
+By Lemma~\ref{lem:phi_scaling}, in expectation over random Kaiming
+(variance-scaled Gaussian) initialization,
+\[
+    \lambda_{\max}(G^{(M)}_{\phip\phip}) \;\geq\; c_\phi \cdot M
+\]
+for a constant $c_\phi > 0$ bounded below independently of $M$: the witness
+bound~\eqref{eq:witness_bound} gives
+$\E[\lambda_{\max}] \geq (1 - \delta_h)\, q_h M_h \geq
+(1 - \delta_h)\, q_h \beta M$, where $\beta > 0$ is the width-ratio floor
+$M_h \geq \beta M$ supplied by the head hypothesis, so one may take
+$c_\phi := (1 - \delta_h) q_h \beta$. The witness route delivers this with
+no additive correction; within Karakida et
+al.'s~\citep{karakida2019universal} proportional-width model class, their
+Theorem~4 sharpens the width-linear rate to an exact asymptotic law. By
+Lemma~\ref{lem:opcap},
+\[
+    \lambda_{\max}(G_{\thetap\thetap})
+    \;\leq\; \|J_\thetap\|_{\mathrm{op}}^2 \;\leq\; C_\thetap
+\]
+with $C_\thetap$ independent of $M$ and $\Cg$. (If $C_\thetap = 0$ the
+spectral block vanishes identically and the bound holds trivially under the
+$+\infty$ convention of Definition~\ref{def:dcurv}; assume $C_\thetap > 0$
+below.) The cap is deterministic---valid for every realization of the
+initialization---so it divides through inside the expectation:
+\begin{equation}
+    \E\!\left[\Dcurv^{(M)}\right]
+    \;=\; \E\!\left[\frac{\lambda_{\max}(G^{(M)}_{\phip\phip})}
+                {\lambda_{\max}(G_{\thetap\thetap})}\right]
+    \;\geq\; \frac{\E\!\left[\lambda_{\max}(G^{(M)}_{\phip\phip})\right]}
+                  {C_\thetap}
+    \;\geq\; \frac{c_\phi \cdot M}{C_\thetap}
+    \;=\; c_1 \cdot M,
+    \label{eq:disparity_bound}
+\end{equation}
+where $c_1 := c_\phi / C_\thetap$ depends only on the initialization scheme,
+the architecture class of $g_\phip$, the classifier's input Lipschitz
+constant $\widetilde{L}$, the bottleneck dimension $K$, the input spectral
+dimension $S$, and the data distribution---exactly the dependencies claimed
+in the theorem statement. The witness route needs no additive correction
+($c_2 = 0$ suffices); the subtracted constant is retained in the statement
+so that sharper asymptotic constants, which hold only for $M$ large, may
+also be substituted. Under $\Cg = \Theta(M^2)$, $M = \Theta(\sqrt{\Cg})$ and
+the ratio form $\Dcurv \geq c_1' \sqrt{\Cg / \Cf} - c_2$ follows on
+multiplying and dividing by $\sqrt{\Cf}$.
+\end{proof}
+
+\begin{remark}[What Theorem~\ref{thm:hessian} does and does not claim]
+\label{rem:thm1_scope}
+Theorem~\ref{thm:hessian} is a scaling law for the curvature ratio between
+two Gauss--Newton blocks; it does not claim that the full joint
+Gauss--Newton matrix has a large condition number in the strict
+$\lambda_{\max}/\lambda_{\min}$ sense (which is trivially infinite under
+rank-deficiency), nor that joint gradient descent produces disparate
+effective learning rates (the separate content of
+Theorem~\ref{thm:twoscale}, under its own hypotheses). The scaling
+$\Dcurv = \Omega(M)$ (equivalently $\Omega(\sqrt{\Cg / \Cf})$ for
+$\Theta(M^2)$-parameter families) is a purely geometric statement about how
+curvature concentrates in the downstream module as the spatial network
+widens. In particular $\Dcurv$ concerns the \emph{top} of the spatial
+block's spectrum, while the fitting rate $\mu$ of
+Assumption~\ref{ass:residual} is governed by how fast the residual can be
+driven down---a property of other parts of the spatial spectrum. The two are
+linked only under spectral-shape assumptions we do not make.
+\end{remark}
+
+\subsection{Relation to classical ill-conditioning}
+\label{app:classical}
+
+Ill-conditioned optimization has classical causes with classical remedies,
+and it is natural to ask whether they remove the width scaling of
+Theorem~\ref{thm:hessian}. Each acts on a different lever, and none acts on
+the one the theorem uses.
+
+\paragraph{Feature normalization.}
+Scale asymmetry or collinearity among input features degrades the
+conditioning of $\Sigma_X$ and is classically cured by standardizing (e.g.\
+mean-centering) the inputs. Here the cure has a sharper, quantitative role:
+Lemma~\ref{lem:opcap} places $\lambda_{\max}(\Sigma_X)$ in the spectral cap,
+so input transformations that deflate the top of the input spectrum
+\emph{raise} the bound on the disparity at every width---normalization moves
+the constants. What no input transformation can touch is the width scaling
+of the spatial block (Lemma~\ref{lem:phi_scaling}): capacity moves the rate.
+On raw nonnegative spectra, whose second moment is dominated by the shared
+mean shape, the cap is large and the disparity the bound permits
+correspondingly small. Whether an input transformation moves the
+\emph{realized} disparity, however, depends on the architecture between
+$f_\thetap$ and the loss: internal normalization layers can absorb input
+shifts entirely (their Jacobians annihilate constant directions), in which
+case the effective regressor is already centered and the lever acts through
+the normalization choice, not the preprocessing. Section~\ref{sec:diagnostics}
+measures exactly this on the production architecture.
+
+\paragraph{Weight decay.}
+Adding $\alpha \norm{w}^2$ to the loss shifts the Hessian by $2\alpha I$,
+lifting every eigenvalue by $2\alpha$ and famously repairing classical
+condition numbers. But the shift acts on \emph{both} blocks equally: the
+disparity becomes $(\lambda_{\max}(G_{\phip\phip}) + 2\alpha) /
+(\lambda_{\max}(G_{\thetap\thetap}) + 2\alpha)$, which remains $\Theta(M)$
+for any fixed $\alpha$ as $M$ grows. Removing the disparity this way would
+require $2\alpha \sim \lambda_{\max}(G_{\phip\phip})$, a regularization
+strength that would dominate the data term and prevent fitting. The same
+arithmetic applies to any penalty that shifts the two blocks by a common
+multiple of the identity, including logit penalties of the Spectral
+Decoupling type~\citep{pezeshki2021gradient}.
+
+\paragraph{Adaptive optimizers.}
+Adam and RMSProp precondition per-coordinate gradient magnitudes with a
+diagonal rescaling. The raw block spectra are optimizer-invariant, but the
+\emph{dynamics} under a diagonal preconditioner $P$ are governed by the
+preconditioned spectra of $P^{-1/2} G P^{-1/2}$ and need not respect the
+disparity: under Adam, per-coordinate steps are near-constant in gradient
+magnitude, so small spectral gradients do not imply small spectral movement.
+The gradient-flow statements around Theorem~\ref{thm:twoscale} are
+accordingly scoped to (stochastic) gradient descent, with the discrete
+pathwise versions of Appendix~\ref{app:math}; joint-versus-frozen gaps
+observed under Adam are evidence about the phenomenon, not applications of
+the theorem. The synthetic dynamics experiment reported in
+Section~\ref{sec:diagnostics} and Appendix~\ref{app:synthetic} is run under
+Adam, and at three seeds its arm ordering is not resolved; we treat the
+stronger claim---that no shared-learning-rate adaptive method can remove the
+disparity's dynamical consequence---as an open question rather than a
+theorem. Optimizers with explicitly different learning rates per module
+(two-timescale update rules; Heusel et al.~\citep{heusel2017gans};
+Borkar~\citep{borkar2008stochastic}, Ch.~6) are the natural remedy at the
+optimizer level; we do not evaluate them here, and
+Section~\ref{sec:matched} is our reason for not recommending untuned
+comparisons.
+
+\begin{remark}[Parameterization scope]
+\label{rem:param_scope}
+$\Dcurv$ is not invariant to per-module reparameterization, and
+Theorem~\ref{thm:hessian} is a statement about the standard variance-scaled
+(Kaiming) parameterization---the one used in the pipelines we analyze and in
+all our experiments. Under alternative parameterizations that rescale layers
+with width, such as $\mu$P~\citep{yang2021tensor}, both the initialization
+magnitudes and the effective per-layer learning rates change, and the width
+scaling of the blocks would need to be re-derived; we do not claim the
+disparity law transfers. Our uses of $\mu$P elsewhere are limited to a
+different role: as one route to keeping the input-Jacobian bound
+(Assumption~\ref{ass:inputlip}) uniform in width during training. Whether
+principled reparameterization can neutralize the disparity---rather than
+merely re-expressing it---is open. A closely related caution applies to
+normalization layers, whose gain can move measured curvature with width at
+fixed function (Appendix~\ref{app:math} and Section~\ref{sec:diagnostics};
+cf.\ van Laarhoven~\citep{vanlaarhoven2017l2}).
+\end{remark}
+
+\begin{remark}[Defense against linear triviality]
+\label{rem:not_pca}
+A natural objection is that, since $f_\thetap$ is linear, the analysis must
+reduce to principal component analysis (PCA) of the input. This is not the
+case. PCA finds directions of maximum input variance \emph{without reference
+to labels}. At initialization, however, the distinction is limited, and we
+state this candidly: the Gauss--Newton blocks carry no label information
+there (the softmax weights are near-uniform), and $G_{\thetap\thetap}$ is,
+by Lemma~\ref{lem:opcap}, an input-second-moment object propagated through a
+label-free random network. The defense against PCA-triviality is therefore a
+statement about \emph{training}: along the trajectory the supervised
+residual shapes $\partial \hat{y}/\partial Z$ and hence the curvature, and
+the conditional pathology we identify is precisely that this supervised
+signal may fail to reach $\thetap$---not that $f_\thetap$ is incapable of
+representing useful features.
+\end{remark}
+
+\subsection{Scope and open extensions for Theorem~\ref{thm:twoscale}}
+\label{app:thm2_open}
+
+\begin{remark}[Open extensions]
+\label{rem:thm2_open}
+The proof of Theorem~\ref{thm:twoscale} is complete for the gradient-flow
+model: the displacement bound follows by direct integration of the residual
+envelope, with the operator-norm cap supplied by Lemma~\ref{lem:opcap}. Two
+extensions are deliberately left open rather than sketched, and one is
+supplied elsewhere. (i)~\emph{Discrete updates}: pathwise discrete
+counterparts---gradient descent, momentum with clipping in either order,
+Adam with a positive stabilizer, and decoupled weight decay---are proved in
+Appendix~\ref{app:math} with $\mu_s = \eta \mu_f$, under the same
+containment and gradient-bound hypotheses imposed at \emph{each} iterate; a
+stochastic-approximation route that instead tracks the flow under gradient
+noise (Borkar~\citep{borkar2008stochastic}, Ch.~2) would relax that
+requirement, and we have not carried it out. (ii)~\emph{Deriving the
+envelope}: obtaining Assumption~\ref{ass:residual}---in particular the
+growth of $\mu$ with $\Cg$---from the architecture, for instance by a
+kernel analysis of the spatial pathway at large width adapting Pezeshki et
+al.~\citep{pezeshki2021gradient}, is the missing link that would chain
+Theorems~\ref{thm:hessian} and~\ref{thm:twoscale} into a single causal
+statement; we test its content empirically rather than claiming it, and the
+residual-excitation and phase-restricted results of
+Appendix~\ref{app:math} record why curvature anisotropy alone does not
+supply it. (iii)~\emph{Envelope verification}: fitting $C/(1+\mu t)$
+envelopes to measured residual trajectories, with the fitted $\hat{\mu}$
+increasing in capacity, is an empirical programme, reported for the shallow
+model in Appendix~\ref{app:synthetic}.
+\end{remark}
+
+\section{Additional theory}
+\label{app:math}
+
+This appendix collects the mathematical results that the main text cites but
+does not prove. In order: pathwise discrete-time counterparts of the
+displacement bound (gradient descent, momentum under either clipping order,
+velocity clipping, Adam with a positive stabilizer, decoupled decay);
+monotone and affine joint-versus-frozen comparisons, the finite-horizon
+attribution bound that Corollary~\ref{cor:attribution} states in the main
+text, the counterexample showing that a large \emph{top} kernel eigenvalue
+is not a rate certificate, and a finite-data initialization certificate;
+interior curvature witnesses and the normalization propositions, including
+the conditional gain law under which a batch-normalized block's measured
+curvature moves with width at fixed function; the residual-excitation
+theorem and the phase-restricted attribution bound with its width
+corollary; the solvable serial cross-entropy instance with its isotropic
+extension, its displacement and margin-gap bounds and its normalized-readout
+control; and a scoped nonlinear existence result for the shallow
+biased-ReLU model under squared loss. It is reproduced verbatim from a
+self-contained mathematical note, so its internal labels are namespaced and
+its normalization is restated in its first paragraph; in particular
+$K_b = J_b J_b^\top$ there is an output-space kernel and is \emph{not} the
+parameter-space block $G_{bb}$, and the two must not be substituted for one
+another. Its section headings are typeset as subsections of this appendix.
+
+% appendix_math.tex is reproduced verbatim and is NOT edited here; its own
+% \section headings are demoted locally so that the whole file sits inside
+% Appendix~\ref{app:math}. The grouping keeps the redefinition local.
+\begingroup
+\let\section\subsection
+\let\subsection\subsubsection
+\input{sections_iclr/appendix_math}
+\endgroup
+
+\section{The effective gradient ratio}
+\label{app:egr}
+
+The theorems of the main text bound the spectral module's learning signal
+but say nothing about how a practitioner would notice its decay inside a
+single run. The \emph{effective gradient ratio} (EGR) is the cheapest
+observable that tracks it. We define it, prove the one statement the theory
+supports---decay of the numerator---and report what it does and does not
+predict empirically. It appears here, and not in the main text, because the
+evidence supports it as a complementary measurement rather than as a
+decision rule.
+
+\begin{definition}[Effective gradient ratio]
+\label{def:egr}
+At training step $t$,
+\[
+    \EGR(t) \;=\;
+    \frac{\norm{\nabla_\thetap \loss(\thetap_t, \phip_t)}}
+         {\norm{\nabla_\phip \loss(\thetap_t, \phip_t)}} .
+\]
+Both norms are available from the standard backward pass, so the cost is one
+extra reduction per step. $\EGR$ is unitless and invariant to the shared
+learning rate.
+\end{definition}
+
+\begin{proposition}[Spectral gradient decay]
+\label{prop:egr_monotonic}
+Under the hypotheses of Theorem~\ref{thm:twoscale}---%
+Assumptions~\ref{ass:linear}, \ref{ass:subg}, \ref{ass:inputlip}
+and~\ref{ass:residual}, with the trajectory contained in the regular set up
+to a horizon $T$---write
+$B_T := \sup_{t \leq T} \norm{J_\thetap(t)}_{\mathrm{op}}$. Then for every
+$t \leq T$,
+\[
+    \norm{\nabla_\thetap \loss(t)} \;\leq\; \frac{B_T\,C}{1 + \mu t},
+    \qquad
+    B_T \;\leq\; \sqrt{C_\thetap}
+    \;=\; \widetilde{L}\sqrt{\lambda_{\max}(\Sigma_X)},
+\]
+with $C_\thetap$ the cap of Lemma~\ref{lem:opcap} and $C, \mu$ the constants
+of Assumption~\ref{ass:residual}.
+\end{proposition}
+
+\begin{proof}
+$\norm{\nabla_\thetap \loss} = \norm{J_\thetap^\top r} \leq
+\norm{J_\thetap}_{\mathrm{op}} \norm{r} \leq B_T \norm{r}$ for $t \leq T$,
+and Assumption~\ref{ass:residual} bounds $\norm{r(t)} \leq C/(1 + \mu t)$.
+The cap on $B_T$ is Lemma~\ref{lem:opcap}. The horizon is not a
+technicality: in the unregularized separable regime that
+Assumption~\ref{ass:residual} models, a cap uniform over
+$t \in [0, \infty)$ cannot be assumed; in practice $T$ is the length of the
+run, which is the horizon the diagnostic operates over.
+\end{proof}
+
+\begin{remark}[From gradient decay to the ratio]
+\label{rem:egr_ratio_caveat}
+Proposition~\ref{prop:egr_monotonic} bounds the \emph{numerator} only. The
+denominator $\norm{\nabla_\phip \loss} = \norm{J_\phip^\top r}$ is also
+proportional to the residual, so both quantities vanish together as the loss
+is fitted and the behaviour of their ratio is not determined by residual
+decay alone: it depends on the relative conditioning of the two Jacobians
+along the trajectory. The EGR trajectory is therefore an empirical object,
+and we use the proposition only for the absolute claim that the spectral
+module's learning signal decays polynomially while the loss is being
+fitted.
+\end{remark}
+
+\paragraph{Descriptive statistics.}
+On the synthetic width sweep of Experiment~1.2 ($N = 24$ runs, widths
+$\{16, 64, 256, 1024\}$, six seeds each), EGR depth correlates with final
+test accuracy at Pearson $r = -0.723$ and Spearman $\rho = -0.808$, and with
+the train--test gap at $r = +0.741$. The pooled correlation is confounded
+with capacity: EGR depth correlates with $\log \mathrm{width}$ at
+$r = +0.903$, and the partial correlation with test accuracy controlling for
+$\log \mathrm{width}$ collapses to $-0.169$. A fixed-capacity companion
+sweep isolates the remainder: width fixed at $D = 256$, varying data noise
+$\{0.05, 0.10, 0.15, 0.20\}$, learning rate
+$\{3{\times}10^{-4}, 10^{-3}, 3{\times}10^{-3}\}$, weight decay
+$\{0, 10^{-3}\}$ and six seeds, $N = 144$ runs. There
+$r(\EGR_{\min}, \mathrm{acc}) = +0.344$; $\EGR_{\min}$ is nearly orthogonal
+to the swept hyperparameters (marginal correlations $+0.029$, $-0.073$,
+$+0.007$; $R^2 = 0.015$ for the full set), and the partial correlation given
+all three, $+0.395$, is \emph{larger} than the pooled value---the opposite
+signature of a hidden hyperparameter confound. Controlling additionally for
+final training loss (itself a predictor, $r = +0.47$ for accuracy) leaves it
+at $+0.335$.
+
+\paragraph{Why we report no aggregate test on the cell analysis.}
+Within the 24 $(\mathrm{noise}, \mathrm{lr}, \mathrm{wd})$ cells in which
+only the seed varies, 23 of 24 give a positive
+$r(\EGR_{\min}, \mathrm{acc})$, with mean $+0.584$. We report this
+descriptively and attach no $p$-value to it. The same six seeds populate
+every cell, so the cells are not independent replicates; the between-cell
+standard deviation of the Fisher-transformed correlations, $0.233$, sits far
+below the $0.577$ that independent cells of this size would produce, and a
+one-sample test over cells would therefore overstate the evidence by an
+unknown factor. The $N = 144$ partial correlation above, computed once over
+runs rather than over cells, is the inferential statement we stand behind.
+
+\paragraph{Effect size, honestly.}
+As a binary alarm, $\EGR_{\min}$ reaches ROC-AUC $0.612$ for flagging
+below-median test accuracy and $\EGR_{\mathrm{depth}}$ only $0.538$ for a
+high overfit gap; the best operating point ($\EGR_{\min} < 0.10$) catches
+$90\%$ of poor runs while also flagging $57\%$ of healthy ones. At fixed
+capacity, EGR is a real, capacity-independent signal correlated with
+generalization, and it carries information that train-loss monitoring does
+not; the within-capacity effect size is small enough that it belongs
+alongside loss monitoring as a complementary measurement and not as a
+standalone run-quality indicator.
+
+\IfFileExists{sections_iclr/appendix_experiments.tex}{\input{sections_iclr/appendix_experiments}}{\section{Synthetic experiment details}\label{app:synthetic}\emph{[Filled separately.]}\section{Production model details}\label{app:production}\emph{[Filled separately.]}}
+
+\section{Verification record}
+\label{app:audits}
+
+Every proof reproduced or stated in this appendix was independently
+re-derived line by line, and every displayed inequality was checked
+numerically at the parameter values recorded below. The scripts live under
+\texttt{code/audits/} in the supplementary repository; each is a standalone
+program that reads and writes no repository file, and each records its own
+seed and command in its header. Table~\ref{tab:audits} lists them; a seed is
+a NumPy generator seed unless marked \texttt{torch}, in which case it is the
+global torch seed, and \texttt{---} marks a deterministic script. The
+recorded environment is Python 3.12.13, numpy 2.0.2, scipy 1.16.3, torch
+2.9.1, CPU only.
+
+\newcommand{\uscore}{\_\allowbreak}
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}p{0.235\textwidth}p{0.415\textwidth}p{0.115\textwidth}p{0.105\textwidth}@{}}
+\toprule
+Script & Verifies & Seed & Result \\
+\midrule
+\texttt{audit\uscore A1.py}
+  & Discrete displacement and clipping bounds; monotone comparison and its
+    Gr\"onwall form; affine bridge, its counterexample and the attribution
+    share; the top-eigenvalue counterexample; the constants of the
+    initialization certificate
+  & \texttt{np 0} & PASS (18/19) \\
+\texttt{audit\uscore a2.py}
+  & Interior curvature witness identity and the ReLU interior theorem's
+    probability and curvature-floor events; the normalization
+    counterexamples; the cross-entropy gradient-gain counterexample
+  & \texttt{np 0} & partial \\
+\texttt{audit\uscore a2\uscore bn.py}
+  & The normalization annihilation counterexample against a real
+    \texttt{BatchNorm1d} in both stabilizer regimes; the width-proportional
+    weighted feature Gram; the mean-direction witness with non-constant
+    features
+  & \texttt{torch 1} & PASS \\
+\texttt{check\uscore p5.py}
+  & Solvable serial instance: invariants, fitting-time bracket, residual
+    envelope, Gauss--Newton constants, gradient-norm bound, joint-versus-%
+    frozen gap, displacement table, normalized-readout control
+  & --- & PASS \\
+\texttt{audit\uscore blocks.py}
+  & In the paper's own normalization: the gradient identity
+    $\nabla_b\loss = J_b^\top r$, the head-weight block identity for a
+    shared-weight $1{\times}1$ convolutional head, and the degenerate
+    stationary-point counterexample to Corollary~\ref{cor:attribution}
+  & \texttt{torch 0} & PASS \\
+\texttt{check\uscore theoremN.py}
+  & Scoped nonlinear existence result: the containment inequality, the
+    three-term Jacobian decomposition, gate-flip containment, perturbation
+    and moment bounds, boundary mass, and the attribution share along the
+    nonlinear flow
+  & \texttt{np 0} & PASS \\
+\texttt{astra\uscore math\uscore 02\uscore checks.py}
+  & Finite-horizon attribution with non-commuting kernels by exact spectral
+    integral; the isotropic serial instance with signed context and unequal
+    zero-sum readouts; the normalization derivative and co-scaled
+    curvature law; ReLU feature and gate tube bounds
+  & \texttt{np 902} & PASS \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Subdirectory}
+  \texttt{math02\uscore sections\uscore 2\uscore 4\uscore 6/}} \\
+\texttt{a1\uscore finite\uscore horizon.py}
+  & Finite-horizon attribution over 24 nonlinear runs, sharpness at equality,
+    and the old-versus-new bound & \texttt{20260910} & PASS \\
+\texttt{a2\uscore chernoff.py}
+  & Truncated matrix Chernoff certificate: truncation radius, minimum
+    eigenvalue floor, exponent constant, width threshold
+  & \texttt{424242} & PASS \\
+\texttt{a2\uscore chernoff\uscore biting.py}
+  & The same certificate in a second parameterization, with empirical
+    failure frequencies across widths & \texttt{909090} & PASS \\
+\texttt{a2\uscore chernoff\uscore constant.py}
+  & The constant in the certificate, stressed on the extremal
+    balls-in-bins family & \texttt{5150} & PASS \\
+\texttt{c23\uscore bullets.py}
+  & Reduction of the full flow to its three-variable closure, residual
+    identities, and the clipping equivalence against a real optimizer
+  & \texttt{246810} & PASS \\
+\texttt{i\uscore toy\uscore ode.py}
+  & The serial instance's update suppression, displacement, fitting time and
+    frozen-comparator bracket over 24 high-accuracy solves
+  & \texttt{31337} & PASS \\
+\texttt{i6\uscore reversal\uscore mc.py}
+  & The contextual-reversal error limit, its per-draw form, the sufficient
+    condition, and the tail bound & \texttt{77007} & PASS \\
+\texttt{b\uscore bn\uscore torch.py}
+  & Normalization Jacobian and spectrum against a real \texttt{BatchNorm2d};
+    the width-constant curvature ratio; the function-preserving rescaling
+    law; uniform versus channelwise rescaling & \texttt{13579} & PASS \\
+\texttt{b\uscore bn\uscore crosschannel.py}
+  & Exact block-diagonality of the normalization derivative across channels
+  & \texttt{13579} & PASS \\
+\bottomrule
+\end{tabular}
+\caption{Numerical verification record for the results of
+Appendices~\ref{app:proofs} and~\ref{app:math}. Both non-clean outcomes are
+explained in the text; neither is a mathematical failure. Scripts are kept
+byte-identical to what was run.}
+\label{tab:audits}
+\end{table}
+
+Two entries are not clean, and both are artefacts of the audit code rather
+than of the mathematics. In \texttt{audit\_A1.py}, the single failing line
+is the sub-check ``share $\leq 1$'' of the affine bridge, whose integral the
+script evaluates with a rectangle rule that over-estimates a decaying
+integrand (16 of 200 trials exceed one, maximum $1.73$); recomputing the
+same integral in closed form gives $0$ of $300$ trials above one with
+maximum $0.919$, and the identical claim passes exactly, over $800$
+non-commuting-kernel instances, in \texttt{astra\_math\_02\_checks.py}. In
+\texttt{audit\_a2.py}, every check passes until the script aborts inside a
+functional Jacobian transform applied to a normalization \emph{module},
+because the installed torch version forbids the in-place update of that
+module's batch counter under the transform; the aborted and subsequent
+checks are duplicated in \texttt{audit\_a2\_bn.py}, which constructs the
+same layer without running statistics and passes them all, so nothing is
+left unverified. Both scripts are retained unmodified so that the record
+matches the run.
