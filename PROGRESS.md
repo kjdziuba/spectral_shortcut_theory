@@ -2289,3 +2289,35 @@ ViT sweep:
   verdict bullets, Sec 2-6, appendices A-F (F = scoped verification
   record); main text ends ~2/3 down page 9; 29 pp; 0 errors.
 - Handed to Astra: review_iclr_02 requested on main_iclr_v2.pdf.
+
+## 2026-09-11 (07:30) — Astra review 02 (5/10, ~35%) and the revision
+
+- review_packet/astra/review_iclr_02.md: stronger than v1; W1 headline
+  exceeds the dissociation (recoverability, "not whether used",
+  regime transfer); W2 recoverability needs the operational test; W3
+  mixed thresholds/width sets/seed counts; W4 real-data causal reading;
+  W5 methods precision; W6 economy; 32-item claim ledger; the single
+  change = retrain the head on frozen L* encoders.
+- Done: exp2_recovery.py (9 runs, protocol fixed in advance): retrained
+  reversal 0.84/0.77/0.75 from kappa=1/256 encoders vs 0.62/0.59/0.54
+  from kappa=1 and 0.60/0.59/0.53 from random init; original classifiers
+  0.12-0.15 in both arms -> the rate changes what retraining recovers by
+  ~0.2. update_projections.py: Exp 3 R_C 0.99995-0.99998 (gamma=30),
+  0.9996-0.9998 (gamma=10), ctxfree 0.88-0.90; Exp 2 R_V 0.95-0.98.
+  Five-width verdicts recomputed (P1 not met 1/3; P2 alignment/probe
+  flatness met, reversal not; P2b met; P3 both fail; P4 half; P5 met;
+  P6 probe/h_u met, reversal 2/3). gamma=10 paired rate effect
+  +0.030/+0.049/+0.095 vs +0.002/+0.023/+0.016 at gamma=30.
+- Text: abstract v3 (Astra's core + recovery numbers), intro (four
+  measurements kept apart; verdict bullets scoped), Sec 2 (base rate +
+  block multipliers; matched calibration discriminant; comparator
+  defined by its training intervention; synthetic reversal changes the
+  field at every pixel; 5x5), Sec 3 finite-width condition, Sec 4
+  (registered paragraph = Astra's; budget endpoints separated;
+  recovery paragraph), Sec 5 rewritten (high/low accessibility, no
+  theorem-case identification, patch readiness, update projections,
+  gamma=10 completed), Sec 6 (Astra's conclusion; production numbers
+  fixed: 2.6-4.8x full contrast, 12-28x orthogonal part), appendix
+  repairs (population-CE inference, toy table caption/horizon, "three
+  orders", theorem title), criterion table + recovery table in App. C.
+  Trimmed to fit 9 pages. exp3_recovery.py running (27 runs).
