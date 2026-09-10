@@ -97,24 +97,28 @@ def make_problem_v2(
         raise ValueError(f"unknown condition {condition!r}")
     S, H, W = spec.S, spec.H, spec.W
     g = torch.Generator().manual_seed(seed)
+    # Draw order is condition-independent so that the five conditions generated
+    # from the SAME seed share labels y, context noise eta and spectral noise
+    # eps, differing only in the assigned context field/amplitudes (paired
+    # interventions; Astra refocus_01 §2.4.5). `iid` output is bitwise identical
+    # to the earlier draw order (y, eta, eps).
     y = torch.randint(0, 2, (n, H, W), generator=g).float() * 2.0 - 1.0
-    if condition == "ctx_random":
-        y_src = torch.randint(0, 2, (n, H, W), generator=g).float() * 2.0 - 1.0
-    else:
-        y_src = y
+    eta = torch.randn(n, spec.n_ctx, H, W, generator=g)
+    eps = torch.randn(n, H, W, S, generator=g)
+    y_alt = torch.randint(0, 2, (n, H, W), generator=g).float() * 2.0 - 1.0
+    y_src = y_alt if condition == "ctx_random" else y
     sign = -1.0 if condition == "reversed" else 1.0
     alpha = 0.0 if condition == "ctx_only" else spec.alpha
     beta = 0.0 if condition == "spec_only" else spec.beta
 
     # Context fields: C[:, d] = sign * y_src shifted by o_d  (+ tau * noise)
     C = torch.stack([sign * shift_torus(y_src, dy, dx) for (dy, dx) in spec.offsets], dim=1)
-    eta = torch.randn(n, spec.n_ctx, H, W, generator=g)
     Cn = C + spec.tau * eta  # (n, n_ctx, H, W)
 
     X = alpha * y.unsqueeze(-1) * u.view(1, 1, 1, S)
     # beta * sum_d Cn[:, d] v_d  ->  (n, H, W, S)
     X = X + beta * torch.einsum("bdhw,ds->bhws", Cn, V)
-    X = X + spec.sigma * torch.randn(n, H, W, S, generator=g)
+    X = X + spec.sigma * eps
     X = X.float()
     if return_fields:
         return X, y, Cn

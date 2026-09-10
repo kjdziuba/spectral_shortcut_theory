@@ -203,26 +203,111 @@ further run and applied uniformly:
   which PyTorch runs in TF32 by default. Pilot outputs are preserved in
   `results/exp2_pilot/`; the grid overwrites `results/exp2/`.
 
+### 4.4b Amendment after Astra's design review (`review_packet/astra/refocus_01.md`; recorded 21:30, before the grid completed)
+
+Astra reviewed §4 and the code. The grid design is unchanged; the following
+were added or corrected before relaunch (the first launch was stopped after
+six width-2 runs because a leftover pilot process starved the GPU; those six
+runs are re-run identically):
+
+- **Whole-head rate arm `headlr`** (Astra's recommended single intervention):
+  encoder rate η, first convolution (incl. bias) and readout rate κη, κ ∈
+  {1, 1/16, 1/256} at M = 32. In the theorem this is ḃ = κMvϱ and the bound
+  becomes (a(T_m)−a₀)/(m−a₀) ≤ 1/(1+κMv₀²): κ moves the competition parameter
+  through one while leaving initial predictions and cue information fixed.
+  Protocol: pilot on seed 0; extend the bracket downward (1/4096) only if no
+  appreciable spectral learning appears before matched fit; check that the
+  slow head still reaches L*; then freeze the bracket and run seeds 1, 2.
+  κ is never chosen by held-out reversal accuracy. **Prediction P6:** at
+  L* = 0.30, probe gain, h_u and reversal accuracy increase as κ decreases
+  (Spearman ≤ −0.8 against κ in each seed); at κ = 1/256 the probe gain
+  approaches the `ctxfree` value at M = 32... [no ctxfree at 32 in the grid;
+  compare with ctxfree M = 8 and 128].
+- **Measures.** Primary operational measure of spectral learning = LDA probe
+  accuracy relative to its initial value (`probe_acc_gain`), with the exact
+  population companion h_u(W) = ‖P_row(W) u‖² exported at every snapshot
+  (optimal probe accuracy = Φ(α/σ·√h_u)); encoder energy fraction a_u is an
+  explanatory secondary quantity, NOT a necessary condition (P3's literal 0.25
+  cutoff is kept for the record but a failure of that cutoff is not evidence
+  against learning). Encoder weights are saved at every snapshot
+  (`results/exp2/enc_*.npz`).
+- **Same-state gradient norms:** backward now precedes the snapshot, so
+  ‖∇_W L‖, ‖∇_φ L‖ at a threshold are those of the snapshotted iterate.
+- **Paired test conditions:** the five conditions of a seed now share labels,
+  context noise and spectral noise (one seed per family); differences between
+  conditions are responses to the intervention alone.
+- **Interpretation rules (Astra):** flat P1 curves in an already suppressed
+  regime do not falsify competition; P2 (no width trend under the normalized
+  readout) is a hypothesis for this CNN, not a consequence of part (c);
+  the normalized readout is algebraically the readout-only rate-1/M arm at
+  the same width (do not count them as independent evidence; call it
+  "normalized readout", not μP); a width trend under `ctxfree` can reflect
+  ordinary width-dependent optimization, so compare informative vs random
+  context at matched width/rate and report the interaction; matched mean
+  loss is an analogue of matched margin, not the theorem's stopping rule
+  (report loss and accuracy at crossing; confirm on representative cases that
+  halving η does not change the interpretation); the context-oracle
+  population CE is ≈ 0.126 nats (spectral ≈ 0.127), so 0.15 is "just above
+  the context-oracle optimum", not a certified floor, and loss < 0.10 alone
+  does not prove spectral learning — the probe and shifted accuracies do.
+- **Documentation fixes:** the oracle/readiness probes use the 3×3 window
+  (r = 1; it contains all eight label copies), not 5×5; the readout
+  multipliers actually run are {1/16, 1/4, 1, 4, 16} (64 dropped in 4.4a);
+  readiness values are the recorded 0.647/0.653/0.608 (spectral) vs
+  0.910/0.914/0.905 (context), not "≈ 0.93".
+
 ### 4.5 Known limitations to state
 Linear encoder (as in the theorem); one head family; full-batch GD; a
 constructed context cue; matched-fit stopping is the theorem's convention,
 not a training recipe; K/S sets the initial readiness asymmetry.
 
-## 5. Experiment 3 — real spectra, assigned neighbourhoods (design; run after Exp 2)
+## 5. Experiment 3 — real centre spectra with constructed context (design; run after Exp 2)
 
-Data: breast QCL pixels (companion repo, `/mnt/hdd2/u37314kd/data_breast_v2_pca23`
-or the no-denoising variant; fold-0 patient-level split). Construct 3×3 (or
-5×5) patches whose CENTRE pixel is a real spectrum with its real label and
-whose NEIGHBOURS are real spectra drawn from cores of a class chosen with
-probability ρ_train ∈ {0.5 (uninformative), 0.9 (informative)} to match the
-centre's class. Evaluate on held-out patients under ρ_test ∈ {0.9, 0.5,
-0.1 (reversed)}. Model: linear (or MLP) spectral encoder → CNN head of width
-M ∈ {48, 192, 768} (SP and normalized readout), plain SGD with the same
-learning rate, matched training fit. Measurements as in Exp 2, with the
-spectral probe = LDA on encoder outputs for centre pixels. Describe as "a
-controlled contextual-shift benchmark built from real spectra"; it does not
-establish that the same mechanism explains natural clinical shifts. Pilot at
-one width before the full grid.
+Decision (Astra refocus_01 §3, adopted): **3B primary, 3A secondary.**
+
+- **3B (primary; "real-centre-spectrum experiment with constructed context").**
+  Astra's sentence: "We test contextual competition using measured centre
+  spectra and their recorded labels, with a synthetic class-associated
+  spatial intensity pattern along a training-estimated dominant spectral
+  direction in the neighbourhood." Data: breast QCL fold-0 patient split
+  (`/mnt/hdd2/u37314kd/data_breast_v2_pca23/splits_fold0.json`: 115 train /
+  28 val / 26 test cores; per-core NPZ with X_raw/X_d1/X_d2 (H, W, 314), y in
+  0–4, tissue_mask). Proposed task: BINARY, the preselected pair Cancer
+  Epithelium (label 3) vs Cancer-Associated Stroma (label 4) — the contrast
+  used in the v1 anisotropy measurements [author to confirm; the 4-class
+  variant with a stated assigned-class transition matrix is the extension].
+  Construction (Astra's minimum requirements): preprocessing (per-channel
+  centering/scaling on the 942-dim raw+d1+d2 vector) and the dominant
+  direction v₁ estimated on TRAINING patients only and frozen; the pattern is
+  added AFTER preprocessing so it survives it; each centre spectrum is
+  preserved with its recorded label; the eight neighbour spectra are real
+  donors sampled independently of the centre label (from training-side
+  donors for training patches, held-out-side donors for evaluation patches;
+  never training donors in evaluation patches); the constructed cue is
+  γ(code(y_centre)·s + τη)v₁ per neighbour with s = +1 (informative), s = −1
+  (reversed), and code of an independent random label (uninformative
+  control, same marginal amplitude/noise); γ, τ calibrated on training-side
+  calibration data so that the neighbourhood oracle matches the centre-only
+  oracle (LDA on the preprocessed centre spectrum); if they cannot be matched,
+  report the imbalance and weaken the "equally predictive" claim. Readiness
+  table as in Exp 2 (raw centre oracle, random-encoder centre probe,
+  random-encoder neighbourhood probe). Model: linear encoder 942→K, ReLU CNN
+  3×3 head, single logit, plain full-batch GD (or large-batch SGD) with one
+  global rate; arms sp widths, headlr κ at one width, normalized readout,
+  ctxfree, frozen; paired initialization within width; matched training
+  loss; paired context interventions on held-out patients (val and test
+  cores reported separately). Failure = excess shifted risk relative to a
+  separately trained spectral-only comparator at the same threshold (nonzero
+  on real spectra), not the theorem's zero/one dichotomy. Patient/seed
+  variation is the replication unit.
+- **3A (secondary, if resources permit; result retained whatever it shows).**
+  Astra's sentence: "We construct a contextual-shift benchmark from measured
+  centre spectra and measured neighbour spectra, assigning neighbour classes
+  to control their association with the centre label; the resulting
+  neighbourhoods are assembled rather than naturally observed tissue
+  neighbourhoods." Measure the same readiness table first: if A already
+  shows the accessibility difference, it is the more natural transfer test;
+  if not, a null A result tests a different regime.
 
 ## 6. Schedule (abstract Sep 18, paper Sep 25)
 
@@ -234,6 +319,22 @@ one width before the full grid.
 - Sep 17: v2 abstract final → register Sep 18.
 - Sep 18–22: full v2 draft, four figures, trimmed appendix; Astra review 02.
 - Sep 23–24: corrections; Sep 25 submit.
+
+## 6a. Adopted from Astra's refocus_01 (2026-09-10 21:30)
+
+- §3 theorem: Astra's `thm:serial` statement (three parts + special-init
+  remark; 0.44 page) verbatim; proof reuse as described; interpretation rules:
+  the spectral-only comparator is trained to ITS OWN first hitting time; the
+  frozen comparator is evaluated at the joint path's elapsed times through
+  T_m; **normalization removes the width dependence, it does not promise
+  recovery** (the normalized system is the M = 1 system, which still fails
+  under reversal for (0,1) initialization) — never write that part (c)
+  eliminates shortcut reliance; no phase-attribution implication; no "factor
+  of six"; no "10⁻¹¹ for every quantity" — numerical verification in its own
+  scoped table.
+- §2 definition-of-failure paragraph: Astra's draft verbatim (refocus_01
+  end of §3).
+- Exp 2: §4.4b above. Exp 3: §5 above (B primary).
 
 ## 7. For Astra (relayed by the author)
 

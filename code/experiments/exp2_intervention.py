@@ -86,16 +86,25 @@ LR_MULTS = [1 / 16, 1 / 4, 1, 4, 16]
 LRMULT_WIDTH = 32
 SEEDS = [0, 1, 2]
 
+# Whole-head learning-rate multiplier kappa (Astra refocus_01 §2.2): encoder
+# rate eta, conv1 (incl. bias) and conv2 rate kappa*eta. Pilot bracket at
+# M=32 on seed 0 first; extend downward only if no appreciable spectral
+# learning appears before matched fit; then freeze and confirm on seeds 1, 2.
+HEAD_MULTS = [1, 1 / 16, 1 / 256]
+HEADLR_WIDTH = 32
+
 ARMS = {
-    "sp":      dict(param="sp",  widths=WIDTHS_FULL,    train_cond="iid",        mults=[1],      frozen=False),
-    "mup":     dict(param="mup", widths=WIDTHS_FULL,    train_cond="iid",        mults=[1],      frozen=False),
-    "ctxfree": dict(param="sp",  widths=WIDTHS_CTRL,    train_cond="ctx_random", mults=[1],      frozen=False),
-    "lrmult":  dict(param="sp",  widths=[LRMULT_WIDTH], train_cond="iid",        mults=LR_MULTS, frozen=False),
-    "frozen":  dict(param="sp",  widths=WIDTHS_CTRL,    train_cond="iid",        mults=[1],      frozen=True),
+    "sp":      dict(param="sp",  widths=WIDTHS_FULL,    train_cond="iid",        mults=[1],      head_mults=[1],        frozen=False),
+    "mup":     dict(param="mup", widths=WIDTHS_FULL,    train_cond="iid",        mults=[1],      head_mults=[1],        frozen=False),
+    "ctxfree": dict(param="sp",  widths=WIDTHS_CTRL,    train_cond="ctx_random", mults=[1],      head_mults=[1],        frozen=False),
+    "lrmult":  dict(param="sp",  widths=[LRMULT_WIDTH], train_cond="iid",        mults=LR_MULTS, head_mults=[1],        frozen=False),
+    "frozen":  dict(param="sp",  widths=WIDTHS_CTRL,    train_cond="iid",        mults=[1],      head_mults=[1],        frozen=True),
+    "headlr":  dict(param="sp",  widths=[HEADLR_WIDTH], train_cond="iid",        mults=[1],      head_mults=HEAD_MULTS, frozen=False),
 }
 
-# Seed layout: directions 1000+s; training data 2000+s; test condition i
-# 3000+10s+i; probe fit 4000+s; probe eval 5000+s; model init = s.
+# Seed layout: directions 1000+s; training data 2000+s; the five test
+# conditions share ONE seed 3000+s (paired: same labels and noise, only the
+# assigned context differs); probe fit 4000+s; probe eval 5000+s; model init = s.
 
 
 # ---------------------------------------------------------------------------
@@ -199,8 +208,8 @@ def build_data(seed: int, spec: ProblemSpec, train_cond: str, device: torch.devi
     u, V = make_directions(spec.S, spec.n_ctx, seed=1000 + seed)
     Xtr, ytr = make_problem_v2(N_TRAIN, spec, u, V, seed=2000 + seed, condition=train_cond)
     tests = {}
-    for i, c in enumerate(CONDITIONS):
-        Xte, yte = make_problem_v2(N_TEST, spec, u, V, seed=3000 + 10 * seed + i, condition=c)
+    for c in CONDITIONS:
+        Xte, yte = make_problem_v2(N_TEST, spec, u, V, seed=3000 + seed, condition=c)
         tests[c] = (Xte.to(device), yte.to(device))
     pf = make_problem_v2(N_TEST, spec, u, V, seed=4000 + seed, condition="spec_only")
     pe = make_problem_v2(N_TEST, spec, u, V, seed=5000 + seed, condition="spec_only")
@@ -230,17 +239,25 @@ def spectral_probe(enc: nn.Module, data: dict) -> float:
 
 @torch.no_grad()
 def encoder_stats(enc: nn.Module, W0: torch.Tensor, u: torch.Tensor, V: torch.Tensor) -> dict:
-    Wt = enc.proj.weight
+    Wt = enc.proj.weight.double()
+    ud, Vd = u.double(), V.double()
     wn2 = float((Wt ** 2).sum())
-    wu = Wt @ u
-    wV = Wt @ V.T  # (K, n_ctx)
+    wu = Wt @ ud
+    wV = Wt @ Vd.T  # (K, n_ctx)
+    # Row-space retention h_u = u^T W^T (W W^T)^+ W u = ||P_row(W) u||^2 (Astra §2.3):
+    # the optimal linear probe on spec_only data has accuracy Phi(alpha/sigma * sqrt(h_u)).
+    G = Wt @ Wt.T
+    h_u = float(wu @ torch.linalg.solve(G, wu))
+    h_V = float((wV * torch.linalg.solve(G, wV)).sum())
     return dict(
         align_u=float((wu ** 2).sum()) / wn2,
         align_V=float((wV ** 2).sum()) / wn2,
         gain_u=float(wu.norm()),
         gain_V=float(wV.norm()),
+        h_u=h_u,
+        h_V=h_V,
         w_norm=math.sqrt(wn2),
-        disp=float((Wt - W0).norm() / W0.norm()),
+        disp=float((Wt - W0.double()).norm() / W0.double().norm()),
     )
 
 
@@ -251,8 +268,14 @@ def mult_tag(mult: float) -> str:
     return f"{mult:g}"
 
 
+def make_tag(arm: str, width: int, mult: float, head_mult: float, seed: int) -> str:
+    h = f"_h{head_mult:g}" if head_mult != 1 else ""
+    return f"{arm}_M{width}_x{mult_tag(mult)}{h}_s{seed}"
+
+
 def run_one(arm: str, width: int, mult: float, seed: int, tau: float, lr: float,
-            max_steps: int, device: torch.device, quiet: bool = False) -> pd.DataFrame:
+            max_steps: int, device: torch.device, head_mult: float = 1.0,
+            quiet: bool = False) -> pd.DataFrame:
     cfg = ARMS[arm]
     spec = ProblemSpec(S=S, H=H, W=W, alpha=ALPHA, beta=BETA, tau=tau, sigma=SIGMA)
     data = build_data(seed, spec, cfg["train_cond"], device)
@@ -268,27 +291,31 @@ def run_one(arm: str, width: int, mult: float, seed: int, tau: float, lr: float,
     groups = []
     if not cfg["frozen"]:
         groups.append({"params": [enc.proj.weight], "lr": lr})
-    groups.append({"params": list(head.conv1.parameters()), "lr": lr})
-    groups.append({"params": [head.conv2.weight], "lr": lr * mult})
+    groups.append({"params": list(head.conv1.parameters()), "lr": lr * head_mult})
+    groups.append({"params": [head.conv2.weight], "lr": lr * head_mult * mult})
     opt = torch.optim.SGD(groups, momentum=0.0)
 
     Xtr, ytr = data["Xtr"], data["ytr"]
-    tag = f"{arm}_M{width}_x{mult_tag(mult)}_s{seed}"
+    tag = make_tag(arm, width, mult, head_mult, seed)
     pending = sorted(THRESHOLDS, reverse=True)
     traj_rows, snap_rows = [], []
+    W_snaps = {}
     t0 = time.time()
     status = "running"
     gth = gph = float("nan")
 
     def snapshot(label, step, loss_v, acc_v):
+        # Called AFTER loss.backward() at the current iterate and BEFORE opt.step():
+        # gradient norms, probe, alignment and test accuracies are same-state.
         st = encoder_stats(enc, W0, data["u"], data["V"])
         row = dict(arm=arm, param=cfg["param"], train_cond=cfg["train_cond"], width=width,
-                   mult=mult, seed=seed, threshold=label, step=step, loss=loss_v,
-                   acc_train=acc_v, gnorm_theta=gth, gnorm_phi=gph,
+                   mult=mult, head_mult=head_mult, seed=seed, threshold=label, step=step,
+                   loss=loss_v, acc_train=acc_v, gnorm_theta=gth, gnorm_phi=gph,
                    probe_acc=spectral_probe(enc, data), wall_s=time.time() - t0, **st)
         for c, (Xc, yc) in data["tests"].items():
             row[f"acc_{c}"] = accuracy(enc, head, Xc, yc)
         snap_rows.append(row)
+        W_snaps[f"W_{label}"] = enc.proj.weight.detach().cpu().numpy().copy()
         if not quiet:
             print(f"  [{tag}] {label!s:>8} step {step:6d} loss {loss_v:.4f} acc {acc_v:.3f} "
                   f"a_u {st['align_u']:.4f} probe {row['probe_acc']:.3f} "
@@ -298,18 +325,20 @@ def run_one(arm: str, width: int, mult: float, seed: int, tau: float, lr: float,
 
     step = 0
     while True:
+        opt.zero_grad(set_to_none=True)
         logits = head(enc(Xtr))
         loss = margin_loss(logits, ytr)
         loss_v = float(loss)
         acc_v = float((torch.sign(logits) == ytr).float().mean())
-
         if not math.isfinite(loss_v) or loss_v > DIVERGE_LOSS:
             status = "diverged"
             snapshot("diverged", step, loss_v, acc_v)
             break
+        loss.backward()  # gradients of the CURRENT iterate; snapshots below are same-state
+        gth = float(enc.proj.weight.grad.norm()) if enc.proj.weight.grad is not None else 0.0
+        gph = math.sqrt(sum(float(p.grad.norm()) ** 2 for p in head.parameters() if p.grad is not None))
         if step == 0:
-            # gradient norms at init are filled in below (after backward)
-            pass
+            snapshot("init", 0, loss_v, acc_v)
         while pending and loss_v < pending[0]:
             snapshot(pending.pop(0), step, loss_v, acc_v)
         if loss_v < STOP_LOSS:
@@ -320,13 +349,6 @@ def run_one(arm: str, width: int, mult: float, seed: int, tau: float, lr: float,
             status = "max_steps"
             snapshot("final", step, loss_v, acc_v)
             break
-
-        opt.zero_grad(set_to_none=True)
-        loss.backward()
-        gth = float(enc.proj.weight.grad.norm()) if enc.proj.weight.grad is not None else 0.0
-        gph = math.sqrt(sum(float(p.grad.norm()) ** 2 for p in head.parameters() if p.grad is not None))
-        if step == 0:
-            snapshot("init", 0, loss_v, acc_v)
         if step % LOG_EVERY == 0:
             st = encoder_stats(enc, W0, data["u"], data["V"])
             traj_rows.append(dict(step=step, loss=loss_v, acc_train=acc_v, gnorm_theta=gth,
@@ -343,6 +365,8 @@ def run_one(arm: str, width: int, mult: float, seed: int, tau: float, lr: float,
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     traj.to_csv(OUT_DIR / f"traj_{tag}.csv", index=False)
     snaps.to_csv(OUT_DIR / f"snap_{tag}.csv", index=False)
+    np.savez_compressed(OUT_DIR / f"enc_{tag}.npz", W0=W0.cpu().numpy(),
+                        u=data["u"].cpu().numpy(), V=data["V"].cpu().numpy(), **W_snaps)
     if not quiet:
         print(f"[{tag}] {status} at step {step}, {time.time() - t0:.1f}s", flush=True)
     return snaps
@@ -455,6 +479,17 @@ def collect() -> pd.DataFrame:
     if not files:
         raise SystemExit("no snapshot files")
     df = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
+    if "head_mult" not in df.columns:
+        df["head_mult"] = 1.0
+    df["head_mult"] = df["head_mult"].fillna(1.0)
+    # Gains relative to the run's own initialization (Astra §2.3: report the probe
+    # relative to its initial value; h_u likewise).
+    key = ["arm", "width", "mult", "head_mult", "seed"]
+    init = df[df["threshold"].astype(str) == "init"].set_index(key)
+    for col in ("probe_acc", "h_u", "align_u"):
+        if col in df.columns:
+            base = init[col]
+            df[f"{col}_gain"] = df[col].values - base.reindex(pd.MultiIndex.from_frame(df[key])).values
     df.to_csv(SUMMARY, index=False)
     print(f"[collect] {len(files)} runs, {len(df)} snapshot rows -> {SUMMARY}")
     return df
@@ -497,11 +532,41 @@ def evaluate_predictions(df: pd.DataFrame) -> str:
                 f"{[round(v, 3) for v in g['probe_acc']]} | {[round(v, 3) for v in g['acc_reversed']]} | "
                 f"{spearman(g['mult'], g['align_u']):+.2f} | {spearman(g['mult'], g['acc_reversed']):+.2f} |")
         lines.append("")
+    a = d[d["arm"] == "headlr"]
+    if not a.empty:
+        lines.append(f"## headlr (M = {HEADLR_WIDTH}; whole-head rate kappa; amendment 4.4b)")
+        lines.append("| seed | kappa | step(L*) | a_u(L*) | probe gain(L*) | h_u(L*) | acc_reversed(L*) | acc_ctx_random(L*) | rho(probe gain,kappa) | rho(rev,kappa) |")
+        lines.append("|---|---|---|---|---|---|---|---|---|---|")
+        for s, g in a.groupby("seed"):
+            g = g.sort_values("head_mult")
+            lines.append(
+                f"| {s} | {[round(v, 5) for v in g['head_mult']]} | {list(g['step'])} | "
+                f"{[round(v, 4) for v in g['align_u']]} | {[round(v, 3) for v in g['probe_acc_gain']]} | "
+                f"{[round(v, 4) for v in g['h_u']]} | {[round(v, 3) for v in g['acc_reversed']]} | "
+                f"{[round(v, 3) for v in g['acc_ctx_random']]} | "
+                f"{spearman(g['head_mult'], g['probe_acc_gain']):+.2f} | {spearman(g['head_mult'], g['acc_reversed']):+.2f} |")
+        lines.append("")
+    # Secondary thresholds (REFOCUS_PLAN 4.4a): the same width tables at 0.15 and 0.10
+    for thr in (0.15, 0.10):
+        dd = df[df["threshold"].astype(str) == str(thr)]
+        if dd.empty:
+            continue
+        lines.append(f"## Secondary analysis at loss {thr} (labelled; not the pre-registered threshold)")
+        lines.append("| arm | seed | widths | probe gain | h_u | acc_reversed | rho(probe gain,M) | rho(rev,M) |")
+        lines.append("|---|---|---|---|---|---|---|---|")
+        for arm in ("sp", "mup", "ctxfree", "frozen"):
+            for s, g in dd[dd["arm"] == arm].groupby("seed"):
+                g = g.sort_values("width")
+                lines.append(
+                    f"| {arm} | {s} | {list(g['width'])} | {[round(v, 3) for v in g['probe_acc_gain']]} | "
+                    f"{[round(v, 4) for v in g['h_u']]} | {[round(v, 3) for v in g['acc_reversed']]} | "
+                    f"{spearman(g['width'], g['probe_acc_gain']):+.2f} | {spearman(g['width'], g['acc_reversed']):+.2f} |")
+        lines.append("")
     miss = df[(df["threshold"] == "final") & (~df["reached_star"])]
     if not miss.empty:
         lines.append("## Runs that never reached L*")
         for _, r in miss.iterrows():
-            lines.append(f"- {r['arm']} M={r['width']} x{r['mult']} s{r['seed']}: status {r['status']}, "
+            lines.append(f"- {r['arm']} M={r['width']} x{r['mult']} h{r['head_mult']} s{r['seed']}: status {r['status']}, "
                          f"final loss {r['loss']:.4f} at step {r['step']}")
     return "\n".join(lines)
 
@@ -512,10 +577,10 @@ def plot(df: pd.DataFrame) -> None:
     import matplotlib.pyplot as plt
 
     d = df[df["threshold"].astype(str) == str(LOSS_STAR)]
-    fig, axes = plt.subplots(1, 4, figsize=(18, 4.2))
+    fig, axes = plt.subplots(1, 5, figsize=(23, 4.2))
     colors = {"sp": "C3", "mup": "C0", "ctxfree": "C2", "frozen": "C7"}
-    for ax, metric, ylabel in zip(axes[:3], ("align_u", "probe_acc", "acc_reversed"),
-                                  ("encoder energy on u at L*", "spectral probe acc at L*",
+    for ax, metric, ylabel in zip(axes[:3], ("align_u", "probe_acc_gain", "acc_reversed"),
+                                  ("encoder energy on u at L*", "spectral probe gain at L* (vs init)",
                                    "accuracy under context reversal at L*")):
         for arm in ("sp", "mup", "ctxfree", "frozen"):
             a = d[d["arm"] == arm]
@@ -542,6 +607,18 @@ def plot(df: pd.DataFrame) -> None:
         ax.plot(m.index, m["align_u"], "s-", color="C3", lw=2.5, label="a_u at L*")
         ax.plot(m.index, m["acc_reversed"], "D-", color="C1", lw=2.5, label="acc reversed at L*")
         ax.set_xscale("log", base=4); ax.set_xlabel("readout lr multiplier (M = 32)")
+        ax.axhline(0.5, color="k", ls=":", lw=1); ax.grid(True, alpha=0.3); ax.legend()
+    ax = axes[4]
+    a = d[d["arm"] == "headlr"]
+    if not a.empty:
+        for s, g in a.groupby("seed"):
+            g = g.sort_values("head_mult")
+            ax.plot(g["head_mult"], g["probe_acc_gain"], "o-", color="C2", alpha=0.35, lw=1)
+            ax.plot(g["head_mult"], g["acc_reversed"], "^-", color="C1", alpha=0.35, lw=1)
+        m = a.groupby("head_mult")[["probe_acc_gain", "acc_reversed"]].mean()
+        ax.plot(m.index, m["probe_acc_gain"], "s-", color="C2", lw=2.5, label="probe gain at L*")
+        ax.plot(m.index, m["acc_reversed"], "D-", color="C1", lw=2.5, label="acc reversed at L*")
+        ax.set_xscale("log", base=16); ax.set_xlabel(f"whole-head lr multiplier kappa (M = {HEADLR_WIDTH})")
         ax.axhline(0.5, color="k", ls=":", lw=1); ax.grid(True, alpha=0.3); ax.legend()
     fig.suptitle(f"Exp 2 v1: matched fit L* = {LOSS_STAR}; full-batch GD; linear encoder + ReLU CNN head")
     fig.tight_layout()
@@ -593,6 +670,7 @@ def main():
     ap.add_argument("--widths", nargs="*", type=int, default=None)
     ap.add_argument("--seeds", nargs="*", type=int, default=SEEDS)
     ap.add_argument("--mults", nargs="*", type=float, default=None)
+    ap.add_argument("--head-mults", nargs="*", type=float, default=None)
     ap.add_argument("--lr", type=float, default=LR_DEFAULT)
     ap.add_argument("--max-steps", type=int, default=MAX_STEPS)
     ap.add_argument("--skip-existing", action="store_true")
@@ -661,18 +739,21 @@ def main():
         cfg = ARMS[arm]
         widths = args.widths or cfg["widths"]
         mults = args.mults or cfg["mults"]
+        head_mults = args.head_mults or cfg.get("head_mults", [1])
         for width in widths:
             for mult in mults:
-                for seed in args.seeds:
-                    total += 1
-                    tag = f"{arm}_M{width}_x{mult_tag(mult)}_s{seed}"
-                    if args.skip_existing and (OUT_DIR / f"snap_{tag}.csv").exists():
-                        print(f"[exp2] skip {tag}")
-                        continue
-                    print(f"[exp2] run {tag}  lr={args.lr:g}", flush=True)
-                    run_one(arm, width, mult, seed, tau, args.lr, args.max_steps, device)
-                    if device.type == "cuda":
-                        torch.cuda.empty_cache()
+                for head_mult in head_mults:
+                    for seed in args.seeds:
+                        total += 1
+                        tag = make_tag(arm, width, mult, head_mult, seed)
+                        if args.skip_existing and (OUT_DIR / f"snap_{tag}.csv").exists():
+                            print(f"[exp2] skip {tag}")
+                            continue
+                        print(f"[exp2] run {tag}  lr={args.lr:g}", flush=True)
+                        run_one(arm, width, mult, seed, tau, args.lr, args.max_steps, device,
+                                head_mult=head_mult)
+                        if device.type == "cuda":
+                            torch.cuda.empty_cache()
     print(f"[exp2] done: {total} runs")
     df = collect()
     print(evaluate_predictions(df))

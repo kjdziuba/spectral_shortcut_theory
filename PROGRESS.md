@@ -2145,3 +2145,38 @@ ViT sweep:
   multipliers 1/16, 1/4 added (continuous version of the mup control).
   Cost: 92 ms/step at M=2048 (fp32, circular padding) → speed-up needed
   before the full grid.
+
+## 2026-09-10 (21:45) — Astra refocus_01 adopted; Exp 2 grid relaunched with amendments
+
+- review_packet/astra/refocus_01.md: (1) compact main theorem thm:serial
+  (three parts: suppression, reversal, normalization; special-init remark;
+  0.44 page) — adopt verbatim; interpretation rules: normalization removes
+  the WIDTH dependence, not the reversal failure (the normalized system is
+  the M=1 system); spectral-only comparator trained to its own hitting time;
+  no phase implication, no "factor of six", no "1e-11 for every quantity".
+  (2) Exp 2 construction is a fair nonlinear analogue of unequal initial cue
+  accessibility ("initially accessible to a trained readout"); the pilot
+  does not establish Mv0^2 >> 1 (no measured v0) — say "consistent with a
+  regime in which context fits before substantial spectral adaptation";
+  recommended intervention = whole-head rate multiplier kappa (encoder rate
+  unchanged), bracket {1, 1/16, 1/256} at M=32 on seed 0, then freeze and
+  confirm; keep the LDA probe (relative to init) + exact h_u(W) = ||P_row(W)
+  u||^2 companion; a_u 0.25 cutoff is not a necessary condition; flat P1 in a
+  saturated regime does not falsify competition; mup == readout-only
+  rate-1/M arm (not independent evidence; call it "normalized readout");
+  gnorms at snapshots were previous-step (fixed); pair the test conditions
+  (fixed); context-oracle population CE ~0.126 nats; 3x3 window doc fix.
+  (3) Exp 3: B primary (real centre spectra + constructed v1-intensity
+  context), A secondary; construction requirements + one-sentence honest
+  descriptions; definition-of-failure paragraph for §2.
+- Grid relaunch: the first launch (3 processes + the leftover conv-path
+  pilot ctxfree M=2048) was stopped after 27 min — the pilot hog starved the
+  small-width runs (6 runs done). Script amended (REFOCUS_PLAN 4.4b): headlr
+  arm, head_mult in tags/rows, h_u/h_V, encoder weights saved per snapshot
+  (results/exp2/enc_*.npz), backward-before-snapshot, paired test
+  conditions (one seed per family; iid bitwise unchanged — calibration
+  regression identical, tau 1.7023). Relaunched 21:45: D headlr seed 0;
+  A sp+frozen; B mup; C ctxfree+lrmult.
+- paper/REFOCUS_PLAN_2026-09-10.md: §4.4b (amendment + P6), §5 rewritten
+  (3B primary, binary CancerEpi vs CAS proposed — author to confirm), §6a
+  adopted items. paper/ICLR_SKELETON_v3.md written (refocused spec).
