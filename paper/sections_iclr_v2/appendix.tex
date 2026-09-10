@@ -81,5 +81,28 @@ scope statement about that framework.
 
 \section{Verification record}
 \label{app:audits}
-\emph{[Pending: the audit scripts actually used by statements in this paper
-(\texttt{code/audits/}), scoped to the checked statements and versions.]}
+The statements of this paper rest on the following checks, each a script
+in the accompanying repository with fixed seeds and a recorded outcome;
+the record is scoped to these statements and does not certify anything
+else. (i) Theorem~\ref{thm:serial}: the closed forms, bounds and the
+normalized-readout control were verified against a full
+$(2+M)$-parameter integration of the flow over $525$ non-trivial
+initialization--width--margin cases and a $4{,}000$-draw Gaussian
+initialization sweep (\texttt{code/experiments/toy\_serial\_ce.py},
+\texttt{toy\_serial\_ce\_isotropic.py}; Appendix~\ref{app:verification});
+the algebraic identities of the proofs were checked symbolically and
+numerically (\texttt{code/audits/astra\_math\_02\_checks.py}). (ii)
+Experiment 2: the matrix-product implementation of the convolutional head
+agrees with \texttt{nn.Conv2d} with circular padding to $10^{-15}$ in
+double precision, in outputs and parameter gradients, at widths $2$, $37$
+and $512$ (\texttt{exp2\_intervention.py --selftest}); the calibration is
+bitwise reproducible before and after the paired-condition change to the
+generator; the pre-registered constants, thresholds, predictions and every
+amendment are dated in \texttt{paper/REFOCUS\_PLAN\_2026-09-10.md}.
+(iii) Experiment 3: preprocessing, principal directions and the readiness
+scan are computed on training patients only and evaluated on a
+core-disjoint half; no test-patient quantity was used for any choice.
+(iv) The production-model measurements of Appendix~\ref{app:scope} carry
+their own verification record from the earlier draft
+(\texttt{code/audits/README.md}); only the statements quoted in
+Section~\ref{sec:limitations} are relied upon here.
