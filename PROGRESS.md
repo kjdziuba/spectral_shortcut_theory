@@ -2076,3 +2076,20 @@ ViT sweep:
   still carries the pre-Q6 causal sentences (fix in P3); residual export
   follow-ups: isotropic reference in the contrast subspace, λ_k, a
   same-sequence gradient-energy phase export (Astra Q9).
+
+## 2026-09-10 (18:30) — ICLR draft milestone: paper/main_iclr.pdf complete (commit 6e6dfce)
+
+- Full build: 56 pp, 0 errors, 0 undefined refs, 0 bibtex warnings; main
+  text 9.00 pp exactly (AI-use heading at the top of p.10); independent
+  counters (main text Theorems 1-4, Lemma 1, Corollary 1; appendix A.n/B.n).
+- Appendices: A proofs (lem:phi_scaling, prop:verified_instance, classical
+  conditioning), B Astra's appendix_math nested as subsections (B.1-B.7),
+  C EGR (descriptive; no Fisher-z), D/E appendix_experiments.tex (19 tables;
+  Astra's Q6/Q9 caveats applied; "3.8x true-amplitude" ratio dropped from
+  the main text as non-artifact), F verification record.
+- Open: Astra reviewer pass on the PDF (prompt handed to author); author
+  read-through; residual-export isotropic reference in the class-contrast
+  subspace (Astra Q9) + same-sequence phase export; long draft
+  08_real_data.tex §8.4 wording (P3); Lim-Kim-Moon 2025 citation omitted
+  (OpenReview blocked verification); zhang2022layers/zhang2024adam/
+  kirichenko2023dfr entries to re-check at proof stage.
