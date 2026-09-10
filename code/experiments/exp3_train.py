@@ -76,6 +76,9 @@ HEADLR_WIDTH = 32
 SEEDS = [0, 1, 2]
 G_AMP_STD = 3.0      # gamma = 3 sqrt(lambda_1) in the standardized regime
 G_AMP_WHITE = 30.0   # gamma = 30 in whitened units (unit natural variance along c)
+G_AMP_WHITE10 = 10.0 # amendment 2026-09-11 03:00: regime "unready10" = whitened with gamma = 10
+                     # (Exp 2's amplitude scale), to test whether the head's rate matters once the
+                     # context cue no longer dominates the encoder's gradient
 WHITEN_RIDGE = 1e-3  # relative ridge on eigenvalues for whitening
 CONDITIONS = ("iid", "reversed", "ctx_random", "spec_only")
 
@@ -85,7 +88,7 @@ ARMS = {
     "ctxfree": dict(widths=[8, 128],        train_cond="ctx_random", head_mults=[1],        frozen=False),
     "frozen":  dict(widths=[HEADLR_WIDTH],  train_cond="iid",        head_mults=[1],        frozen=True),
 }
-REGIMES = ("ready", "unready")
+REGIMES = ("ready", "unready", "unready10")
 
 
 # ------------------------------------------------------------ preprocessing ---
@@ -110,13 +113,13 @@ class Preproc:
             self.C = self.Vh[:8].clone()                                # v_1..v_8 (standardized coords)
             self.c_std = torch.sqrt(self.lam[:8])                       # natural donor std along each
             self.gamma = G_AMP_STD * self.c_std
-        elif regime == "unready":
+        elif regime in ("unready", "unready10"):
             self.scale = 1.0 / torch.sqrt(self.lam + WHITEN_RIDGE * self.lam.mean())
             self.C = torch.zeros(8, S_FEAT)
             for d in range(8):
                 self.C[d, d] = 1.0                                      # e_1..e_8 (whitened coords)
             self.c_std = torch.ones(8)
-            self.gamma = G_AMP_WHITE * torch.ones(8)
+            self.gamma = (G_AMP_WHITE if regime == "unready" else G_AMP_WHITE10) * torch.ones(8)
         else:
             raise ValueError(regime)
         self.c = self.C[0]  # kept for backward compatibility of saved files

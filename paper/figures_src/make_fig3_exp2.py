@@ -89,6 +89,8 @@ if not k.empty:
         ax_c.plot(r["head_mult"], r["probe_acc_gain"], "o", mfc="none", mec="#2ca02c", ms=4)
         print(f"(c) kappa={r['head_mult']:g} did not reach L* (final loss {r['loss']:.3f}); open markers")
 ax_c.set_xscale("log", base=16); ax_c.invert_xaxis()
+kt = sorted(set(k["head_mult"]) | set(fin["head_mult"]) if not k.empty else [1, 1 / 16, 1 / 256], reverse=True)
+ax_c.set_xticks(kt); ax_c.set_xticklabels(["1" if v == 1 else f"1/{round(1 / v)}" for v in kt]); ax_c.set_xticks([], minor=True)
 ax_c.set_xlabel(r"whole-head rate multiplier $\kappa$ ($M=32$; slower $\to$)")
 ax_c.set_ylabel(r"value at $L^\ast$"); ax_c.set_title("(c) relative speed of the head", loc="left")
 ax_c.axhline(0.5, color="k", ls=":", lw=0.8); ax_c.grid(True, alpha=0.25); ax_c.legend(frameon=False, loc="center left")
