@@ -55,5 +55,36 @@ arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec
 \texttt{frozen} & 32 & 1418$\pm$232 & 0.000$\pm$0.000 & 0.217$\pm$0.016 & 0.542$\pm$0.005 & 0.637$\pm$0.027 & 0.213$\pm$0.016 & 0.542$\pm$0.011 (3) \\
 \bottomrule
 \end{tabular}\end{table}
+\begin{table}[htbp]\centering\scriptsize
+\caption{Recovery at $M=32$ (real spectra): a fresh patch head with paired initialization trained for 20,000 steps on newly sampled context-random patches with the encoder frozen at its $L^\ast$ checkpoint (\texttt{init} = random initial encoder); validation and test patients under the paired conditions; original = the run's own classifier at $L^\ast$ (validation).}\label{tab:exp3_recovery_paviau}
+\begin{tabular}{lllcccccc}\toprule regime & seed & encoder & probe (val) & orig.\ rev.\ (val) & retr.\ iid (val) & retr.\ rev.\ (val) & retr.\ ctx-rand.\ (val) & retr.\ rev.\ (test) \\ \midrule
+ready & 0 & \texttt{init} & 0.915 & -- & 0.893 & 0.894 & 0.892 & 0.972 \\
+ready & 0 & \texttt{kappa1} & 0.917 & 0.208 & 0.898 & 0.897 & 0.895 & 0.972 \\
+ready & 0 & \texttt{kappa256} & 0.916 & 0.210 & 0.912 & 0.911 & 0.912 & 0.971 \\
+ready & 1 & \texttt{init} & 0.923 & -- & 0.892 & 0.887 & 0.890 & 0.967 \\
+ready & 1 & \texttt{kappa1} & 0.918 & 0.249 & 0.891 & 0.886 & 0.889 & 0.967 \\
+ready & 1 & \texttt{kappa256} & 0.923 & 0.200 & 0.907 & 0.906 & 0.906 & 0.966 \\
+ready & 2 & \texttt{init} & 0.909 & -- & 0.875 & 0.875 & 0.875 & 0.965 \\
+ready & 2 & \texttt{kappa1} & 0.909 & 0.233 & 0.880 & 0.876 & 0.880 & 0.965 \\
+ready & 2 & \texttt{kappa256} & 0.917 & 0.158 & 0.899 & 0.904 & 0.899 & 0.969 \\
+unready & 0 & \texttt{init} & 0.664 & -- & 0.639 & 0.634 & 0.636 & 0.621 \\
+unready & 0 & \texttt{kappa1} & 0.665 & 0.095 & 0.640 & 0.638 & 0.635 & 0.626 \\
+unready & 0 & \texttt{kappa256} & 0.688 & 0.098 & 0.626 & 0.650 & 0.635 & 0.646 \\
+unready & 1 & \texttt{init} & 0.703 & -- & 0.615 & 0.668 & 0.638 & 0.652 \\
+unready & 1 & \texttt{kappa1} & 0.701 & 0.051 & 0.611 & 0.667 & 0.639 & 0.650 \\
+unready & 1 & \texttt{kappa256} & 0.692 & 0.068 & 0.588 & 0.646 & 0.610 & 0.639 \\
+unready & 2 & \texttt{init} & 0.755 & -- & 0.641 & 0.679 & 0.652 & 0.688 \\
+unready & 2 & \texttt{kappa1} & 0.752 & 0.068 & 0.645 & 0.670 & 0.652 & 0.684 \\
+unready & 2 & \texttt{kappa256} & 0.746 & 0.074 & 0.612 & 0.652 & 0.629 & 0.651 \\
+unready10 & 0 & \texttt{init} & 0.664 & -- & 0.653 & 0.646 & 0.650 & 0.644 \\
+unready10 & 0 & \texttt{kappa1} & 0.673 & 0.065 & 0.658 & 0.660 & 0.659 & 0.639 \\
+unready10 & 0 & \texttt{kappa256} & 0.746 & 0.065 & 0.706 & 0.720 & 0.706 & 0.718 \\
+unready10 & 1 & \texttt{init} & 0.703 & -- & 0.649 & 0.708 & 0.678 & 0.665 \\
+unready10 & 1 & \texttt{kappa1} & 0.704 & 0.041 & 0.644 & 0.701 & 0.676 & 0.666 \\
+unready10 & 1 & \texttt{kappa256} & 0.702 & 0.052 & 0.624 & 0.669 & 0.647 & 0.680 \\
+unready10 & 2 & \texttt{init} & 0.755 & -- & 0.663 & 0.708 & 0.681 & 0.709 \\
+unready10 & 2 & \texttt{kappa1} & 0.755 & 0.057 & 0.665 & 0.701 & 0.680 & 0.706 \\
+unready10 & 2 & \texttt{kappa256} & 0.761 & 0.059 & 0.666 & 0.702 & 0.680 & 0.712 \\
+\bottomrule\end{tabular}\end{table}
 \paragraph{Runs that did not reach $L^\ast$.}
 Every run reached $L^\ast$.

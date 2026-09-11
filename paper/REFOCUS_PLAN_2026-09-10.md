@@ -1114,3 +1114,16 @@ standardized 0.915 / 0.923 / 0.909.
 - **High accessibility (ready): failure without a probe deficit**, as on
   tissue (gain ≈ 0 everywhere; reversal 0.19–0.26 vs 0.85–0.88).
 - Recovery ordering: pending `exp3_recovery.py` (running).
+- **Recovery (Pavia), recorded 20:25 (27 retraining runs, 20,000 steps):**
+  ready regime: retrained reversal 0.885 (init) / 0.887 (κ=1) / 0.907
+  (κ=1/256) — from EVERY encoder, random included, against 0.19–0.26 for
+  the original classifiers (tissue: 0.90–0.96); κ=1/256 > κ=1 in every
+  seed (+0.014 / +0.020 / +0.028) → ordering MET where the cue is
+  accessible, with a small margin. Unready γ=30: 0.660 / 0.658 / 0.649 —
+  no encoder yields more than the random one (per-seed κ256 − κ1: +0.012
+  / −0.021 / −0.018) → ordering NOT met, as expected where the probe did
+  not respond. Unready10 γ=10: 0.687 / 0.687 / 0.697 (per seed +0.060 /
+  −0.032 / +0.001) → 1/3, the responsive seed only. Pavia Exp 3 summary:
+  suppression MET, reliance MET, high-accessibility failure-without-
+  deficit MET with full recoverability, rate response and recovery
+  ordering NOT met at γ=30 and PARTIAL (one seed) at γ=10.

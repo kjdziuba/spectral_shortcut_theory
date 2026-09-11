@@ -2425,3 +2425,9 @@ ViT sweep:
   γ=30 and partial (2/3, one responsive seed) at γ=10, ready regime fails without a probe deficit →
   plan §9.3, Appendix F paragraph + tables (make_tables_exp3.py with EXP3_DATASET=paviau). Pavia
   Exp 3 retraining running. Abstract v4 candidate recorded in plan §13 (not applied).
+- 20:30 Pavia Exp 3 retraining DONE → plan §9.3 complete, Appendix F complete (design, scan, Stage A,
+  Exp 3 results + retraining, Exp 4 results; tables via make_tables_pavia.py). Pavia summary:
+  suppression + reliance replicate in full; high-accessibility failure-without-deficit with full
+  recoverability replicates; rate response / recovery ordering NOT met at γ=30, partial at γ=10.
+  Exp 3 retraining script gained EXP3_SEEDS; five-fold aggregation generator make_tables_folds.py
+  + Appendix D subsection wired (fold 0 only so far). Abstract v4 candidate in plan §13.

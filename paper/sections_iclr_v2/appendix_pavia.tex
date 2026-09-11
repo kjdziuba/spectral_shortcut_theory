@@ -59,7 +59,16 @@ least accessible ($0.664$ against $0.703$ and $0.755$) responds, and reversal ac
 is unchanged. The registered rate prediction is therefore not met at $\gamma=30$ and
 partially met at $\gamma=10$ on this scene. In the high-accessibility regime the probe
 is $0.91$ to $0.92$ throughout and the informative-context arms still fail under
-reversal ($0.19$ to $0.26$ against $0.85$ to $0.88$), as on tissue.
+reversal ($0.19$ to $0.26$ against $0.85$ to $0.88$), as on tissue. Retraining
+(Table~\ref{tab:exp3_recovery_paviau}) also matches tissue: in the high-accessibility
+regime a fresh head recovers reversal accuracy $0.885$, $0.887$ and $0.907$ from the
+random, the $\kappa=1$ and the $\kappa=1/256$ encoders, the ordering holding in every
+seed with a small margin ($+0.014$ to $+0.028$), while in the low-accessibility regime
+no encoder yields more than the random one at $\gamma=30$ ($0.65$ to $0.66$) and only
+the responsive seed gains at $\gamma=10$ ($+0.060$, $-0.032$, $+0.001$). On this scene the
+mechanism's suppression and reliance replicate in full; its rate response and the
+recoverability it governs replicate where the cue is accessible and only partially
+where it is not.
 
 \subsection{Experiment 4 on Pavia: natural context}
 All nine classes, macro-F1, with the Stage A gate and the Stage B arms of

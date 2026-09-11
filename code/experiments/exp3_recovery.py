@@ -35,7 +35,10 @@ from experiments.exp3_train import (  # noqa: E402
     make_patches, margin_loss, load_pair, lda_fit, lda_eval,
 )
 
-LR = 1e-3; BUDGET = 20_000; STOP_LOSS = 0.10; HEAD_WIDTH = 32; SEEDS = [0, 1, 2]
+import os
+LR = 1e-3; BUDGET = 20_000; STOP_LOSS = 0.10; HEAD_WIDTH = 32
+SEEDS = [int(x) for x in os.environ.get("EXP3_SEEDS", "0 1 2").split()]   # §11: EXP3_SEEDS="3 4" for the added seeds
+OUT_NAME = "recovery_summary.csv" if "EXP3_SEEDS" not in os.environ else "recovery_summary_seeds" + "_".join(str(x) for x in SEEDS) + ".csv"
 REGIMES = ["unready", "unready10", "ready"]
 ENC = {"init": ("enc_{r}_headlr_M32_s{s}.npz", "W0"), "kappa1": ("enc_{r}_headlr_M32_s{s}.npz", "W_0.3"),
        "kappa256": ("enc_{r}_headlr_M32_h0.00390625_s{s}.npz", "W_0.3")}
@@ -102,9 +105,9 @@ def main():
                       f"retrained val iid {row['retrained_acc_iid_val']:.3f} rev {row['retrained_acc_reversed_val']:.3f} "
                       f"ctxrnd {row['retrained_acc_ctx_random_val']:.3f} | test rev {row['retrained_acc_reversed_test']:.3f}"
                       + (f" | original rev {row['original_acc_reversed_val']:.3f}" if 'original_acc_reversed_val' in row else ""), flush=True)
-    df = pd.DataFrame(rows); df.to_csv(OUT_DIR / "recovery_summary.csv", index=False)
+    df = pd.DataFrame(rows); df.to_csv(OUT_DIR / OUT_NAME, index=False)
     print(df.groupby(["regime", "encoder"])[["probe_val", "retrained_acc_reversed_val", "retrained_acc_ctx_random_val", "retrained_acc_reversed_test"]].mean().round(3))
-    print(f"[recovery3] wrote {OUT_DIR / 'recovery_summary.csv'}")
+    print(f"[recovery3] wrote {OUT_DIR / OUT_NAME}")
 
 
 if __name__ == "__main__":
