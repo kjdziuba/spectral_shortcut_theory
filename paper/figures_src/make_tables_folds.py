@@ -90,13 +90,13 @@ def table(rows, cols, label, caption):
     df = pd.DataFrame(rows).set_index("fold")
     L.append("\\begin{table}[htbp]\\centering\\scriptsize")
     L.append(f"\\caption{{{caption}}}\\label{{{label}}}")
-    L.append("\\begin{tabular}{l" + "c" * len(cols) + "}\\toprule")
+    L.append("\\resizebox{\\linewidth}{!}{\\begin{tabular}{l" + "c" * len(cols) + "}\\toprule")
     L.append("fold & " + " & ".join(c[1] for c in cols) + " \\\\ \\midrule")
     for f, r in df.iterrows():
         L.append(f"{int(f)}" + ("$^\\ast$" if f == 0 else "") + " & " + " & ".join(f3(r.get(c[0], float("nan"))) for c in cols) + " \\\\")
     L.append("\\midrule mean [min, max] & " + " & ".join(
         f"{df[c[0]].mean():.3f} [{df[c[0]].min():.2f}, {df[c[0]].max():.2f}]" if c[0] in df and df[c[0]].notna().any() else "--" for c in cols) + " \\\\")
-    L.append("\\bottomrule\\end{tabular}\\end{table}")
+    L.append("\\bottomrule\\end{tabular}}\\end{table}")
     print(df.round(3).to_string())
 
 

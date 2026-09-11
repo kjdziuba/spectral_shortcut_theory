@@ -154,7 +154,7 @@ def fmt(v):
 L.append("\\begin{table}[htbp]\\centering\\scriptsize")
 L.append("\\caption{Registered predictions (REFOCUS\\_PLAN \\S4.4) evaluated at $L^\\ast=0.30$ on the original five widths and on the amended grid; "
          "$\\rho$ = Spearman rank correlation across widths (or multipliers), one value per registered seed (0--2; added seeds are reported in the mean$\\pm$sd tables only). P2's second clause compares $a_u$ at $M=2048$.}\\label{tab:exp2_verdicts}")
-L.append("\\begin{tabular}{p{5.2cm}p{3.1cm}p{4.2cm}p{2.6cm}}\\toprule criterion & grid & per-seed values & verdict \\\\ \\midrule")
+L.append("\\begin{tabular}{p{4.6cm}p{2.6cm}p{3.8cm}p{2.0cm}}\\toprule criterion & grid & per-seed values & verdict \\\\ \\midrule")   # 13.0 cm < ICLR text width
 sp_au_o, sp_rev_o = rhos("sp", ORIG, "align_u"), rhos("sp", ORIG, "acc_reversed")
 sp_au_a, sp_rev_a = rhos("sp", sorted(d["width"].unique()), "align_u"), rhos("sp", sorted(d["width"].unique()), "acc_reversed")
 both_o = sum(1 for a, b in zip(sp_au_o, sp_rev_o) if a <= -0.8 and b <= -0.8)

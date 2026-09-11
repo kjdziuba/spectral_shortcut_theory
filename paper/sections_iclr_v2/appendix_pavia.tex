@@ -24,7 +24,9 @@ no evaluation neighbourhood overlaps a training one ($34{,}386$ admissible pixel
 tile and class up to $400/200/200$ pixels are sampled with a fixed seed: $19{,}870$
 training, $6{,}172$ validation and $6{,}407$ test pixels. Residual spatial
 autocorrelation across tile borders is a limitation shared by every single-scene
-benchmark and is not removed here. Reflectance counts are cast to float; per-feature
+benchmark and is not removed here; the split avoids overlapping $3\times3$ training and
+evaluation patches but is a tile split within one scene, not an independent-scene
+replication. Reflectance counts are cast to float; per-feature
 standardization and PCA are fitted on the training split by the experiment code,
 exactly as for the tissue spectra; there is no per-pixel normalization, denoising or
 derivative.
@@ -45,30 +47,38 @@ multipliers, seeds, thresholds, conditions and the retraining protocol are those
 Appendix~\ref{app:exp3}.
 
 \paragraph{Results (Tables~\ref{tab:exp3_unready_paviau}, \ref{tab:exp3_unready10_paviau},
-\ref{tab:exp3_ready_paviau}).} All $78$ runs reach $L^\ast$. In the low-accessibility
-regime the outcome is that of the tissue experiment: every informative-context arm
-leaves the encoder's probe at its initial value (gain $-0.002$ to $+0.002$ at
-$\gamma=30$, at most $+0.008$ at $\gamma=10$, from $0.707$) and fits within $15$ to
-$420$ steps, while the uninformative-context comparator raises the probe by $0.22$ to
-$0.24$ and needs about $9{,}000$ steps; reversal accuracy is $0.05$ to $0.12$ against
-$0.84$ to $0.90$, and context-random accuracy is at chance. The rate response is weaker
-than on tissue: at $\gamma=30$ the within-seed probe change from $\kappa=1$ to $1/256$
-is $+0.023$, $-0.009$, $-0.006$ (monotone in one seed of three), and at $\gamma=10$ it is
-$+0.073$, $-0.001$, $+0.005$ (two of three); only the seed whose random encoder started
-least accessible ($0.664$ against $0.703$ and $0.755$) responds, and reversal accuracy
-is unchanged. The registered rate prediction is therefore not met at $\gamma=30$ and
-partially met at $\gamma=10$ on this scene. In the high-accessibility regime the probe
-is $0.91$ to $0.92$ throughout and the informative-context arms still fail under
-reversal ($0.19$ to $0.26$ against $0.85$ to $0.88$), as on tissue. Retraining
-(Table~\ref{tab:exp3_recovery_paviau}) also matches tissue: in the high-accessibility
-regime a fresh head recovers reversal accuracy $0.885$, $0.887$ and $0.907$ from the
-random, the $\kappa=1$ and the $\kappa=1/256$ encoders, the ordering holding in every
-seed with a small margin ($+0.014$ to $+0.028$), while in the low-accessibility regime
-no encoder yields more than the random one at $\gamma=30$ ($0.65$ to $0.66$) and only
-the responsive seed gains at $\gamma=10$ ($+0.060$, $-0.032$, $+0.001$). On this scene the
-mechanism's suppression and reliance replicate in full; its rate response and the
-recoverability it governs replicate where the cue is accessible and only partially
-where it is not.
+\ref{tab:exp3_ready_paviau}).} All $78$ constructed-context runs reach $L^\ast$. In the
+low-accessibility regime the standard-parameterization arms leave the encoder's probe
+at its initial value (seed-mean gain $-0.002$ to $+0.001$ at $\gamma=30$ and $+0.001$
+to $+0.009$ at $\gamma=10$, from $0.707$) and fit within $15$ to $420$ steps (seed
+means), while the uninformative-context comparator raises the probe by $0.22$ to $0.24$
+and needs about $9{,}000$ steps; the slow-head arm at $\gamma=10$ has mean gain
+$+0.029$ (one seed $+0.082$) and fits in about $1{,}900$ steps. Reversal accuracy of
+the informative-context arms is $0.05$ to $0.12$ (seed means) against $0.84$ to $0.90$
+for the comparator, and their context-random accuracy is $0.45$ to $0.54$; the training
+patches are class-balanced and the validation majority baseline of this pair is
+$0.784$ ($0.838$ test), so accuracies are read against that baseline and the paired
+within-seed differences carry the comparisons. The rate response is weaker than on
+tissue: at $\gamma=30$ the within-seed probe change from $\kappa=1$ to $1/256$ is
+$+0.023$, $-0.009$, $-0.006$, and at $\gamma=10$ it is $+0.073$, $-0.002$, $+0.005$ (one
+substantial positive effect, one negligible positive and one negative); only the seed
+whose random encoder started least accessible ($0.664$ against $0.703$ and $0.755$)
+responds, and reversal accuracy is unchanged. The registered rate prediction, positive
+in every seed, is therefore not met at either amplitude on this scene. In the
+high-accessibility regime the probe is $0.91$ to $0.92$ throughout and the
+informative-context arms still fail under reversal ($0.19$ to $0.26$ against $0.85$ to
+$0.88$), as on tissue. Retraining (Table~\ref{tab:exp3_recovery_paviau}): in the
+high-accessibility regime a fresh head recovers reversal accuracy $0.885$, $0.887$ and
+$0.907$ from the random, the $\kappa=1$ and the $\kappa=1/256$ encoders, the ordering
+holding in every seed with a small margin ($+0.014$ to $+0.028$); in the
+low-accessibility regime the group means at $\gamma=30$ are $0.660$, $0.658$ and
+$0.649$ (paired slow-minus-fast $+0.012$, $-0.021$, $-0.019$) and at $\gamma=10$ they are
+$0.687$, $0.687$ and $0.697$ (paired $+0.061$, $-0.032$, $+0.001$). On this scene
+suppression relative to the comparator and reliance replicate; the low-accessibility
+rate and recovery effects do not replicate consistently across seeds; and the
+high-accessibility recovery ordering, present in every seed, is not shown to be
+mediated by the probe, whose within-seed changes have a different sign pattern
+($-0.001$, $+0.006$, $+0.008$).
 
 \subsection{Experiment 4 on Pavia: natural context}
 All nine classes, macro-F1, with the Stage A gate and the Stage B arms of
@@ -76,30 +86,35 @@ Appendix~\ref{app:exp4}. Stage A gives the opposite of the tissue result
 (Table~\ref{tab:exp4_pixel_paviau}): the best per-pixel classifier gains only $0.020$
 macro-F1 on validation and $0.009$ on test from the components beyond the sixteenth
 (MLP $0.891\to0.911$ and $0.876\to0.885$; discriminant $0.767\to0.781$ and
-$0.742\to0.759$), so the registered gate fails and sixteen principal components carry
-essentially all per-pixel information available to these classifiers on this scene,
-whose bands are strongly correlated. By the registered rule the compression arms are
-dropped here and Stage B runs the usage arms and the no-bottleneck arms.
+$0.742\to0.759$), so the registered gate fails: the tested classifiers do not meet the
+$0.02$ improvement criterion on both evaluation sides, a performance result for these
+classifiers rather than an information bound. By the registered rule the compression
+arms are dropped here and Stage B runs the usage arms and the no-bottleneck arms.
 
 \paragraph{Stage B results (Tables~\ref{tab:exp4_val_paviau}, \ref{tab:exp4_test_paviau},
-\ref{tab:exp4_recovery_paviau}).} The natural neighbourhoods are as homogeneous as on
-tissue (no patch straddles two labelled classes; $88\%$ of neighbours share the centre
-label), and the outcome matches the tissue result on every registered item. Natural
-context is worth $0.25$ macro-F1 in distribution ($0.840$ against $0.594$ for the
-shuffled comparator), and the natural-context model collapses to $0.144$ under
-context-random evaluation (nine-class chance $0.11$). Its encoder is not starved: the
-probe is $0.732$ against the comparator's $0.722$, from $0.715$ at initialization,
-this scene being in the high-accessibility regime under standardization. A fresh head
-retrained on context-random patches recovers $0.629$ from the natural-context encoder
-against $0.627$ for the comparator and $0.559$ from a random encoder, so the collapse is
-the head's use of same-class neighbours (P9, head-level). The learned twelve-dimensional
-bottleneck equals no bottleneck ($0.840$ against $0.836$ in distribution; $0.627$
-against $0.654$ for the comparators under context-random evaluation; P11). Two
-limitations of the head family are visible here: the $M=32$ ReLU head trained by plain
-gradient descent is a weak nine-class per-pixel classifier (the comparator reaches
-$0.627$ where the per-pixel MLP reaches $0.911$, and the no-bottleneck comparator
-$0.654$), so the second clause of P8 fails, and the slow-head arm ($\kappa=1/256$)
-does not reach any matched-fit threshold within the budget (training loss $0.84$),
-so the rate prediction is not evaluable at matched fit and is not met at budget end.
+\ref{tab:exp4_recovery_paviau}).} The natural neighbourhoods show the same annotation
+pattern as on tissue (no labelled neighbour disagrees with its centre; $88\%$ of
+neighbours share the centre label, $12\%$ are unlabelled). Item by item: the first
+clause of P8 is met, its second clause fails, P9 reads head-level and P11 is met; P7 and
+P10 were not run under the gate rule. Natural context is worth $0.25$ macro-F1 in
+distribution ($0.840$ against $0.594$ for the shuffled comparator), and the
+natural-context model falls to $0.144$ under context-random evaluation. No
+accessibility deficit is detected: the probe is $0.732$ against the comparator's
+$0.722$, from $0.715$ at initialization, this scene being in the high-accessibility
+regime under standardization. A fresh head retrained on context-random patches recovers
+$0.629$ from the natural-context encoder against $0.615$ from the comparator's encoder
+under the same retraining and $0.627$ for the comparator's original classifier, and
+$0.559$ from a random encoder, so within this family the collapse is located at the
+head (P9). The learned twelve-dimensional bottleneck is within tolerance of no
+bottleneck ($0.840$ against $0.836$ in distribution; $0.627$ against $0.654$ for the
+comparators under context-random evaluation; P11). Two limitations of the head family
+are visible here: the $M=32$ ReLU head trained by plain gradient descent is a weak
+nine-class per-pixel classifier (the comparator reaches $0.627$ where the per-pixel MLP
+reaches $0.911$, and the no-bottleneck comparator $0.654$), so the second clause of P8
+fails, without separating whether the architecture or the optimizer is responsible;
+and the slow-head arm ($\kappa=1/256$) does not reach any matched-fit threshold within
+the budget (training loss $0.78$--$0.90$), so the rate prediction is not evaluable at
+matched fit and is not met at budget end. Macro-F1 has no single chance level under
+this class imbalance; the random-encoder value ($0.559$) is the empirical reference.
 
 \input{sections_iclr_v2/appendix_pavia_tables}

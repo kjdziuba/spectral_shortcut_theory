@@ -7,8 +7,10 @@ label $y_p\in\{-1,+1\}$. A spectral encoder $f_\thetap:\R^S\to\R^K$ acts on
 each pixel separately, and a spatial model $g_\phip$ of width $M$ reads the
 encoded neighbourhood of $p$ to produce a logit $F_p$. The encoder is
 linear, $f_\thetap(x)=Wx$ with $W\in\R^{K\times S}$, in the theorem and in
-the experiments; the spatial model is a replicated readout in the theorem
-and a ReLU convolutional head in the experiments. Training minimizes the
+the primary experiments, with a two-layer ReLU encoder extension in
+Section~\ref{sec:synthetic}; the spatial model is a replicated readout in
+the theorem, a ReLU convolutional head in the synthetic experiment and a
+ReLU patch head in the real-spectrum experiment. Training minimizes the
 mean margin loss $\loss=\frac1N\sum_p\log(1+e^{-y_pF_p})$ by gradient flow
 or plain gradient descent with a base rate $\eta$; the baseline uses that
 one rate for every parameter, and the interventions multiply the rate of
@@ -19,17 +21,19 @@ explicit, declared multiplier.
 \paragraph{Two cues.}
 The training distribution carries the label in two places. The
 \emph{spectral cue} lies in the pixel's own spectrum along a direction the
-encoder must discover: a randomly initialized encoder attenuates it. The
+encoder must discover: in the constructed low-accessibility settings a
+randomly initialized encoder attenuates it. The
 \emph{contextual cue} lies in the neighbourhood along directions of large
 amplitude: a randomly initialized encoder passes it, so a trained readout
 can use it at once. The two cues are calibrated to matched discriminant
 accuracy on calibration data (matched signal-to-noise synthetically; a
 training-side estimate on real spectra), so that a
 preference for one cue is not simply a preference for the more predictive
-one. The theorem allows any $(a_0,v_0)$; the experiments select its
-regime of interest, a small initial spectral contribution and an
-initially accessible contextual one, and measure that accessibility
-asymmetry directly (Section~\ref{sec:synthetic}).
+one. The theorem allows any $(a_0,v_0)$; the synthetic experiment selects
+a small initial spectral contribution and an accessible contextual one
+and measures an empirical accessibility analogue, not the theorem's
+initial margin coefficients (Section~\ref{sec:synthetic}); the
+real-spectrum experiment adds a high-accessibility regime.
 
 \paragraph{Matched fit, spectral learning, reliance, failure.}
 We compare models at their first attainment of a prespecified
@@ -61,16 +65,15 @@ the spectrum in the presence of context.
 
 \begin{figure}[t]
 \centering
-\IfFileExists{figures/fig1_model.pdf}{\includegraphics[width=0.92\linewidth]{figures/fig1_model.pdf}}{\fbox{\rule{0pt}{1.6in}\rule{0.97\linewidth}{0pt}}}
+\IfFileExists{figures/fig1_model.pdf}{\includegraphics[width=0.84\linewidth]{figures/fig1_model.pdf}}{\fbox{\rule{0pt}{1.6in}\rule{0.97\linewidth}{0pt}}}
 \caption{The serial model and the two cues. Each pixel's spectrum passes
 through the shared encoder; the spatial model reads the encoded
-neighbourhood (a $5\times5$ receptive field from two $3\times3$
-convolutions in Experiment 2; one nine-spectrum patch in Experiment 3).
-The contextual cue lies in the eight nearest neighbours along
-large-amplitude directions that a random encoder passes; the spectral cue
-lies in the pixel's own spectrum along a small-amplitude direction that,
-in the low-accessibility settings, requires encoder alignment. Evaluation
-under iid, reversed and context-random contexts measures reliance and
-failure.}
+neighbourhood (a $5\times5$ receptive field in Experiment 2; one
+nine-spectrum patch in Experiment 3). The contextual cue lies in the
+eight neighbours along large-amplitude directions that a random encoder
+passes; the spectral cue lies in the pixel's own spectrum along a
+small-amplitude direction that, in the low-accessibility settings,
+requires encoder alignment. Evaluation under iid, reversed and
+context-random contexts measures reliance and failure.}
 \label{fig:model}
 \end{figure}

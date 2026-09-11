@@ -24,10 +24,12 @@ eight recorded neighbours, all nine inside the tissue mask; neighbours keep thei
 labels or lack of one. Per core and class, up to $150$ (training) or $100$
 (validation, test) patches were sampled with a fixed seed: $19{,}650$ training patches
 from $79$ cores, $3{,}700$ validation from $20$, $2{,}700$ test from $16$ ($54$ cores
-carry no label of the four classes). The neighbourhoods are homogeneous: no patch
-contains a neighbour of a different labelled class, $88\%$ of neighbours share the
-centre's label and $12\%$ are unlabelled. Natural $3\times3$ context on this data is
-therefore a redundant copy of the centre's class signal, not a separate cue.
+carry no label of the four classes). No labelled neighbour disagrees with its centre in
+any sampled patch; $88\%$ of neighbours share the centre's label, $12\%$ are unlabelled,
+and $61.5\%$ of training patches have all eight neighbours labelled as the centre's
+class. This annotation pattern describes the sampled setting; it does not by itself
+imply that neighbouring measurements carry no additional class information or cannot
+compete during optimization.
 
 \subsection{Stage A: per-pixel information against the number of components}
 On the standardized centre spectra, with PCA fitted on training patients, three
@@ -56,8 +58,8 @@ with one global rate $10^{-3}$, a budget of $40{,}000$ steps, paired initializat
 within seed, three seeds. Arms: \emph{natural} context; \emph{natural, 16 PCs}
 (inputs projected onto the top $16$ training-centre principal directions);
 \emph{shuffled} (the eight neighbours replaced by random training centres drawn
-independently of the centre label: the uninformative-context comparator, jointly
-trained); \emph{shuffled, 16 PCs}; \emph{frozen} (random encoder, head trained on
+without conditioning on the centre label: the uninformative-context comparator,
+jointly trained); \emph{shuffled, 16 PCs}; \emph{frozen} (random encoder, head trained on
 natural patches); \emph{natural, $\kappa=1/256$} (whole-head rate multiplier); and,
 under amendment 8.5, \emph{no bottleneck} (identity encoder; the head reads the nine
 raw standardized spectra) with natural and with shuffled context, the analogue of the
@@ -71,8 +73,13 @@ protocol of Section~\ref{sec:synthetic}: a fresh paired-initialization head trai
 for $20{,}000$ steps on context-random training patches from a frozen saved encoder,
 scored under context-random evaluation. Because the frozen and 16-component arms
 plateau above every registered matched-fit threshold (loss $0.61$ and $0.53$
-respectively), the registered fallback applies and the primary comparison is at
-budget end; matched values at loss $0.5$ are given in the tables.
+respectively; capacity rather than budget), no threshold in the registered set
+$\{0.30,0.40,0.50\}$ is reached by every arm and the registered matched-fit comparison
+is unavailable; the planned budget-end analysis is reported as the primary comparison,
+a promotion recorded after the outcome (pre-registration section~8.6), with matched
+values at loss $0.5$ given in the tables for the arms that reach it. Budget end is
+$40{,}000$ steps or the declared $0.10$ stopping loss, which the no-bottleneck arms
+reach earlier.
 
 \paragraph{Results, non-denoised copy (Tables~\ref{tab:exp4_val_nodenoise},
 \ref{tab:exp4_test_nodenoise}, \ref{tab:exp4_recovery_nodenoise}).}
@@ -82,51 +89,60 @@ with the full spectrum and $0.657$ with $16$ components on validation patients
 ($0.652$ and $0.611$ on test); the full-spectrum model keeps fitting (loss $0.19$)
 where the compressed one plateaus ($0.42$). At matched loss $0.5$ the two are
 indistinguishable ($0.643$ and $0.636$). \emph{P8, reliance on the neighbourhood:
-met.} Under context-random evaluation the natural-context model falls to $0.234$
-against $0.680$ for the shuffled comparator and $0.705$ for the per-pixel MLP.
+both clauses met.} Under context-random evaluation the natural-context model falls to
+$0.234$, below the per-pixel MLP's $0.705$ by more than the registered $0.10$, and the
+shuffled comparator reaches $0.680$, within the registered $0.03$ of it.
 \emph{P9, where the information stopped: head-level.} The retrained head recovers
 $0.681$ from the natural-context encoder against $0.688$ from the comparator's, and the
-two encoders' probes are equal ($0.672$ and $0.670$, from $0.52$ at initialization);
-a random encoder yields only $0.494$ after retraining. With natural context the encoder
-learns the class signal exactly as it does without, and the collapse under
-context-random evaluation is the head's use of same-class neighbours. \emph{P10,
+two encoders' probes are similar ($0.672$ and $0.670$, from $0.52$ at initialization);
+a random encoder yields only $0.494$ after retraining. Within this head family and
+procedure the natural-context encoder supports comparator-level performance, so the
+collapse under context-random evaluation is located at the head; the measurements do
+not show that the two encoders learned the same features or that the encoder retained
+all task-relevant information. \emph{P10,
 compression asymmetry: not established.} The comparator loses $0.111$ from PCA-16
 ($0.652\to0.541$), but so does the natural-context model, so the registered reading
 (sensitive comparator, insensitive natural-context model) does not hold. \emph{The
 secondary rate prediction is not met}: slowing the head to $\kappa=1/256$ lowers the
-probe ($0.619$) and the recovered value ($0.644$), at budget end and at matched loss
-$0.5$ ($0.616$ against $0.632$). With a context that is a redundant copy of the
-spectral cue there is no competition for the head's rate to relieve.
+probe ($0.628$ against $0.672$) and the recovered value ($0.644$ against $0.681$) at
+budget end, and at matched loss $0.5$ ($0.616$ against $0.632$). Why the rate has no
+effect here is not identified by this experiment.
 
 \paragraph{Results, PCA-23-denoised copy (Tables~\ref{tab:exp4_pixel_pca23},
 \ref{tab:exp4_val_pca23}, \ref{tab:exp4_test_pca23}, \ref{tab:exp4_recovery_pca23}).}
 The replication registered before its cache was built agrees with the non-denoised copy
-on every verdict. The per-pixel gate passes more strongly (MLP $0.665\to0.804$
+on P7 (not met), the first clause of P8, P9 (head-level) and P11; the second clause of
+P8 fails on this copy (below). The per-pixel gate passes more strongly (MLP $0.665\to0.804$
 validation, $0.634\to0.883$ test from $16$ to $942$ components). The natural-context
 model is again sensitive to PCA-16 at budget end ($0.727$ against $0.683$ in every
 seed; $0.839$ against $0.640$ on test) and indistinguishable at matched loss; it
-collapses under context-random evaluation ($0.274$); its encoder's probe equals the
-comparator's ($0.671$ and $0.676$ from $0.529$) and a retrained head recovers
-$0.706$--$0.712$ against the comparator's $0.720$; the slow head does not raise the
-probe consistently ($0.683$, two seeds up and one down). One clause fails on this copy:
-the jointly trained comparator ($0.722$) stays $0.08$ below the per-pixel MLP ($0.804$),
-as does the no-bottleneck comparator ($0.715$), so the gap is the head family and plain
-gradient descent, not the bottleneck.
+collapses under context-random evaluation ($0.274$); its encoder's probe is close to the
+comparator's ($0.671$ and $0.676$ from $0.529$) and a retrained head recovers $0.706$
+from its final encoder ($0.712$ from its $L^\ast$ checkpoint) against $0.720$ from the
+comparator's final encoder ($0.726$ at $L^\ast$); the slow head does not raise the
+probe consistently ($0.683$, two seeds up and one down). The second clause of P8 fails
+on this copy: the jointly trained comparator ($0.722$) stays $0.08$ below the per-pixel
+MLP ($0.804$), as does the no-bottleneck comparator ($0.715$), so the gap is not
+attributable to the bottleneck; whether the head family or plain gradient descent is
+responsible is not separated.
 
 \paragraph{P11: the learned bottleneck against none.} The comparison
 \citet{oleary2026spatial} actually made is a learned linear bottleneck against no
 reduction, and it reproduces on both copies: with natural context the learned
 twelve-dimensional bottleneck scores $0.732$ in distribution against $0.744$ without a
-bottleneck (denoised copy $0.727$ against $0.744$; on its test patients the bottleneck
-model is $0.037$ higher), and the shuffled-context comparators score $0.680$ against
-$0.661$ under context-random evaluation ($0.722$ against $0.715$ denoised); the
-no-bottleneck model fits faster, so the equality is not a fitting artefact. Taken with Stage A and P7, this separates two readings of ``a small set of
-spectral features'': the class signal is low-dimensional as a learned linear subspace,
-as any four-class discriminant is, and not as a small number of principal components;
-the learned features draw on the whole spectrum, so compressibility is not redundancy.
-Whether a spatial model leaves that information unused is a separate question, answered
-here in the negative for natural $3\times3$ context (the model uses the full spectrum and
-its encoder is not starved) and in the affirmative for the constructed context of
-Section~\ref{sec:real}.
+bottleneck (denoised copy $0.727$ against $0.744$), within the registered validation
+tolerance; on the denoised test patients the bottleneck model is $0.037$ higher, a
+difference, not an equivalence. The shuffled-context comparators score $0.680$ against
+$0.661$ under context-random evaluation ($0.722$ against $0.715$ denoised). The
+registered finite-budget tolerance holds although the no-bottleneck model fits faster.
+Taken with Stage A and P7, this separates two readings of ``a small set of spectral
+features'': the class signal is captured by a learned linear subspace of low dimension,
+as the score-contrast space of a linear discriminant is, and not by the leading
+principal components; performance depends on the chosen representation, and neither
+result shows that more than twelve learned features, or every input channel, are
+needed. Whether a spatial model leaves that information unused is a separate question:
+with natural $3\times3$ context the encoder supports comparator-level recovery (P9), and
+with the constructed context of Section~\ref{sec:real} in the low-accessibility regime
+it does not.
 
 \input{sections_iclr_v2/appendix_exp4_tables}

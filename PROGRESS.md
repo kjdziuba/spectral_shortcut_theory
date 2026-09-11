@@ -2442,3 +2442,19 @@ ViT sweep:
 - 21:55 Exp 3 added-seed retraining DONE: ready regime recovers 0.89–0.93 from every encoder (5/5);
   γ=10 ordering κ256 > κ1 5/5; γ=30 little recovery from any encoder. Exp 3 tables regenerated with
   five seeds; Appendix D seed note. Seed extension (§11) COMPLETE for both experiments.
+- 2026-09-11 10:50 ASTRA REVIEW 03 APPLIED (`review_packet/astra/review_iclr_03.md`; 6/10 weak accept, est. ~55%
+  after corrections). Tag before edits: `iclr-v2-pre-review03-2026-09-11`. Every ledger number re-derived from the
+  CSVs first (all confirmed; one extra scoping found: nlenc slow-head reversal 0.131–0.154 > the "≤0.128" P13
+  sentence). Applied: W1 Fig 3(d) = paired recovery panel (linear + ReLU facets; +0.20 / +0.11), trajectories to
+  Appendix C (`figC_exp2_traj.pdf`); W2/L3 "no competition" → "reliance without a detected accessibility deficit"
+  everywhere; W3/L4 compression paragraph replaced (two-question framing); W4 Pavia component-wise summary in §5
+  and intro; W5 shared recovery-protocol subsection in Appendix C (all runs full budget, verified); W6 + appendix
+  items 1–12 (E fallback provenance, P8 clause-wise, 0.619→0.628, checkpoint-labelled 0.706/0.712, P11 wording;
+  F ranges as seed means, group means + paired signs, item-by-item verdicts, majority baselines 0.784/0.838, tile
+  split note; D projection subsection + Table `tab:exp3_proj`); L1–L17 as worded; abstract = Astra's v4; plan
+  §11.1 arithmetic (3/5, 1/5, ≤0.023) and §10.1 wording corrected; plan §15 = disposition table.
+  Page fit: +24 lines initially; recovered by Fig 2/3/4 size (0.84 lw, 3.3 in, 3.3 in; Fig 4 in-panel legends
+  removed, caption carries them), Remark → one-line pointer to Appendix A, and ~20 sentence trims on pp. 1–9.
+  LESSON (supersedes the "trims before the theorem are absorbed" note): the theorem now breaks across pp. 3–4,
+  so trims anywhere count; §6 trims move the boundary for certain. Build: 43 pp, 0 errors, 0 undefined refs,
+  main text ends at the bottom of p. 9 (p. 10 = AI USE STATEMENT). Fold chain still running (fold 2 Exp 3 grid).

@@ -1,6 +1,6 @@
 \begin{table}[htbp]\centering\scriptsize
 \caption{Experiment 3, unready (whitened, $\gamma=30$) regime, at $L^\ast=0.30$: mean$\pm$sd over seeds (number of seeds). Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; accuracies on validation (val) and test (test) patients under the paired conditions.}\label{tab:exp3_unready_paviau}
-\begin{tabular}{llrcccccc}\toprule
+\resizebox{\linewidth}{!}{\begin{tabular}{llrcccccc}\toprule
 arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec.-only (val) & rev.\ (test) & ctx-rand.\ (test) \\ \midrule
 \texttt{sp} & 8 & 85$\pm$71 & -0.002$\pm$0.002 & 0.073$\pm$0.015 & 0.466$\pm$0.034 & 0.355$\pm$0.122 & 0.068$\pm$0.016 & 0.463$\pm$0.033 (3) \\
 \texttt{sp} & 32 & 42$\pm$5 & -0.001$\pm$0.002 & 0.071$\pm$0.022 & 0.476$\pm$0.024 & 0.386$\pm$0.094 & 0.066$\pm$0.024 & 0.469$\pm$0.026 (3) \\
@@ -16,10 +16,10 @@ arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec
 \midrule
 \texttt{frozen} & 32 & 53$\pm$8 & 0.000$\pm$0.000 & 0.072$\pm$0.023 & 0.476$\pm$0.023 & 0.389$\pm$0.082 & 0.067$\pm$0.024 & 0.469$\pm$0.025 (3) \\
 \bottomrule
-\end{tabular}\end{table}
+\end{tabular}}\end{table}
 \begin{table}[htbp]\centering\scriptsize
 \caption{Experiment 3, unready (whitened, $\gamma=10$; amendment) regime, at $L^\ast=0.30$: mean$\pm$sd over seeds (number of seeds). Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; accuracies on validation (val) and test (test) patients under the paired conditions.}\label{tab:exp3_unready10_paviau}
-\begin{tabular}{llrcccccc}\toprule
+\resizebox{\linewidth}{!}{\begin{tabular}{llrcccccc}\toprule
 arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec.-only (val) & rev.\ (test) & ctx-rand.\ (test) \\ \midrule
 \texttt{sp} & 8 & 416$\pm$244 & 0.008$\pm$0.006 & 0.056$\pm$0.008 & 0.479$\pm$0.019 & 0.365$\pm$0.106 & 0.053$\pm$0.010 & 0.479$\pm$0.018 (3) \\
 \texttt{sp} & 32 & 283$\pm$28 & 0.004$\pm$0.005 & 0.054$\pm$0.012 & 0.486$\pm$0.011 & 0.391$\pm$0.064 & 0.052$\pm$0.016 & 0.484$\pm$0.015 (3) \\
@@ -35,10 +35,10 @@ arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec
 \midrule
 \texttt{frozen} & 32 & 368$\pm$42 & 0.000$\pm$0.000 & 0.054$\pm$0.011 & 0.484$\pm$0.009 & 0.389$\pm$0.050 & 0.053$\pm$0.014 & 0.485$\pm$0.013 (3) \\
 \bottomrule
-\end{tabular}\end{table}
+\end{tabular}}\end{table}
 \begin{table}[htbp]\centering\scriptsize
 \caption{Experiment 3, ready (standardized) regime, at $L^\ast=0.30$: mean$\pm$sd over seeds (number of seeds). Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; accuracies on validation (val) and test (test) patients under the paired conditions.}\label{tab:exp3_ready_paviau}
-\begin{tabular}{llrcccccc}\toprule
+\resizebox{\linewidth}{!}{\begin{tabular}{llrcccccc}\toprule
 arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec.-only (val) & rev.\ (test) & ctx-rand.\ (test) \\ \midrule
 \texttt{sp} & 8 & 1219$\pm$441 & 0.002$\pm$0.002 & 0.227$\pm$0.050 & 0.530$\pm$0.032 & 0.605$\pm$0.059 & 0.225$\pm$0.049 & 0.533$\pm$0.028 (3) \\
 \texttt{sp} & 32 & 1066$\pm$262 & -0.001$\pm$0.004 & 0.230$\pm$0.021 & 0.544$\pm$0.010 & 0.634$\pm$0.036 & 0.227$\pm$0.027 & 0.547$\pm$0.019 (3) \\
@@ -54,10 +54,10 @@ arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec
 \midrule
 \texttt{frozen} & 32 & 1418$\pm$232 & 0.000$\pm$0.000 & 0.217$\pm$0.016 & 0.542$\pm$0.005 & 0.637$\pm$0.027 & 0.213$\pm$0.016 & 0.542$\pm$0.011 (3) \\
 \bottomrule
-\end{tabular}\end{table}
+\end{tabular}}\end{table}
 \begin{table}[htbp]\centering\scriptsize
 \caption{Recovery at $M=32$ (real spectra): a fresh patch head with paired initialization trained for 20,000 steps on newly sampled context-random patches with the encoder frozen at its $L^\ast$ checkpoint (\texttt{init} = random initial encoder); validation and test patients under the paired conditions; original = the run's own classifier at $L^\ast$ (validation).}\label{tab:exp3_recovery_paviau}
-\begin{tabular}{lllcccccc}\toprule regime & seed & encoder & probe (val) & orig.\ rev.\ (val) & retr.\ iid (val) & retr.\ rev.\ (val) & retr.\ ctx-rand.\ (val) & retr.\ rev.\ (test) \\ \midrule
+\resizebox{\linewidth}{!}{\begin{tabular}{lllcccccc}\toprule regime & seed & encoder & probe (val) & orig.\ rev.\ (val) & retr.\ iid (val) & retr.\ rev.\ (val) & retr.\ ctx-rand.\ (val) & retr.\ rev.\ (test) \\ \midrule
 ready & 0 & \texttt{init} & 0.915 & -- & 0.893 & 0.894 & 0.892 & 0.972 \\
 ready & 0 & \texttt{kappa1} & 0.917 & 0.208 & 0.898 & 0.897 & 0.895 & 0.972 \\
 ready & 0 & \texttt{kappa256} & 0.916 & 0.210 & 0.912 & 0.911 & 0.912 & 0.971 \\
@@ -85,6 +85,6 @@ unready10 & 1 & \texttt{kappa256} & 0.702 & 0.052 & 0.624 & 0.669 & 0.647 & 0.68
 unready10 & 2 & \texttt{init} & 0.755 & -- & 0.663 & 0.708 & 0.681 & 0.709 \\
 unready10 & 2 & \texttt{kappa1} & 0.755 & 0.057 & 0.665 & 0.701 & 0.680 & 0.706 \\
 unready10 & 2 & \texttt{kappa256} & 0.761 & 0.059 & 0.666 & 0.702 & 0.680 & 0.712 \\
-\bottomrule\end{tabular}\end{table}
+\bottomrule\end{tabular}}\end{table}
 \paragraph{Runs that did not reach $L^\ast$.}
 Every run reached $L^\ast$.

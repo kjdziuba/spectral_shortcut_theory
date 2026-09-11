@@ -2,12 +2,12 @@
 \label{sec:real}
 
 \paragraph{What this experiment is.}
-We test contextual competition using measured centre spectra and their
-recorded labels, with a synthetic class-associated spatial intensity
-pattern along training-estimated principal directions in the
-neighbourhood. It asks whether the mechanism operates when the spectral
-cue is a real, high-dimensional class contrast; natural neighbourhoods are
-treated in Appendix~\ref{app:exp4}.
+We test contextual competition with measured centre spectra and their
+recorded labels, adding a synthetic class-associated intensity pattern
+along training-estimated principal directions in the neighbourhood: does
+the mechanism operate when the spectral cue is a real, high-dimensional
+class contrast? Natural neighbourhoods are treated in
+Appendix~\ref{app:exp4}.
 
 \paragraph{Data and readiness.}
 Breast-tissue QCL micro-array cores, fold~0 of a five-fold patient-level
@@ -18,21 +18,21 @@ separately (Appendix~\ref{app:exp3}). A readiness scan
 (Table~\ref{tab:exp3_scan}) shows that with per-feature standardization a
 random encoder $W\in\R^{12\times942}$ already reads this contrast at
 $0.955$ against a calibration discriminant of $0.969$; PCA
-whitening estimated on the training patients reduces the random-encoder
-probe to $0.54$ while the discriminant stays at $0.944$. We therefore run
+whitening (training patients) reduces the random-encoder probe to $0.54$
+while the discriminant stays at $0.944$. We therefore run
 two regimes on the same pixels and labels, \emph{high} and \emph{low
 initial probe accessibility} (standardized and whitened inputs). Neither
 is an instance of the theorem: a probe on the encoder output does not
 measure the spectral contribution to a random head's margin.
 
 \paragraph{Construction.}
-Each patch is a real centre with eight real donor spectra drawn
-independently of the centre label from the same split side; donor $d$
+Each patch is a real centre with eight real donor spectra drawn without
+conditioning on the centre label from the same split side; donor $d$
 carries $\gamma_d(c\,s+\tau\eta_d)$ along the $d$th principal coordinate,
 where $c$ is the centre's label, $s=\pm1$ or $c$ is replaced by an
 independent label, and $\gamma_d$ is large relative to the donors'
-natural variation ($3\sqrt{\lambda_d}$ standardized; $30$ in whitened
-units, with a $\gamma=10$ variant declared before its runs). $\tau$ is
+natural variation ($3\sqrt{\lambda_d}$ standardized; $30$ whitened, with
+a $\gamma=10$ variant declared before its runs). $\tau$ is
 calibrated per regime so that a discriminant on the eight cue projections
 matches the centre-only discriminant on training-side data ($0.969$ high,
 $0.948$ low); through a random encoder the encoded patch, centre
@@ -49,8 +49,8 @@ reversal accuracy $0.08$--$0.10$ and context-random accuracy at chance
 for every width and $\kappa$, all fitting within $70$--$230$ steps; the
 uninformative-context comparator
 reaches reversal $0.93$ and context-random $0.92$, the frozen encoder $0.09$
-(Table~\ref{tab:exp3_ready}). A large deficit in this probe is not
-necessary for failure.
+(Table~\ref{tab:exp3_ready}): a large probe deficit is not necessary for
+failure.
 
 \paragraph{Results: low accessibility.}
 The probe starts at $0.56$--$0.60$. Among the $\gamma=30$
@@ -67,9 +67,9 @@ lies in the span of the eight constructed-cue directions, against
 $88$--$90\%$ under uninformative-context training
 (Appendix~\ref{app:exp3}). That the cue's amplitude dominates the
 encoder's own gradient is a supported hypothesis, not an identified
-mechanism: the projection is not a pathwise gradient decomposition, and
-the random head, unlike the theorem's zero-sum readout, lets contextual
-learning proceed through the encoder even when the head barely moves.
+mechanism: the projection is not a pathwise decomposition, and the random
+head, unlike the theorem's zero-sum readout, lets contextual learning
+proceed through the encoder while the head barely moves.
 
 \paragraph{Results: the lower-amplitude variant.}
 At $\gamma=10$ the fit takes $530$--$1{,}800$ steps and the rate response
@@ -82,28 +82,33 @@ gain $0.35$, reversal $0.92$ (Table~\ref{tab:exp3_unready10}). The net update re
 the removal of contextual dominance.
 
 \paragraph{Results: what retraining recovers.}
-The recovery procedure of Section~\ref{sec:synthetic} separates the
-regimes further (Table~\ref{tab:exp3_recovery}).
+Retraining separates the regimes further (Table~\ref{tab:exp3_recovery}).
 With high accessibility a fresh head retrained on decorrelated context
 reaches reversal accuracy $0.90$--$0.96$ from every encoder, the random
 initialization included, against $0.08$ for the original classifiers: the
-spectral information was available and unused. At
-$\gamma=30$ no encoder yields more than $0.45$--$0.56$; at $\gamma=10$ the
-slow-head encoders yield $0.55$--$0.70$ against $0.48$--$0.60$ after the
-fast head.
+original failure coexisted with spectral information that the specified
+retraining could use. Under this procedure the nine $\gamma=30$ encoders
+yield $0.45$--$0.56$; at $\gamma=10$ the slow-head encoders yield
+$0.55$--$0.70$ against $0.48$--$0.60$ after the fast head (paired gain
+$+0.07$, $+0.10$, $+0.07$).
 
 \paragraph{Reading.}
 With measured spectra the outcome matches the synthetic experiment on
-reliance: at every width and rate evaluated the original predictor uses
-the constructed context when it is informative, with excess shifted risk
-of $0.83$--$0.84$ over the uninformative-context comparator. On
+reliance: at every width and rate the original predictor uses informative
+constructed context, with excess shifted risk of $0.83$--$0.84$ over the
+comparator. On
 adaptation it adds a scope condition: how much of the contrast the
-encoder learns before the fit depends on the head's relative speed and on
-the cue's amplitude, which are not interchangeable here. With the natural
-$3\times3$ neighbourhoods of the same cores, which never straddle two
-classes, the encoder learns the class signal equally with and without
-informative context and the model uses the full spectrum, on tissue and
-on a public scene (Appendices~\ref{app:exp4} and~\ref{app:pavia}).
+encoder learns before the fit depends on the head's relative speed and
+the cue's amplitude, which are not interchangeable here. On the public
+Pavia University scene the constructed-context experiment reproduces
+suppression and reliance, while its low-accessibility rate and recovery
+effects are inconsistent across seeds (Appendix~\ref{app:pavia}). In
+natural $3\times3$ neighbourhoods, on tissue and on that scene,
+informative- and shuffled-context training give similar encoder probes
+and comparator-level recovery: reliance without the accessibility
+deficit seen with constructed context, which neither identifies why
+suppression was absent nor shows that natural context cannot produce it
+(Appendix~\ref{app:exp4}).
 
 \begin{figure}[t]
 \centering

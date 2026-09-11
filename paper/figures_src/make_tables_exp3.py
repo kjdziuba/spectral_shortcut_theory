@@ -42,7 +42,7 @@ for regime, name in (("unready", "unready (whitened, $\\gamma=30$)"), ("unready1
              "Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; "
              "accuracies on validation (val) and test (test) patients under the paired conditions.}"
              f"\\label{{tab:exp3_{regime}{SFX}}}")
-    L.append("\\begin{tabular}{llrcccccc}\\toprule")
+    L.append("\\resizebox{\\linewidth}{!}{\\begin{tabular}{llrcccccc}\\toprule")
     L.append("arm & $M$ / $\\kappa$ & step & probe gain & rev.\\ (val) & ctx-rand.\\ (val) & spec.-only (val) & rev.\\ (test) & ctx-rand.\\ (test) \\\\ \\midrule")
     print(f"--- {regime} at L* ---")
     for arm in ("sp", "headlr", "ctxfree", "frozen"):
@@ -57,7 +57,7 @@ for regime, name in (("unready", "unready (whitened, $\\gamma=30$)"), ("unready1
         if not a.empty:
             L.append("\\midrule")
     L[-1] = "\\bottomrule"
-    L.append("\\end{tabular}\\end{table}")
+    L.append("\\end{tabular}}\\end{table}")
     init = df[(df["regime"] == regime) & (df["threshold"].astype(str) == "init")]
     print(f"init probe_val {regime}: {init.groupby('seed')['probe_val'].first().round(3).to_dict()}")
 
@@ -69,12 +69,12 @@ if rec_path.exists():
              "sampled context-random patches with the encoder frozen at its $L^\\ast$ checkpoint (\\texttt{init} = random initial encoder); "
              "validation and test patients under the paired conditions; original = the run's own classifier at $L^\\ast$ (validation).}"
              f"\\label{{tab:exp3_recovery{SFX}}}")
-    L.append("\\begin{tabular}{lllcccccc}\\toprule regime & seed & encoder & probe (val) & orig.\\ rev.\\ (val) & retr.\\ iid (val) & retr.\\ rev.\\ (val) & retr.\\ ctx-rand.\\ (val) & retr.\\ rev.\\ (test) \\\\ \\midrule")
+    L.append("\\resizebox{\\linewidth}{!}{\\begin{tabular}{lllcccccc}\\toprule regime & seed & encoder & probe (val) & orig.\\ rev.\\ (val) & retr.\\ iid (val) & retr.\\ rev.\\ (val) & retr.\\ ctx-rand.\\ (val) & retr.\\ rev.\\ (test) \\\\ \\midrule")
     for _, x in r.sort_values(["regime", "seed", "encoder"]).iterrows():
         o = f"{x['original_acc_reversed_val']:.3f}" if pd.notna(x.get("original_acc_reversed_val", float('nan'))) else "--"
         L.append(f"{x['regime']} & {int(x['seed'])} & \\texttt{{{x['encoder']}}} & {x['probe_val']:.3f} & {o} & {x['retrained_acc_iid_val']:.3f} & "
                  f"{x['retrained_acc_reversed_val']:.3f} & {x['retrained_acc_ctx_random_val']:.3f} & {x['retrained_acc_reversed_test']:.3f} \\\\")
-    L.append("\\bottomrule\\end{tabular}\\end{table}")
+    L.append("\\bottomrule\\end{tabular}}\\end{table}")
     print("--- recovery3 means ---")
     print(r.groupby(["regime", "encoder"])[["probe_val", "retrained_acc_reversed_val", "retrained_acc_ctx_random_val", "retrained_acc_reversed_test"]].mean().round(3))
 

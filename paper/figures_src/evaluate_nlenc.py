@@ -36,7 +36,7 @@ L.append("\\begin{table}[htbp]\\centering\\scriptsize")
 L.append("\\caption{Experiment 2 with a two-layer ReLU encoder ($256\\to64\\to12$) at $L^\\ast=0.30$: mean$\\pm$sd over "
          "seeds (number of seeds). Probe gain = spectral-only probe accuracy minus its value at initialization; "
          "paired shifted accuracies as in Table~\\ref{tab:exp2_star}.}\\label{tab:exp2_nlenc}")
-L.append("\\begin{tabular}{llrcccccc}\\toprule")
+L.append("\\resizebox{\\linewidth}{!}{\\begin{tabular}{llrcccccc}\\toprule")
 L.append("arm & $M$ / $\\kappa$ & step & probe & probe gain & iid & reversed & ctx-random & spec.-only \\\\ \\midrule")
 for arm in ("nlenc", "nlenc_headlr", "nlenc_ctxfree", "nlenc_frozen"):
     a = star[star["arm"] == arm]
@@ -47,7 +47,7 @@ for arm in ("nlenc", "nlenc_headlr", "nlenc_ctxfree", "nlenc_frozen"):
     if not a.empty:
         L.append("\\midrule")
 L[-1] = "\\bottomrule"
-L.append("\\end{tabular}\\end{table}")
+L.append("\\end{tabular}}\\end{table}")
 
 # ---- verdicts
 def by_seed(arm, width, hm=1.0, col="probe_acc_gain"):

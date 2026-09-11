@@ -1,24 +1,27 @@
-%% Abstract v3 (2026-09-11, after Astra review 02). Registered abstract (Sep 18) must match this file.
-We study how relative module training rates affect spectral adaptation in
-serial spectral--spatial models, in which a small encoder compresses each
-pixel's spectrum and a wide spatial network reads the encoded
-neighbourhood. An exactly solvable serial logistic model bounds the
-spectral encoder's update at matched fit by a fraction $1/(1+Mv_0^2)$ of
-the update a spectral-only model needs, establishes contextual-reversal
-failure under explicit finite-width conditions, and shows through a
-$M^{-1/2}$-normalized readout that replicated-readout width acts through
-the training metric; normalization removes the width dependence but need
-not prevent the failure. In a nonlinear synthetic model with two cues of
-matched signal-to-noise ratio, slowing the spatial head by $256\times$
-raises the linear accessibility of the spectral cue at matched training
-loss from $0.66$ to $0.85$ while the trained classifier remains strongly
-context-reliant (reversal accuracy $0.12$ to $0.14$); retraining the head
-on decorrelated context from the frozen encoders then recovers shifted
-accuracy of $0.75$--$0.84$ from the slow-head encoders against
-$0.54$--$0.62$ from the fast-head ones, no better than random encoders.
-Experiments using measured tissue spectra with constructed context
-distinguish high and low initial spectral accessibility, show strong
-contextual reliance in both, and show a weaker rate response at high
-contextual amplitude. The results separate adaptation of the encoder,
-accessibility of the spectral cue, reliance of the fitted classifier, and
-what a specified retraining recovers.
+%% Abstract v4 (2026-09-11, after Astra review 03; Astra's corrected registration abstract, review_iclr_03.md section 8,
+%% adopted with one clause added: "near the random-encoder baseline"). v3 is in git tag iclr-v2-pre-review03-2026-09-11.
+%% Registered abstract (Sep 18) must match this file.
+We study how relative module training rates affect spectral learning in
+serial spectral--spatial models. In an exactly solvable logistic model we bound adaptation
+of the spectral coefficient at matched fit, establish contextual-reversal
+failure under explicit finite-width conditions, and show that readout
+normalization removes replicated-width dependence without necessarily
+preventing failure. Controlled synthetic experiments distinguish
+accessibility of the centre-spectrum cue, reliance of the fitted
+classifier, and recovery through a specified fresh-head retraining
+procedure. With a linear encoder, slowing the contextual head by
+$256\times$ raises probe accuracy from $0.66$ to $0.85$ at matched
+training loss while original reversal accuracy remains $0.12$--$0.14$;
+retraining a fresh nonlinear head for $20{,}000$ steps on
+decorrelated-context data, with the original encoder frozen, yields
+reversal accuracy $0.75$--$0.84$ after slow-head training against
+$0.54$--$0.62$ after fast-head training, near the random-encoder
+baseline. A two-layer ReLU encoder reproduces the qualitative ordering.
+Constructed-context experiments with breast-tissue and public
+hyperspectral spectra reproduce suppression and reliance, while the rate
+and recovery responses depend on the setting. In the tested natural
+$3\times3$ neighbourhoods, contextual reliance occurs without a detected
+encoder-accessibility deficit relative to shuffled-context training.
+Similar contextual reliance can thus conceal different encoder quality
+and subsequent recoverability; the results establish neither a general
+width law nor optimal recoverability from the learned representations.

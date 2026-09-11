@@ -33,7 +33,7 @@ REG = {"unready": ("unready (whitened, $\\gamma=30$)", "#d62728"), "unready10": 
 
 df = pd.read_csv(RES / "exp3_summary.csv")
 star = df[df["threshold"].astype(str) == str(L_STAR)].copy()
-fig, axes = plt.subplots(2, 2, figsize=(5.6, 4.0))
+fig, axes = plt.subplots(2, 2, figsize=(5.6, 3.3))
 (ax_a, ax_b), (ax_c, ax_d) = axes
 
 
@@ -57,7 +57,7 @@ def width_panel(ax, metric, ylabel, title, comparator=True):
 
 
 width_panel(ax_a, "probe_val_gain", r"probe gain at $L^\ast$ (val.)", "(a) spectral learning at matched fit")
-ax_a.axhline(0, color="k", lw=0.6); ax_a.legend(frameon=False, loc="best")
+ax_a.axhline(0, color="k", lw=0.6)   # colours and line styles are named in the caption (no in-panel legend)
 width_panel(ax_b, "acc_reversed_val", r"accuracy, context reversed (val.)", "(b) reliance: reversal accuracy")
 ax_b.axhline(0.5, color="k", ls=":", lw=0.8); ax_b.set_ylim(-0.02, 1.02)
 width_panel(ax_d, "acc_ctx_random_val", r"accuracy, context random (val.)", "(d) spectrum in the presence of context")
@@ -81,7 +81,7 @@ kt = sorted(set(star[star["arm"] == "headlr"]["head_mult"]), reverse=True) or [1
 ax_c.set_xticks(kt); ax_c.set_xticklabels(["1" if v == 1 else f"1/{round(1 / v)}" for v in kt]); ax_c.set_xticks([], minor=True)
 ax_c.set_xlabel(r"whole-head rate multiplier $\kappa$ ($M=32$; slower $\to$)"); ax_c.set_ylabel(r"value at $L^\ast$ (val.)")
 ax_c.set_title("(c) relative speed of the head", loc="left"); ax_c.axhline(0.5, color="k", ls=":", lw=0.8)
-ax_c.grid(True, alpha=0.25); ax_c.legend(frameon=False, loc="best")
+ax_c.grid(True, alpha=0.25)
 
 fig.tight_layout(pad=0.4, h_pad=1.0, w_pad=1.2)
 for ext in ("pdf", "png"):

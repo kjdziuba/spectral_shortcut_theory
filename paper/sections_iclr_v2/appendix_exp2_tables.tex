@@ -129,7 +129,7 @@ arm & $M$ & probe gain & $h_u$ & reversed acc. & context-random acc. \\ \midrule
 The following runs ended at the step budget above $L^\ast$: \texttt{headlr} $M=32$, $\kappa=0.000244141$, seed 0 (final loss 0.320 at step 40000); \texttt{headlr} $M=32$, $\kappa=3.05176e-05$, seed 0 (final loss 0.347 at step 40000).
 \begin{table}[htbp]\centering\scriptsize
 \caption{Registered predictions (REFOCUS\_PLAN \S4.4) evaluated at $L^\ast=0.30$ on the original five widths and on the amended grid; $\rho$ = Spearman rank correlation across widths (or multipliers), one value per registered seed (0--2; added seeds are reported in the mean$\pm$sd tables only). P2's second clause compares $a_u$ at $M=2048$.}\label{tab:exp2_verdicts}
-\begin{tabular}{p{5.2cm}p{3.1cm}p{4.2cm}p{2.6cm}}\toprule criterion & grid & per-seed values & verdict \\ \midrule
+\begin{tabular}{p{4.6cm}p{2.6cm}p{3.8cm}p{2.0cm}}\toprule criterion & grid & per-seed values & verdict \\ \midrule
 P1: standard param., $\rho(a_u,M)\le-0.8$ and $\rho(\text{rev},M)\le-0.8$ in every seed & original & $a_u$: -0.70, -1.00, -1.00; rev: -0.60, -0.90, -0.60 & not met (1/3 seeds) \\
  & amended & $a_u$: -0.54, -1.00, -0.96; rev: -0.64, -0.96, -0.82 & not met \\
 P2a: normalized readout, $|\rho(\cdot,M)|<0.5$ in at least two seeds & original & $a_u$: +0.10, -0.90, -0.30; probe: -0.20, -0.90, -0.30; rev: -0.90, -0.70, -0.70 & alignment met; probe met; reversal not met \\

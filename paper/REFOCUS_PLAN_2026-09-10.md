@@ -1043,11 +1043,17 @@ criterion table to seeds 0–2 and report five-seed means separately.
   encoders 0.78–0.85 vs 0.64–0.66 vs 0.62–0.64). Ordering holds in every
   seed; the κ = 1 encoders yield no more than random ones. Magnitudes are
   smaller than for the linear encoder (0.75–0.84 vs 0.54–0.62 there): the
-  fresh linear-readout head extracts less from the ReLU encoder's
+  fresh head (the entire ReLU head is retrained, not a linear readout;
+  wording corrected after review 03) extracts less from the ReLU encoder's
   features within the budget (retraining loss 0.56–0.61 vs 0.67). All
   four nonlinear-encoder predictions (P12–P15) are met.
 
 ## 13. Abstract v4 candidate (drafted 19:35; NOT applied to `00_abstract.tex`; for the author and Astra; registration deadline Sep 18)
+**SUPERSEDED 2026-09-11 (review 03, §15 below): Astra rejected this candidate
+(whole-encoder fraction, random-equivalence, "no competition", numbers
+attributed to both encoders) and supplied a corrected abstract, which is now
+`00_abstract.tex` (v4). This candidate is kept for the record.**
+
 Changes from v3: "linear or two-layer ReLU encoder" in the synthetic
 sentence; one added sentence on natural neighbourhoods (tissue + public
 scene, the compressibility/redundancy distinction); the real-spectra
@@ -1197,7 +1203,10 @@ Registered verdicts unchanged (`PREDICTIONS.md` regenerated on seeds
   (means +0.025 vs +0.068).
 - **Exp 2 P1 (width criterion ρ ≤ −0.8 for a_u AND reversal):** a_u ρ =
   −0.7 / −1.0 / −1.0 / −0.9 / −0.7; reversal ρ = −0.6 / −0.9 / −0.6 /
-  +0.7 / −0.4 → still not met (2/5 for a_u; 0/5 for both). **P2b** (a_u at
+  +0.7 / −0.4 → still not met (3/5 for a_u at ρ ≤ −0.8: seeds 1, 2, 3;
+  1/5 for both: seed 1; seed 3's reversal ρ = +0.7 is opposite to the
+  predicted direction) [arithmetic corrected 2026-09-11 after Astra
+  review 03 §9; this line originally read "2/5 for a_u; 0/5 for both"]. **P2b** (a_u at
   2048, normalized > standard): 5/5. **P5** frozen reversal max 0.149
   (< 0.5). ctxfree probe 0.887–0.943 at every width. **P6 κ** (M = 32):
   probe gain 0.028→0.223, 0.025→0.203, 0.014→0.205, 0.008→0.225,
@@ -1215,7 +1224,35 @@ Main text keeps the registered three-seed numbers; one sentence each in
   κ=1 0.921 / 0.909, κ=1/256 0.926 / 0.928) → "recovers from every
   encoder" holds 5/5. Unready γ=30: 0.523→0.571→0.593 (s3), 0.472→0.471→
   0.483 (s4): little recovery from any encoder, κ256 ≥ κ1 in 5/5 but by
-  ≤ 0.02. Unready10 γ=10: κ256 0.755 / 0.621 vs κ1 0.636 / 0.486 vs init
+  ≤ 0.023 (s3: 0.5930 − 0.5705; corrected from "≤ 0.02" after Astra
+  review 03 §9). Unready10 γ=10: κ256 0.755 / 0.621 vs κ1 0.636 / 0.486 vs init
   0.517 / 0.472 → ordering holds 5/5 (five-seed ranges 0.55–0.76 vs
   0.48–0.64; the main text keeps the registered three-seed 0.55–0.70 vs
   0.48–0.60). Exp 3 tables regenerated with five seeds.
+
+## 15. Response to Astra review 03 (`review_packet/astra/review_iclr_03.md`; 6/10 weak accept; applied 2026-09-11 morning; state before = git tag `iclr-v2-pre-review03-2026-09-11`)
+Every number in the review's ledger was re-derived from the summary CSVs
+before editing (fast-minus-random recovery +0.019/+0.001/+0.006; 61.5%
+all-eight-labelled patches; Pavia majority baselines 0.784/0.838; γ=10
+slow-head Pavia mean gain +0.029 at ~1,900 steps; nlenc slow-head reversal
+0.131–0.154, which also required scoping Appendix C's P13 sentence).
+Nothing was retracted that the artifacts support; nothing was rerun.
+
+| item | disposition |
+|---|---|
+| W1 recovery in the main figure | Fig 3(d) is now the paired recovery panel (random / κ=1 / κ=1/256; linear facet with seeds 0–2 filled and 3–4 open; ReLU facet; original classifiers as crosses; mean paired gain +0.20 / +0.11). The h_u trajectory panel moved to Appendix C (`figC_exp2_traj.pdf`). Intro contributions name the fresh-head recovery and the ReLU ordering; related work now says "retraining the entire nonlinear head". |
+| W2 / L3 natural-context "no competition" | Replaced everywhere (intro contributions, §5 Reading, §6, Appendix E, Appendix F) by the measured statement: reliance without a detected accessibility deficit; does not identify why suppression was absent or show natural context cannot produce it. "Larger natural receptive fields". |
+| W3 / L4 compression positioning | Intro paragraph replaced by Astra's two-question framing (spatial reliance ≠ dispensability; learned-12 within tolerance vs PCA-16 loss = representation dependence, not high-dimensional need). O'Leary's spectrum-only evidence acknowledged. Appendix E P11 paragraph rewritten (score-contrast space of a linear discriminant; no claim that >12 features or every channel is needed). |
+| W4 Pavia summary in main text | Two sentences in §5 Reading and one clause in the intro contributions; γ=10 kept in §5; Appendix F rewritten component-wise with the failed rate/recovery generalization explicit. |
+| W5 procedure dependence | Shared recovery-protocol subsection added to Appendix C (whole head, M=32, η=1e-3, paired init/data, final state, all full-budget, not a ceiling; the two comparator types labelled). "Near the random-encoder baseline" throughout. |
+| W6 / appendix items 1–12 | E: fallback provenance (planned endpoint analysis promoted after the outcome, §8.6), P8 clause-wise, exact-equality/causal-exclusion wording removed, 0.619→0.628, 0.706/0.712 labelled by checkpoint, P11 tolerance wording. F: "78 constructed-context runs", sp-arm ranges as seed means, γ=10 slow-head +0.029/1,901 steps, group means + paired signs for recovery, item-by-item natural verdicts, gate = performance criterion not information bound, retrained vs original comparator labelled, chance level removed, tile-split and imbalance (majority baselines) qualifications, headlr loss 0.78–0.90. D: projection audit subsection + Table (R_C definition, ranges by regime/arm), donor "without conditioning", retraining pointer. C: P13 scoped to standard-parameterization runs; "near random (within 0.015)"; added seeds "confirm the suppression, rate and recovery comparisons", seed-3 +0.7 reversal ρ named. |
+| L1 coefficient vs encoder | Abstract, intro, §6: "update of the spectral coefficient". |
+| L2 | "near the random-encoder baseline" / "within 0.02" / "little more than". |
+| L5 universal repair | §6 last sentences replaced by Astra's text. |
+| L6 linear encoder | §2 and §6: "primary experiments, with a two-layer ReLU extension in §4"; §2 names both head families. |
+| L7 nonlinear metric | §4 sentence rewritten: probe gain 0.14–0.21 named; reversal ≤0.13 scoped to standard-parameterization arms; recovery 0.65–0.70 vs 0.57 vs 0.58. |
+| L8 provenance | §4: "specified after the original shifted results and before any of its own evaluations were inspected". |
+| L9, L10, L11, L12, L13, L14, L15, L16, L17 | Applied as worded in the review (intro L9/L13/L14/L16; §2 L15; §5 L10/L11 (+ paired gains +0.07/+0.10/+0.07) /L12; §6 and intro L17 "larger at the smaller constructed amplitude on the breast-tissue contrast, mixed on the public scene"). |
+| §9 addendum | §11.1 arithmetic corrected (3/5, 1/5; ≤0.023); "every direction" removed from §4, Appendix C and D (Exp 2 seed 3 has reversal ρ = +0.7). §10.1 "fresh linear-readout head" corrected. Folds remain a pending extension; nothing from them is cited. |
+| Abstract (check d) | Astra's corrected abstract adopted as v4 in `00_abstract.tex` (one clause added: "near the random-encoder baseline"); §13 candidate marked superseded. Registration deadline Sep 18. |
+| Not done (optional per Astra) | Budget/learning-rate sensitivity of recovery; balanced/per-class Pavia metric from saved evaluations; Appendix G trim. |

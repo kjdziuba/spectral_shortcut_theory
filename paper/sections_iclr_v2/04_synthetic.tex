@@ -1,9 +1,8 @@
 \section{Exact-model check and synthetic intervention}
 \label{sec:synthetic}
 
-The exact model is verified numerically in Section~\ref{sec:theorem}; the
-question here is whether the mechanism survives when the cues are noisy,
-the routing is learned and the head is nonlinear.
+The question here is whether the mechanism survives when the cues are
+noisy, the routing is learned and the head is nonlinear.
 
 \paragraph{Experiment 2: design.}
 Pixels carry i.i.d.\ labels $y_p\in\{-1,+1\}$ on $16\times16$ images with
@@ -17,23 +16,22 @@ $\tau\eta$: the information about $y_p$ sits only in the neighbourhood,
 because $p$'s own $v$-coordinates carry its neighbours' labels. Matched
 signal-to-noise: $\alpha=1.645$ gives an oracle spectral accuracy of
 $0.95$, and $\tau=1.70$ is calibrated so that the oracle contextual accuracy
-(a linear discriminant on the $3\times3$ window of the eight projections)
-is $0.950$; both values are recorded before any training run
+(a discriminant on the $3\times3$ window of the eight projections)
+is $0.950$, both recorded before any training run
 (Appendix~\ref{app:exp2}). Readiness: through a random encoder
 $W\in\R^{12\times256}$ the same discriminant reads the contextual cue at
-$0.905$--$0.914$ and the spectral cue at $0.608$--$0.653$ (three seeds),
-because the random projection preserves the signal-to-noise ratio of a
+$0.905$--$0.914$ and the spectral cue at $0.608$--$0.653$ (three seeds):
+the random projection preserves the signal-to-noise ratio of a
 cue whose noise shares its direction and attenuates by about $\sqrt{K/S}$
-one whose noise is isotropic. This is the nonlinear analogue of
-$(a_0\ \text{small},\ v_0=O(1))$: the contextual cue is initially
-accessible, the spectral cue substantially less so. The model is the
+one whose noise is isotropic, the analogue of
+$(a_0\ \text{small},\ v_0=O(1))$. The model is the
 linear encoder followed by a ReLU
 convolutional head ($3\times3$ convolution to width $M$, ReLU, $3\times3$
 convolution to one logit, circular padding; a $5\times5$ receptive field),
 trained by full-batch gradient descent on $256$ images ($65{,}536$ pixels)
-with base rate $\eta=10^{-3}$, chosen as the largest rate with a monotone
-loss at the widest head; the baseline applies it to every parameter, the
-rate interventions multiply a named block's rate. Runs are compared at the
+at $\eta=10^{-3}$, the largest rate with a monotone loss at the widest
+head, applied to every parameter unless an intervention multiplies a
+named block's rate. Runs are compared at the
 first step with training loss below $L^\ast=0.30$ (further snapshots at
 $0.6$--$0.10$).
 
@@ -47,28 +45,30 @@ label) at $M\in\{2,8,128,512\}$;
 a readout multiplier and, following the design review, a whole-head
 multiplier $\kappa\in\{1,1/16,1/256\}$ at $M=32$, which in the
 theorem gives the bound $1/(1+\kappa Mv_0^2)$; and a frozen encoder. Three
-registered seeds each; two seeds added afterwards agree on every direction
+registered seeds each; two seeds added afterwards confirm the suppression,
+rate and recovery comparisons
 (Appendix~\ref{app:exp2}). At every snapshot we record the probe (a discriminant on the
 encoder output of clean spectral-only inputs, fitted and evaluated on
-disjoint independent sets; initial values $0.647$, $0.658$, $0.615$,
-reported as the gain over the run's own initial value), its exact
+disjoint sets; initial values $0.647$, $0.658$, $0.615$; reported as the
+gain over the initial value), its exact
 population counterpart $h_u(W)=\|P_{\mathrm{row}(W)}u\|^2$ (optimal probe
 accuracy $\Phi(\alpha\sqrt{h_u})$; $0.055$, $0.060$, $0.029$ at
-initialization), the encoder's displacement, and accuracies on paired
-test sets sharing labels and noise (iid, reversed and context-random
-change only the contextual field; spectral-only removes it; context-only
-removes the spectral signal). A recovery procedure, fixed before any
-shifted result was inspected, freezes the encoder at its $L^\ast$
-checkpoint, trains a fresh paired-initialization head on new
+initialization), the encoder's displacement, and accuracies on the paired
+test conditions of Section~\ref{sec:model} plus spectral-only and
+context-only sets, which remove the contextual or the spectral signal. A
+recovery procedure, specified after the
+original shifted results and before its own evaluations were inspected,
+freezes the encoder at its $L^\ast$ checkpoint, trains a fresh
+paired-initialization head (the entire head, not a last layer) on new
 context-random images for $20{,}000$ steps, and evaluates it on the same
-paired test family.
+paired test family (Appendix~\ref{app:exp2}).
 
 \paragraph{Results: suppression.}
 In the standard-parameterization baseline every model with an informative
 context leaves the encoder's spectral accessibility near its initial value
 at $L^\ast$: the probe gain is $0.04$ at $M=2$ and $0.002$ at $M=2048$
-(three-seed means; $h_u$ $0.09\to0.05$ against $0.048$ at
-initialization), accuracy under reversal is $0.12$--$0.13$, and accuracy
+(three-seed means; $h_u$ $0.09\to0.05$ from $0.048$), accuracy under
+reversal is $0.12$--$0.13$, and accuracy
 with an uninformative context is at chance ($0.50$). The same model trained
 with an uninformative context aligns its encoder before reaching the same
 loss (probe gain $0.25$--$0.30$; $h_u$ $0.56$--$0.86$) and survives
@@ -82,9 +82,9 @@ for both alignment and reversal accuracy. On those widths, the normalized
 readout's alignment and probe flatness met the stated two-of-three-seed
 criterion, but its reversal flatness did not; its high-width alignment
 improvement over the standard readout held in every seed. On the amended
-control grid, the uninformative-context arm failed both the energy-fraction
-cutoff and the flatness requirement, although it produced substantially
-higher probe accuracy than informative-context training at every width.
+control grid the uninformative-context arm failed the energy-fraction
+cutoff and the flatness requirement, though its probe accuracy exceeded
+informative-context training at every width.
 The readout-rate sweep supported the alignment prediction and changed
 reversal accuracy in the opposite direction; frozen encoders remained far
 below chance under reversal; the whole-head-rate prediction added at the
@@ -92,8 +92,8 @@ design review held for probe accessibility and row-space retention in
 every seed, while its reversal rank criterion failed in one seed. Low
 primary-threshold gains with the stronger labelled secondary trend at loss
 $0.15$ are consistent with contextual fitting preceding spectral
-adaptation, and neither falsify nor confirm competition (criterion table
-in Appendix~\ref{app:exp2}).
+adaptation and neither falsify nor confirm competition
+(Appendix~\ref{app:exp2}).
 
 \paragraph{Results: where the width and speed dependence appears.}
 At the labelled secondary threshold $0.15$, spectral learning decreases
@@ -106,9 +106,9 @@ rate by $256$ raises mean probe accuracy from $0.662$ to $0.851$ (paired
 gains $0.195$, $0.178$, $0.192$) and $h_u$ from $0.067$ to $0.406$, monotone
 in every seed (Table~\ref{tab:exp2_kappa}), in the direction of the
 theorem's bound $1/(1+\kappa Mv_0^2)$, while remaining below the
-uninformative-context control ($0.89$--$0.94$). Two further runs at
-$\kappa\le1/4096$ on one seed did not reach $L^\ast$ in budget (losses
-$0.32$, $0.35$) and are reported as budget endpoints. The readout-only
+uninformative-context control ($0.89$--$0.94$). Two runs at
+$\kappa\le1/4096$ on one seed did not reach $L^\ast$ (losses $0.32$,
+$0.35$; budget endpoints in Figure~\ref{fig:exp2}c); the readout-only
 multiplier acts in the same direction but weakly
 (Table~\ref{tab:exp2_lrmult}).
 
@@ -117,19 +117,19 @@ Across every matched informative-context run, accuracy under reversal at
 $L^\ast$ lies between $0.10$ and $0.15$ and accuracy with an uninformative
 context at chance, for every width, the normalized readout and both rate
 multipliers; the rate change that raises the probe by $0.19$ raises
-reversal accuracy by $0.02$ ($0.121\to0.143$). Among the tested
-interventions only training without an informative context removes the
-reliance: the classifier's use of context and the encoder's accessibility
-respond very differently to the same intervention.
+reversal accuracy by $0.02$ ($0.121\to0.143$). Only training without an
+informative context removes the reliance: the classifier's use of context
+and the encoder's accessibility respond differently to the same
+intervention.
 
 \paragraph{Results: what retraining recovers.}
 From the $\kappa=1$ encoders the retrained head reaches accuracy $0.62$,
-$0.59$, $0.54$ under reversal ($0.61$, $0.59$, $0.55$ with context-random,
-$0.59$ iid), no better than the same procedure on the random initial
-encoders ($0.60$, $0.59$, $0.53$); from the $\kappa=1/256$ encoders it
-reaches $0.84$, $0.77$, $0.75$ ($0.84$, $0.77$, $0.76$; $0.79$ iid), while
-the original classifiers of the two arms had the same poor shifted
-performance ($0.12$--$0.15$; Table~\ref{tab:exp2_recovery}). Within this
+$0.59$, $0.54$ under reversal (context-random within $0.01$), within
+$0.02$ of the same procedure on the random initial encoders ($0.60$,
+$0.59$, $0.53$); from the $\kappa=1/256$ encoders it reaches $0.84$,
+$0.77$, $0.75$, while the original classifiers of the two arms had the
+same poor shifted performance ($0.12$--$0.15$;
+Table~\ref{tab:exp2_recovery}). Within this
 protocol the contextual pathway's relative rate at the original fit thus
 changed what retraining could recover by about $0.2$; no retraining
 reached the $0.10$ loss target, so this concerns the specified procedure
@@ -138,13 +138,15 @@ and budget, not every possible repair.
 \paragraph{Amendments and a nonlinear encoder.}
 Widths $2$ and $4$, the fractional readout multipliers and the whole-head
 arm were added after a one-seed pilot and the design review, before their
-runs; the $\kappa$ extension below $1/256$ was motivated by the observed
-reversal outcome; the recovery procedure was specified after the first
-results and before its runs. A two-layer ReLU encoder in place of the
-linear one (registered before its runs) leaves the pattern unchanged:
-probe gain $0.00$--$0.02$ against $0.26$--$0.29$ without informative
-context, reversal at most $0.13$, and $0.14$--$0.21$ with the head slowed
-by $256\times$, in every seed (Appendix~\ref{app:exp2}).
+runs; the $\kappa$ extension below $1/256$ followed the observed reversal
+outcome. A two-layer ReLU encoder in place of the
+linear one (registered before its runs) leaves the pattern in place: with
+informative context the probe gain is $0.00$--$0.02$ against
+$0.26$--$0.29$ without, reversal accuracy of the standard-parameterization
+arms is at most $0.13$, slowing the head by $256\times$ raises the probe
+gain to $0.14$--$0.21$, and retraining recovers $0.65$--$0.70$ from the
+slow-head encoders against $0.57$ from the fast-head and $0.58$ from
+random encoders, in every seed (Appendix~\ref{app:exp2}).
 
 \begin{figure}[t]
 \centering
@@ -153,7 +155,11 @@ by $256\times$, in every seed (Appendix~\ref{app:exp2}).
 means). (a) Spectral probe gain against head width by arm. (b) Accuracy
 under context reversal. (c) Whole-head rate multiplier $\kappa$ at $M=32$:
 probe gain, $h_u$ and reversal accuracy; open markers are single-seed
-budget endpoints (losses shown), not matched-fit points. (d) $h_u$ along
-training for three widths, $L^\ast$ crossing marked.}
+budget endpoints (losses shown). (d) Recovery: reversal accuracy of a
+fresh entire head ($M=32$) retrained for $20{,}000$ steps on
+context-random images from frozen $L^\ast$ encoders (random
+initialization, $\kappa=1$, $\kappa=1/256$; paired initialization and
+common data within seed), original classifiers as crosses; linear encoder
+(added seeds open) and two-layer ReLU encoder; squares are means.}
 \label{fig:exp2}
 \end{figure}
