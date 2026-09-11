@@ -18,6 +18,8 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 df = pd.read_csv(ROOT / "results" / "exp2_summary.csv")
 df["head_mult"] = df["head_mult"].fillna(1.0)
+REG_SEEDS = [0, 1, 2]          # §11: registered verdicts stay on seeds 0-2; added seeds enter the mean/sd tables only
+df = df[~df["arm"].str.startswith("nlenc")]   # the nonlinear-encoder arms have their own tables (evaluate_nlenc.py)
 OUT = ROOT / "paper" / "sections_iclr_v2" / "appendix_exp2_tables.tex"
 L = []
 
@@ -69,8 +71,9 @@ def width_table(thr, label, caption, metrics):
 metrics_star = [("probe_acc_gain", "probe gain"), ("h_u", "$h_u$"), ("acc_reversed", "reversed acc."),
                 ("acc_ctx_random", "context-random acc."), ("acc_spec_only", "spectral-only acc.")]
 width_table(0.3, "tab:exp2_star", "Experiment 2 at the pre-registered threshold $L^\\ast=0.30$: mean$\\pm$sd over seeds (number of seeds). "
-            "Probe gain is the discriminant accuracy on the encoder output minus its initial value (0.647, 0.653, 0.608 for seeds 0--2); "
-            "$h_u=\\|P_{\\mathrm{row}(W)}u\\|^2$ (0.055 at initialization).", metrics_star)
+            "Probe gain is the discriminant accuracy on the encoder output minus its initial value (per seed: "
+            + ", ".join(f"{v:.3f}" for v in at("init")[at("init")["arm"] == "sp"].groupby("seed")["probe_acc"].first()) + "); "
+            "$h_u=\\|P_{\\mathrm{row}(W)}u\\|^2$ (0.055 at initialization, seed 0).", metrics_star)
 for thr, lab in ((0.15, "tab:exp2_015"), (0.10, "tab:exp2_010")):
     width_table(thr, lab, f"Experiment 2 at the secondary threshold {thr} (labelled; not pre-registered): mean$\\pm$sd over seeds that reached it.",
                 [("probe_acc_gain", "probe gain"), ("h_u", "$h_u$"), ("acc_reversed", "reversed acc."), ("acc_ctx_random", "context-random acc.")])
@@ -96,7 +99,7 @@ print(h[h["threshold"].astype(str).isin(["0.3"])].groupby("head_mult")[["probe_a
 # C4 readout multiplier
 m = at(0.3); m = m[m["arm"] == "lrmult"]
 L.append("\\begin{table}[htbp]\\centering\\scriptsize")
-L.append("\\caption{Readout learning-rate multiplier at $M=32$ (arm \\texttt{lrmult}) at $L^\\ast$: mean$\\pm$sd over three seeds.}\\label{tab:exp2_lrmult}")
+L.append(f"\\caption{{Readout learning-rate multiplier at $M=32$ (arm \\texttt{{lrmult}}) at $L^\\ast$: mean$\\pm$sd over {m['seed'].nunique()} seeds.}}\\label{{tab:exp2_lrmult}}")
 L.append("\\begin{tabular}{lcccc}\\toprule multiplier & probe gain & $h_u$ & reversed acc. & context-random acc. \\\\ \\midrule")
 for k, g in m.groupby("mult"):
     L.append(f"{k:g} & {ms(g['probe_acc_gain'])} & {ms(g['h_u'])} & {ms(g['acc_reversed'])} & {ms(g['acc_ctx_random'])} \\\\")
@@ -106,7 +109,8 @@ print("--- lrmult means ---"); print(m.groupby("mult")[["probe_acc_gain", "h_u",
 # C4b recovery table (retraining the head on frozen L* encoders)
 rec_path = ROOT / "results" / "exp2" / "recovery_summary.csv"
 if rec_path.exists():
-    r = pd.read_csv(rec_path)
+    r = pd.concat([pd.read_csv(f) for f in sorted((ROOT / "results" / "exp2").glob("recovery_summary*.csv"))
+                   if "nl_" not in f.name], ignore_index=True)   # registered seeds + §11 added seeds
     L.append("\\begin{table}[htbp]\\centering\\scriptsize")
     L.append("\\caption{Recovery at $M=32$: a fresh head with paired initialization trained for 20,000 steps on newly sampled "
              "context-random images with the encoder frozen at its $L^\\ast$ checkpoint (\\texttt{init} = the random initial encoder). "
@@ -131,8 +135,8 @@ else:
         f"\\texttt{{{r['arm']}}} $M={int(r['width'])}$" + (f", $\\kappa={r['head_mult']:g}$" if r['head_mult'] != 1 else "")
         + f", seed {int(r['seed'])} (final loss {r['loss']:.3f} at step {int(r['step'])})" for _, r in miss.iterrows()) + ".")
 
-# C6 registered verdicts: criterion table on the original five widths and the amended grid
-d = at(0.3); d = d[(d["mult"] == 1) & (d["head_mult"] == 1)]
+# C6 registered verdicts: criterion table on the original five widths and the amended grid (REGISTERED seeds only)
+d = at(0.3); d = d[(d["mult"] == 1) & (d["head_mult"] == 1) & (d["seed"].isin(REG_SEEDS))]
 ORIG = [8, 32, 128, 512, 2048]
 
 
@@ -149,7 +153,7 @@ def fmt(v):
 
 L.append("\\begin{table}[htbp]\\centering\\scriptsize")
 L.append("\\caption{Registered predictions (REFOCUS\\_PLAN \\S4.4) evaluated at $L^\\ast=0.30$ on the original five widths and on the amended grid; "
-         "$\\rho$ = Spearman rank correlation across widths (or multipliers), one value per seed. P2's second clause compares $a_u$ at $M=2048$.}\\label{tab:exp2_verdicts}")
+         "$\\rho$ = Spearman rank correlation across widths (or multipliers), one value per registered seed (0--2; added seeds are reported in the mean$\\pm$sd tables only). P2's second clause compares $a_u$ at $M=2048$.}\\label{tab:exp2_verdicts}")
 L.append("\\begin{tabular}{p{5.2cm}p{3.1cm}p{4.2cm}p{2.6cm}}\\toprule criterion & grid & per-seed values & verdict \\\\ \\midrule")
 sp_au_o, sp_rev_o = rhos("sp", ORIG, "align_u"), rhos("sp", ORIG, "acc_reversed")
 sp_au_a, sp_rev_a = rhos("sp", sorted(d["width"].unique()), "align_u"), rhos("sp", sorted(d["width"].unique()), "acc_reversed")
@@ -169,13 +173,13 @@ cf = d[d["arm"] == "ctxfree"]
 cf_au = rhos("ctxfree", sorted(cf["width"].unique()), "align_u"); cf_pr = rhos("ctxfree", sorted(cf["width"].unique()), "probe_acc")
 L.append(f"P3: uninformative context, $a_u>0.25$ at every width and $|\\rho(a_u,M)|<0.5$ & amended control widths $\\{{{','.join(str(int(w)) for w in sorted(cf['width'].unique()))}\\}}$ & "
          f"$a_u$ range {cf['align_u'].min():.3f}--{cf['align_u'].max():.3f}; $\\rho(a_u,M)$: {fmt(cf_au)}; $\\rho(\\text{{probe}},M)$: {fmt(cf_pr)} & cutoff not met; flatness not met (probe {cf.groupby('width')['probe_acc'].mean().iloc[0]:.3f}$\\to${cf.groupby('width')['probe_acc'].mean().iloc[-1]:.3f}) \\\\")
-lm = at(0.3); lm = lm[lm["arm"] == "lrmult"]
+lm = at(0.3); lm = lm[(lm["arm"] == "lrmult") & (lm["seed"].isin(REG_SEEDS))]
 lm_au = [spearman(g.sort_values("mult")["mult"], g.sort_values("mult")["align_u"]) for _, g in lm.groupby("seed")]
 lm_rev = [spearman(g.sort_values("mult")["mult"], g.sort_values("mult")["acc_reversed"]) for _, g in lm.groupby("seed")]
 L.append(f"P4: readout multiplier, $a_u$ and reversal accuracy decrease with the multiplier in every seed & run multipliers $\\{{1/16,1/4,1,4,16\\}}$ (64 dropped) & $a_u$: {fmt(lm_au)}; rev: {fmt(lm_rev)} & $a_u$ met; reversal not met (opposite sign) \\\\")
 fr = d[d["arm"] == "frozen"]
 L.append(f"P5: frozen encoder, reversal accuracy $<0.5$ at every width & amended widths & max {fr['acc_reversed'].max():.3f} & met \\\\")
-hk = at(0.3); hk = hk[hk["arm"] == "headlr"]
+hk = at(0.3); hk = hk[(hk["arm"] == "headlr") & (hk["seed"].isin(REG_SEEDS))]
 hk_pr = [spearman(g.sort_values("head_mult")["head_mult"], g.sort_values("head_mult")["probe_acc"]) for _, g in hk.groupby("seed")]
 hk_hu = [spearman(g.sort_values("head_mult")["head_mult"], g.sort_values("head_mult")["h_u"]) for _, g in hk.groupby("seed")]
 hk_rev = [spearman(g.sort_values("head_mult")["head_mult"], g.sort_values("head_mult")["acc_reversed"]) for _, g in hk.groupby("seed")]

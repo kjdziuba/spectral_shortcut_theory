@@ -2409,3 +2409,14 @@ ViT sweep:
   mitigation" (and the scope bullet now says "no mitigation is tested on natural context"); trims
   in §1, §5, §6 and the Fig 1 caption; main text ends at the bottom of page 9 (36 pp, 0 errors).
   Appendix lettering: E = Exp 4 (natural context), F = Pavia, G = scope, H = audits.
+- 18:50 Nonlinear-encoder arm (§10) DONE: P12, P13, P14 all MET in every seed (probe gain 0.00–0.02 vs
+  0.26–0.29; reversal ≤ 0.13 vs ≥ 0.88; κ=1/256 gain 0.14–0.21, reversal +0.02) → plan §10.1,
+  Appendix C subsection + `appendix_exp2_nlenc_tables.tex` (evaluate_nlenc.py), one sentence in §4
+  (page fit re-restored after trims). P15 retraining running (`recovery_summary_nl_*.csv`).
+  Pavia Exp 4 retraining done → P9 head-level MET (0.629 vs 0.627; init 0.559) → §9.2, Appendix F
+  results paragraph. Pavia Exp 3 grid at 63/78.
+- 19:25 P15 MET (retrained reversal 0.65–0.70 from κ=1/256 ReLU encoders vs 0.57 κ=1 vs 0.58 random)
+  → all of P12–P15 met; Appendix C subsection complete with tables; §4 sentence in. Exp 2 tooling:
+  registered verdicts pinned to seeds 0–2 (`REG_SEEDS`), PREDICTIONS_allseeds.md for the extension,
+  `EXP2_SEEDS` for added-seed retraining, table generator merges retraining files and excludes nlenc.
+  Build clean: 38 pp, 0 undefined refs, main text ends on p. 9.

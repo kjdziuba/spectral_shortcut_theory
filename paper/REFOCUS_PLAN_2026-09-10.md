@@ -1005,3 +1005,44 @@ O(16) = 0.891. Budget end (40,000 steps; no arm reaches the 0.10 stop;
   reaches 0.5 in budget) and NOT MET at budget end (probe 0.702 < 0.732).
 - **P9**: pending the retraining rerun (the first run crashed on the
   dropped compression arm; loop now skips missing encoders).
+- **P9 (Pavia), recorded 18:20 after the retraining rerun: HEAD-LEVEL
+  MET.** Retrained head on the `nat` encoder: ctx-random 0.629
+  (0.625–0.634; at L* 0.619) vs the `shuf` comparator's 0.627 at budget
+  end (its own retrained head 0.615); random encoder 0.559; κ = 1/256
+  encoder 0.620. Test side: 0.710 (nat) vs 0.699 (shuf), 0.609 (init).
+  The natural-context encoder passes the class information as well as
+  the comparator's; the collapse under context-random evaluation is the
+  head's use of same-class neighbours, exactly as on tissue. Pavia
+  summary: G1 fails (16 PCs suffice per pixel), P8 first clause met,
+  P9 head-level, P11 met, κ not evaluable/not met, encoder not starved,
+  natural context worth +0.25 in distribution.
+
+### 10.1 Registered verdicts, nonlinear encoder (recorded 18:40; 24 runs, all reached L*; retraining for P15 running)
+Readiness of the random two-layer ReLU encoder: spectral-only probe
+0.635 at initialization (linear encoder: 0.64), so the accessibility
+asymmetry is the same. At L* = 0.30 (validation of the paired test
+family):
+- **P12 MET** (6/6): probe gain with informative context +0.022 /
+  +0.003 / +0.001 (M = 8) and +0.016 / +0.008 / +0.020 (M = 128) against
+  the uninformative-context comparator's +0.286 / +0.264 / +0.271 and
+  +0.276 / +0.256 / +0.258.
+- **P13 MET**: reversal accuracy of every informative-context run
+  ≤ 0.128 (all widths, all seeds); comparator ≥ 0.879.
+- **P14 MET** (3/3): probe gain at M = 32 rises from +0.020 / +0.020 /
+  +0.016 (κ = 1) to +0.189 / +0.210 / +0.142 (κ = 1/256); mean reversal
+  change +0.018 (< 0.05).
+- P15: pending (`exp2_recovery.py nl_init nl_kappa1 nl_kappa256`).
+Note for the tables: the collect step now sees the seed-3/4 runs that
+§11 is adding; the REGISTERED Exp 2 verdicts stay on seeds 0–2
+(`PREDICTIONS_3seeds_v1.md`), and `make_tables_exp2.py` must restrict the
+criterion table to seeds 0–2 and report five-seed means separately.
+- **P15 MET** (recorded 19:20; 9 retraining runs, 20,000 steps, none
+  reached the 0.10 target): retrained reversal accuracy from the
+  κ = 1/256 encoders 0.681 / 0.699 / 0.650 vs κ = 1 0.572 / 0.566 / 0.568
+  vs random initialization 0.579 / 0.580 / 0.580 (probe of the frozen
+  encoders 0.78–0.85 vs 0.64–0.66 vs 0.62–0.64). Ordering holds in every
+  seed; the κ = 1 encoders yield no more than random ones. Magnitudes are
+  smaller than for the linear encoder (0.75–0.84 vs 0.54–0.62 there): the
+  fresh linear-readout head extracts less from the ReLU encoder's
+  features within the budget (retraining loss 0.56–0.61 vs 0.67). All
+  four nonlinear-encoder predictions (P12–P15) are met.

@@ -47,7 +47,8 @@ LR = 1e-3
 BUDGET = 20_000
 STOP_LOSS = 0.10
 HEAD_WIDTH = 32
-SEEDS = [0, 1, 2]
+import os
+SEEDS = [int(x) for x in os.environ.get("EXP2_SEEDS", "0 1 2").split()]   # §11: EXP2_SEEDS="3 4" for the added seeds
 ENCODERS = {
     "init":     ("enc_headlr_M32_x1_s{s}.npz", "W0"),
     "kappa1":   ("enc_headlr_M32_x1_s{s}.npz", "W_0.3"),
@@ -65,6 +66,8 @@ def main():
     filt = sys.argv[1:]                                   # optional encoder names; default = the three linear ones
     names = filt or ["init", "kappa1", "kappa256"]
     out_name = "recovery_summary.csv" if not filt else "recovery_summary_" + "_".join(names) + ".csv"
+    if "EXP2_SEEDS" in os.environ:
+        out_name = out_name.replace(".csv", "_seeds" + "_".join(str(x) for x in SEEDS) + ".csv")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tau = float(json.loads(CALIB.read_text())["tau"])
     spec = ProblemSpec(S=S, H=H, W=W, alpha=ALPHA, beta=BETA, tau=tau, sigma=SIGMA)
@@ -81,9 +84,10 @@ def main():
                 print(f"[recovery] seed {s} {name}: missing {path.name}, skipped", flush=True); continue
             if fname.endswith(".pt"):
                 states = torch.load(path)
-                if key not in states:
-                    print(f"[recovery] seed {s} {name}: no state {key!r} in {path.name}, skipped", flush=True); continue
-                enc = MLPEncoder(S, ENC_HIDDEN, K).to(device); enc.load_state_dict(states[key])
+                k = key if key in states else (float(key) if key.replace(".", "", 1).isdigit() and float(key) in states else None)
+                if k is None:
+                    print(f"[recovery] seed {s} {name}: no state {key!r} in {path.name} (keys {list(states)}), skipped", flush=True); continue
+                enc = MLPEncoder(S, ENC_HIDDEN, K).to(device); enc.load_state_dict(states[k])
             else:
                 z = np.load(path)
                 Wenc = torch.from_numpy(z[key]).float().to(device)

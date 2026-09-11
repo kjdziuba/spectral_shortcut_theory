@@ -55,4 +55,25 @@ essentially all per-pixel information available to these classifiers on this sce
 whose bands are strongly correlated. By the registered rule the compression arms are
 dropped here and Stage B runs the usage arms and the no-bottleneck arms.
 
+\paragraph{Stage B results (Tables~\ref{tab:exp4_val_paviau}, \ref{tab:exp4_test_paviau},
+\ref{tab:exp4_recovery_paviau}).} The natural neighbourhoods are as homogeneous as on
+tissue (no patch straddles two labelled classes; $88\%$ of neighbours share the centre
+label), and the outcome matches the tissue result on every registered item. Natural
+context is worth $0.25$ macro-F1 in distribution ($0.840$ against $0.594$ for the
+shuffled comparator), and the natural-context model collapses to $0.144$ under
+context-random evaluation (nine-class chance $0.11$). Its encoder is not starved: the
+probe is $0.732$ against the comparator's $0.722$, from $0.715$ at initialization,
+this scene being in the high-accessibility regime under standardization. A fresh head
+retrained on context-random patches recovers $0.629$ from the natural-context encoder
+against $0.627$ for the comparator and $0.559$ from a random encoder, so the collapse is
+the head's use of same-class neighbours (P9, head-level). The learned twelve-dimensional
+bottleneck equals no bottleneck ($0.840$ against $0.836$ in distribution; $0.627$
+against $0.654$ for the comparators under context-random evaluation; P11). Two
+limitations of the head family are visible here: the $M=32$ ReLU head trained by plain
+gradient descent is a weak nine-class per-pixel classifier (the comparator reaches
+$0.627$ where the per-pixel MLP reaches $0.911$, and the no-bottleneck comparator
+$0.654$), so the second clause of P8 fails, and the slow-head arm ($\kappa=1/256$)
+does not reach any matched-fit threshold within the budget (training loss $0.84$),
+so the rate prediction is not evaluable at matched fit and is not met at budget end.
+
 \input{sections_iclr_v2/appendix_pavia_tables}

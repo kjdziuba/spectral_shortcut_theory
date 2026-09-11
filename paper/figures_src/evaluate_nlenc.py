@@ -41,8 +41,8 @@ L.append("arm & $M$ / $\\kappa$ & step & probe & probe gain & iid & reversed & c
 for arm in ("nlenc", "nlenc_headlr", "nlenc_ctxfree", "nlenc_frozen"):
     a = star[star["arm"] == arm]
     for (w, h), g in a.groupby(["width", "head_mult"]):
-        lab = f"{int(w)}" + ("" if h == 1 else f" / {h:g}")
-        L.append(f"\\texttt{{{arm}}} & {lab} & {ms(g['step'], 0)} & {ms(g['probe_acc'])} & {ms(g['probe_acc_gain'])} & "
+        lab = f"{int(w)}" + ("" if h == 1 else f" / 1/{round(1 / h)}")
+        L.append(f"\\texttt{{{arm.replace(chr(95), chr(92) + chr(95))}}} & {lab} & {ms(g['step'], 0)} & {ms(g['probe_acc'])} & {ms(g['probe_acc_gain'])} & "
                  f"{ms(g['acc_iid'])} & {ms(g['acc_reversed'])} & {ms(g['acc_ctx_random'])} & {ms(g['acc_spec_only'])} ({len(g)}) \\\\")
     if not a.empty:
         L.append("\\midrule")

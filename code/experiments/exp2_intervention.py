@@ -538,7 +538,12 @@ def spearman(x, y) -> float:
     return float(np.corrcoef(xr, yr)[0, 1])
 
 
-def evaluate_predictions(df: pd.DataFrame) -> str:
+REG_SEEDS = (0, 1, 2)   # §11: the registered verdicts are computed on seeds 0-2 only
+
+
+def evaluate_predictions(df: pd.DataFrame, seeds=REG_SEEDS) -> str:
+    if seeds is not None:
+        df = df[df["seed"].isin(seeds)]
     """Pre-registered P1-P5 at L* (REFOCUS_PLAN 4.4). Descriptive; prints a table."""
     d = df[df["threshold"].astype(str) == str(LOSS_STAR)].copy()
     lines = [f"# Pre-registered predictions at L* = {LOSS_STAR}", ""]
@@ -765,7 +770,8 @@ def main():
     if args.collect or args.plot:
         df = collect()
         print(evaluate_predictions(df))
-        (OUT_DIR / "PREDICTIONS.md").write_text(evaluate_predictions(df))
+        (OUT_DIR / "PREDICTIONS.md").write_text(evaluate_predictions(df))            # registered seeds 0-2
+        (OUT_DIR / "PREDICTIONS_allseeds.md").write_text(evaluate_predictions(df, None))  # §11 extension, for the record
         if args.plot:
             plot(df)
         return
