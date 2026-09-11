@@ -1256,3 +1256,8 @@ Nothing was retracted that the artifacts support; nothing was rerun.
 | §9 addendum | §11.1 arithmetic corrected (3/5, 1/5; ≤0.023); "every direction" removed from §4, Appendix C and D (Exp 2 seed 3 has reversal ρ = +0.7). §10.1 "fresh linear-readout head" corrected. Folds remain a pending extension; nothing from them is cited. |
 | Abstract (check d) | Astra's corrected abstract adopted as v4 in `00_abstract.tex` (one clause added: "near the random-encoder baseline"); §13 candidate marked superseded. Registration deadline Sep 18. |
 | Not done (optional per Astra) | Budget/learning-rate sensitivity of recovery; balanced/per-class Pavia metric from saved evaluations; Appendix G trim. |
+
+Applied in commit 06f9b93 (plus this note); `paper/main_iclr_v2.pdf` SHA-256 prefix 58f2319c4d258b36, 42 pages, main text ends
+at the bottom of page 9. For Astra (review 04, when the author asks): "Review-03 corrections applied at commit 06f9b93;
+please check the ledger items against the PDF and the disposition table in plan §15; the five-fold extension is still
+running and is not cited anywhere."
