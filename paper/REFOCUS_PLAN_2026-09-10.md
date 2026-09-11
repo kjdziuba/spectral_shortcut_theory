@@ -1210,3 +1210,12 @@ Main text keeps the registered three-seed numbers; one sentence each in
   vs random init 0.605 / 0.561 → the ordering of §4 holds 5/5 (five-seed
   means 0.789 / 0.583 / 0.578). Exp 2 tables regenerated with five seeds
   (criterion table on seeds 0–2).
+- **Exp 3 retraining, added seeds (recorded 21:55; 18 runs):** ready
+  regime 0.888–0.928 from every encoder (seeds 3–4: init 0.888 / 0.925,
+  κ=1 0.921 / 0.909, κ=1/256 0.926 / 0.928) → "recovers from every
+  encoder" holds 5/5. Unready γ=30: 0.523→0.571→0.593 (s3), 0.472→0.471→
+  0.483 (s4): little recovery from any encoder, κ256 ≥ κ1 in 5/5 but by
+  ≤ 0.02. Unready10 γ=10: κ256 0.755 / 0.621 vs κ1 0.636 / 0.486 vs init
+  0.517 / 0.472 → ordering holds 5/5 (five-seed ranges 0.55–0.76 vs
+  0.48–0.64; the main text keeps the registered three-seed 0.55–0.70 vs
+  0.48–0.60). Exp 3 tables regenerated with five seeds.

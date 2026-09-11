@@ -2439,3 +2439,6 @@ ViT sweep:
 - 21:20 Main text: "two added seeds agree" sentences in §4/§5; page re-fitted (trims in §2 duplicate
   four-measurement list, §4, §5, §6, Fig 4 caption). Note: trims before the theorem block do not help
   the page-9 spill (slack absorbed at the unbreakable statement); pay on pages 7–9.
+- 21:55 Exp 3 added-seed retraining DONE: ready regime recovers 0.89–0.93 from every encoder (5/5);
+  γ=10 ordering κ256 > κ1 5/5; γ=30 little recovery from any encoder. Exp 3 tables regenerated with
+  five seeds; Appendix D seed note. Seed extension (§11) COMPLETE for both experiments.
