@@ -2340,3 +2340,72 @@ ViT sweep:
   Draft cites O'Leary only as the pipeline example; Mueller/Mosig not
   cited (needs a verified reference); inference argument not yet
   explicit -> proposed: 3 sentences in the intro + 1 in the conclusion.
+
+## 2026-09-11 (11:30) — Experiment 4 opened: natural-context usage test (O'Leary/Mosig inference)
+
+- Author question: does the paper answer O'Leary 2026 / Müller 2023 ("insensitive to
+  compression ⇒ spectral dimension redundant")? Current answer is logical only (Exp 3:
+  iid accuracy ties for random vs trained encoder under CONSTRUCTED context). Decided to
+  test the inference with NATURAL 3×3 neighbourhoods, four classes.
+- Found: Exp 3's cache was built from `data_breast_v2_pca23` (rank 23 per core; singular
+  values beyond 23 vanish). A 16-vs-full sweep there would test seven components. Exp 4 uses
+  `data_breast_v2_nodenoising` (same cores, same split file, full rank). Appendix D must
+  disclose the PCA-23 denoising of Exp 3's spectra (ledger item for review 03).
+- Müller et al. 2023 (Analyst 148:5022, doi 10.1039/d3an00166k) is already verified in the
+  tokenization paper's bibliography → the O'Leary/Mosig paragraph is no longer blocked on a
+  reference.
+- Pre-registered §8 in `paper/REFOCUS_PLAN_2026-09-10.md`: Stage A gate G1 (per-pixel gain
+  beyond 16 PCs ≥ 0.02 macro-F1), Stage B arms (nat, nat16, shuf, shuf16, frozen, κ=1/256),
+  predictions P7–P10 with disposition rules. Code `code/experiments/exp4_natural_context.py`
+  (cache + Stage A). Cache build running → `results/exp4/cache_fold0_natural.npz`.
+- Wording note for §6: "We recommend no mitigation" overstates the negative; the supported
+  conditional (readout retraining on decorrelated context recovers where accessible; encoder
+  retraining without informative context recovers otherwise) is the candidate replacement.
+- 12:10 Stage A done: G1 PASSED (per-pixel gain beyond 16 PCs 0.065–0.107 macro-F1 on val AND
+  test, three classifier families). Non-monotonic in k (components 9–16 hurt test). Stage B grid
+  (6 arms × 3 seeds, M = 32) running → results/exp4/stageB_grid.log. Table generator
+  paper/figures_src/make_tables_exp4.py written. Appendix D now discloses PCA-23 denoising.
+- 13:30 Exp 4 Stage B (non-denoised) + retraining DONE; verdicts recorded in plan §8.6: P7 NOT met
+  (natural-context model IS sensitive to PCA-16: iid 0.732 vs 0.657 val), P8 met, P9 head-level
+  (encoder not starved: probes 0.672/0.670, retrained head 0.681 vs comparator 0.688), P10 asymmetry
+  fails (both lose from PCA-16), κ prediction NOT met. Reading: natural 3×3 context is a redundant
+  copy of the spectral cue (no patch straddles classes; 88% same-label neighbours) → no competition
+  → the paper's mechanism does not operate here (scope result, reported as such).
+- O'Leary et al. 2026 verified (abstract via Manchester Research Explorer; code in
+  ~/Projects/avpn/third_party_oleary): the NN "16-feature bottleneck" is a LEARNED 1×1 conv trained
+  end to end (PCA only for classical models); conclusion "tissue classification is characterised by
+  only a small set of spectral features". The author's paraphrase "16 PCA is enough" and the v1
+  triage note "frozen compression" were both wrong. Amendment §8.5: no-bottleneck arms (identity
+  encoder) + P11; running. Denoised-copy replication (§8.4) running (per-pixel MLP ≈ 0.80 val there).
+- Paper: Appendix G (`appendix_exp4.tex` + generated tables) inserted before the scope appendix;
+  `mueller2023dimred` added to references.bib; Appendix D discloses per-core PCA-23 denoising.
+  Main-text sentences (intro related work, §5 pointer, §6 limitation) pending final numbers; page
+  budget must be re-fitted. Astra review-03 prompt to be updated with Exp 4.
+
+## 2026-09-11 (16:15) — Acceptance-boost batch launched (author: "we can do all"; plan in memory)
+- Public replication on Pavia University (§9): data fetched from the HybridSN GitHub mirror (EHU
+  returns 403), 20-px tile split (208/70/70 tiles), caches built by `code/experiments/hsi_data.py`;
+  Exp 3 / Exp 4 scripts gained dataset switches (`EXP3_DATASET=paviau`, `--dataset paviau`).
+  Readiness scan: same two regimes (random K=12 probe 0.850 standardized / 0.667 whitened, oracle
+  0.93/0.955). Stage A gate FAILS on Pavia (gain beyond 16 PCs 0.020 val / 0.009 test) — the
+  opposite of tissue; compression arms dropped there per the rule. Exp 3 grid (78 runs) and Exp 4
+  usage + no-bottleneck grid (18 runs) + retraining RUNNING → results/exp3_paviau/, exp4_paviau/.
+- Tissue: P11 MET (learned 12-dim bottleneck = no bottleneck within 0.012/0.019) → plan §8.7,
+  Appendix G paragraph. Denoised-copy chain relaunched with --skip-existing (identity bypass).
+- Exp 2 nonlinear-encoder arm (§10, P12–P15): MLPEncoder S→64→K, arms nlenc/nlenc_ctxfree/
+  nlenc_headlr/nlenc_frozen; recovery script extended (encstate_*.pt); 24-run grid RUNNING.
+- Seed extension 3→5 (§11): Exp 3 all regimes/arms and Exp 2 all registered arms, seeds 3–4,
+  RUNNING; three-seed summaries backed up as *_3seeds_v1.
+- Five-fold extension (§12): EXP_FOLD switch added; fold 1–4 caches BUILDING (CPU); grids to be
+  launched when the GPU queue drains.
+- Paper: `appendix_pavia.tex` design skeleton written (Appendix H; not yet wired in); Exp 3/Exp 4
+  table generators made dataset-aware. Astra review-03 prompt to be rewritten once Pavia lands.
+- 17:55 Denoised-copy replication done → plan §8.8 (agrees on every verdict; comparator 0.08
+  below the MLP oracle there). Pavia Exp 4 Stage B done → §9.2 (P11 met; encoder not starved;
+  natural context +0.25 iid; the M=32 plain-GD head is a weak nine-class classifier); Pavia
+  retraining rerun after a crash on the dropped compression arm (loop now skips missing encoders).
+- Main-text pass done: intro related work (O'Leary/Müller with the compressibility-vs-redundancy
+  sentence), §5 pointer to natural context, §6 conditional statement replacing "we recommend no
+  mitigation" (and the scope bullet now says "no mitigation is tested on natural context"); trims
+  in §1, §5, §6 and the Fig 1 caption; main text ends at the bottom of page 9 (36 pp, 0 errors).
+  Appendix lettering: E = Exp 4 (natural context), F = Pavia, G = scope, H = audits.

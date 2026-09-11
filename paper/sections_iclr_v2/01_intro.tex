@@ -23,11 +23,11 @@ replicated contextual readout, a faster contextual pathway suppresses the
 encoder's update at matched fit, the fitted model fails under contextual
 reversal under explicit finite-width conditions, and readout normalization
 removes the width dependence (Section~\ref{sec:theorem}). We then measure,
-with interventions on training speed, how each of the four quantities
-responds in a nonlinear convolutional model on synthetic data
-(Section~\ref{sec:synthetic}) and with measured tissue spectra in
-constructed neighbourhoods (Section~\ref{sec:real}), in each case against
-a control that removes the proposed cause.
+with interventions on training speed, how each responds in a nonlinear
+convolutional model on synthetic data (Section~\ref{sec:synthetic}) and
+with measured tissue spectra in constructed neighbourhoods
+(Section~\ref{sec:real}), each against a control that removes the
+proposed cause.
 
 \paragraph{Contributions.}
 \begin{itemize}
@@ -42,32 +42,32 @@ a control that removes the proposed cause.
   and a $M^{-1/2}$-normalized readout removes the width dependence, though
   it need not remove the failure.
 \item \textbf{Synthetic intervention.} In a ReLU convolutional head over a
-  linear encoder, with two cues of matched signal-to-noise ratio but
-  unequal initial accessibility, an informative context suppresses the
-  encoder's spectral learning at matched fit at every width. Slowing the
-  whole head by $256\times$ raises the spectral cue's linear accessibility
-  from $0.66$ to $0.85$, monotonically in every seed, while the trained
-  classifier's reversal accuracy moves from $0.12$ to $0.14$; a normalized
-  readout reduces the suppression at large width; an uninformative context
-  removes it. Retraining a fresh head on decorrelated context from the
-  frozen encoders recovers shifted accuracy of $0.75$--$0.84$ after the
-  slow head and $0.54$--$0.62$ after the fast one, no more than from random
-  encoders.
-\item \textbf{Real spectra.} With measured centre spectra and their
-  recorded labels in constructed neighbourhoods, informative-context arms
-  are strongly context-reliant in both a high- and a low-accessibility
-  regime; in the low-accessibility regime the encoder's adaptation is
-  limited relative to the uninformative-context control, with a small
-  rate response at the larger cue amplitude and a larger one at the
-  smaller amplitude, and more than $99.9\%$ of the net encoder update lies
-  in the constructed-cue span. Where the spectral cue is accessible,
-  retraining the head recovers $0.90$--$0.96$ shifted accuracy from every
-  encoder, a random one included: the failure was in the use of the
-  spectrum, not its availability.
-\item \textbf{Scope.} We report why scalar curvature on a production model
-  does not identify the mechanism and why an earlier apparent freezing
-  advantage was protocol-confounded (Section~\ref{sec:limitations},
-  Appendix~\ref{app:scope}); no mitigation is recommended.
+  linear encoder, with two cues of matched signal-to-noise ratio, an
+  informative context suppresses the encoder's spectral learning at
+  matched fit at every width. Slowing the whole head by $256\times$ raises
+  the spectral cue's linear accessibility from $0.66$ to $0.85$,
+  monotonically in every seed, while the trained classifier's reversal
+  accuracy moves from $0.12$ to $0.14$; a normalized readout reduces the
+  suppression at large width; an uninformative context removes it.
+  Retraining the head on decorrelated context recovers shifted accuracy
+  of $0.75$--$0.84$ after the slow head and $0.54$--$0.62$ after the fast
+  one, no more than from random encoders.
+\item \textbf{Real spectra.} With measured centre spectra in constructed
+  neighbourhoods, informative-context arms are strongly context-reliant
+  in a high- and a low-accessibility regime; in the latter the encoder's
+  adaptation is limited relative to the uninformative-context control,
+  with a rate response that grows as the cue amplitude falls, and more
+  than $99.9\%$ of the net encoder update lies in the constructed-cue
+  span. Where the spectral cue is accessible, retraining the head recovers
+  $0.90$--$0.96$ shifted accuracy from every encoder, a random one
+  included: the failure was in the use of the spectrum, not its
+  availability. With natural neighbourhoods, on tissue and on a public
+  hyperspectral scene, no competition arises (Appendices~\ref{app:exp4}
+  and~\ref{app:pavia}).
+\item \textbf{Scope.} Scalar curvature on a production model does not
+  identify the mechanism, and an earlier apparent freezing advantage was
+  protocol-confounded (Appendix~\ref{app:scope}); no mitigation is tested
+  on natural context.
 \end{itemize}
 
 \paragraph{Related work.}
@@ -81,13 +81,24 @@ be present in a representation while a spurious feature is used, and that
 last-layer retraining can then restore robustness, is the observation of
 \citet{kirichenko2023dfr}; our addition is that the relative training
 rate of the modules at the original fit changes what such retraining can
-recover, measured at matched fit against a control. The mathematics uses
-the balance invariant of gradient flow in layered linear models
-\citep{astra_du2018balance,astra_saxe2014,astra_yun2021} and sits next to
-lazy-training analyses in which a wide component barely moves
-\citep{chizat2019lazy,yang2021tensor}. Curvature and its growth with width
-and normalization \citep{karakida2019universal,vanlaarhoven2017l2} are the
-reason we measure learning outcomes rather than curvature
-(Appendix~\ref{app:scope}); frozen or retrained feature extractors in
-practice \citep{zhang2022layers,coil2025freezing} are the setting, not a
-remedy we evaluate.
+recover, measured at matched fit against a control. In infrared
+histology, insensitivity to a learned sixteen-feature spectral bottleneck
+has been read as showing that tissue classification needs only a small
+set of spectral features \citep{oleary2026spatial}, and CNN classifiers
+are reported insensitive to the compression method
+\citep{mueller2023dimred}.
+Appendix~\ref{app:exp4} tests that reading with natural neighbourhoods: a
+learned twelve-dimensional bottleneck loses nothing, sixteen principal
+components lose $0.07$--$0.11$ macro-F1 per pixel and $0.04$ for the
+spatial model, and the jointly trained encoder learns the class signal
+exactly as it does without informative context; compressibility is not
+redundancy, and a natural $3\times3$ neighbourhood, being the same class
+as its centre, is not the competing cue of the theorem. The mathematics
+uses the balance invariant of gradient flow in layered linear models
+\citep{astra_du2018balance,astra_saxe2014,astra_yun2021} next to
+lazy-training analyses \citep{chizat2019lazy,yang2021tensor}; we measure
+learning outcomes rather than curvature, whose width dependence is
+normalization-driven \citep{karakida2019universal,vanlaarhoven2017l2}
+(Appendix~\ref{app:scope}); freezing in practice
+\citep{zhang2022layers,coil2025freezing} is the setting, not a remedy we
+evaluate.

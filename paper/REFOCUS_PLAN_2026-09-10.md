@@ -519,3 +519,489 @@ Decision (Astra refocus_01 §3, adopted): **3B primary, 3A secondary.**
 3. Draft the "definition of failure" paragraph for v2 §2 (what "reliance on
    context" and "failure under context change" mean operationally, in
    the theorem and in the experiments).
+
+## 8. Experiment 4 — natural context, usage test (design recorded 2026-09-11 ~11:30, BEFORE any Stage B run)
+
+**Why.** The author's motivating question (O'Leary et al. 2026, Anal. Chem.
+98:2743; Müller et al. 2023, Analyst 148:5022, Mosig group) is the
+inference "in-distribution accuracy of a spatial–spectral model is
+insensitive to spectral compression (to ~16 features), therefore the
+spectral dimension is largely redundant". Exp 3 shows the premise of that
+inference holds for a model that uses almost no spectral information
+(random and trained encoders tie in distribution; the model is at chance
+without context) but with CONSTRUCTED context. Exp 4 tests the same
+inference with NATURAL neighbourhoods, four classes (standing rule), on
+the full-rank spectra. It is a usage test, not a mechanism test: no cue
+calibration, no matched-SNR construction, so it does not reopen the
+design argument that led to constructed context in Exp 3.
+
+**Data.** `/mnt/hdd2/u37314kd/data_breast_v2_nodenoising` (full rank;
+the Exp 3 cache came from the PCA-23-denoised copy, whose per-core
+singular values vanish beyond 23 — DISCLOSE in Appendix D). Fold 0,
+patient-level split (115/28/26 cores), identical split file. Natural
+3×3 patches: centre labelled, all nine pixels in the tissue mask,
+neighbours as recorded (labelled or not). Per core per class caps
+150/100/100 (train/val/test), seed 1234. Code
+`code/experiments/exp4_natural_context.py` (cache; Stage A), results
+`results/exp4/`.
+
+### 8.1 Stage A — premise check (a GATE, run first; not a registered prediction)
+Per-pixel classifiers on the CENTRE spectra as a function of the number
+of principal components k ∈ {2,4,8,16,23,32,64,128,256,942} (PCA on
+standardized training centres): shrinkage LDA, balanced logistic
+regression, and a 256-unit ReLU MLP (fixed 40-epoch schedule, three
+seeds, no selection on evaluation patients). Metrics: four-class accuracy,
+macro-F1, per-class F1 on validation and on test patients. Also recorded:
+neighbourhood homogeneity (fraction of patches whose eight neighbours all
+share the centre label).
+
+- **Gate G1:** the best per-pixel classifier at k = 942 exceeds the same
+  classifier at k = 16 by ≥ 0.02 macro-F1 on validation AND on test. If G1
+  passes, the components beyond sixteen carry per-pixel information a
+  classifier can use, and Stage B's compression arms are meaningful.
+- **If G1 fails:** report it as such — on breast QCL fold 0, per-pixel
+  classifiers of these three families do not gain beyond sixteen
+  components — which SUPPORTS the "sixteen suffices" reading for
+  per-pixel information on this data. Stage B then runs only the usage
+  arms (P8, P9), and the O'Leary/Müller paragraph must say the
+  sixteen-component claim was not contradicted here.
+
+### 8.2 Stage B — joint training on natural patches (pre-registered)
+Model as Exp 3: linear encoder 942→12 (or k→12 in compression arms, the
+projection applied to all nine pixels), PatchHead ReLU MLP over the nine
+encoded spectra, width M = 32, four logits, class-weighted mean CE
+(weights ∝ inverse class frequency, normalized to mean one; amended from
+"mean CE" at 11:50, before any registered run, because the per-core caps
+leave the classes unbalanced and Stage A's classifiers are balanced),
+full-batch GD, one
+global rate (Exp 3 defaults), budget 40,000 steps, paired initialization
+within seed; three seeds. Matched fit at L* = 0.30 with a fallback: if any
+arm does not reach 0.30 in budget, the primary comparison is at the
+highest threshold in {0.30, 0.40, 0.50} all arms reach, and budget-end
+values are reported separately and labelled (review-02 rule).
+
+Arms (train side): `nat` natural context; `nat16` natural context, inputs
+projected to the top 16 PCs; `shuf` comparator: neighbours replaced by
+pixels drawn from other training patches independently of the centre
+label (uninformative context, jointly trained); `shuf16`; `frozen`
+random encoder, head trained on `nat`; `nat` with κ = 1/256 (head rate
+multiplier, one extra arm, secondary).
+
+Evaluation (validation patients; test reported separately), each centre
+held fixed: `iid` natural patches; `ctx_random` neighbours replaced by
+pixels from other validation cores with independent labels;
+`homogeneous` all nine pixels = centre (secondary). Probe: LDA on the
+encoder output of centre spectra (accessibility), at init and at L*.
+Recovery: fresh paired-init head retrained on `ctx_random` TRAINING
+patches from the frozen encoder (protocol of exp2_recovery.py, 20,000
+steps), evaluated on `ctx_random` validation. Per-pixel oracle O(k) from
+Stage A is the reference.
+
+Predictions (macro-F1, validation; evaluated at matched fit and at budget
+end):
+- **P7 (their observation reproduced at the patch level):** |iid(`nat`)
+  − iid(`nat16`)| < 0.02. Ceiling caveat registered now: if both exceed
+  0.97 the comparison is uninformative and is reported as such.
+- **P8 (usage):** ctx_random(`nat`) ≤ O(942) − 0.10 while ctx_random
+  (`shuf`) ≥ O(942) − 0.03. (Natural neighbours are almost always
+  same-class, so part of this drop is legitimate noise averaging; P8
+  alone does not establish a shortcut. P9 and P10 carry the claim.)
+- **P9 (where the information stopped):** two registered readings.
+  (a) HEAD-LEVEL: the head retrained on the frozen `nat` encoder reaches
+  ≥ ctx_random(`shuf`) − 0.03 → the encoder passed the centre
+  information and the readout ignored it (Exp 3 high-accessibility
+  pattern). (b) ENCODER-LEVEL: it falls short by > 0.03 while `shuf`
+  itself reaches ≥ O(942) − 0.03 → the jointly trained encoder never
+  learned to pass what the comparator's encoder learned (the theorem's
+  suppression, now with natural context). Either is "unused, not
+  unnecessary". The outcome that supports the redundancy reading is
+  ctx_random(`shuf`) ≈ ctx_random(`shuf16`) together with a failed G1.
+- **P10 (compression asymmetry, only if G1 passes):** the comparator is
+  sensitive where the natural-context model is not: iid(`shuf`) −
+  iid(`shuf16`) ≥ 0.6 × [O(942) − O(16)], while P7 holds for `nat`.
+  Equivalently, the components beyond sixteen are exploited only when the
+  context cannot be leaned on.
+- **Secondary (κ = 1/256):** probe gain and recovered macro-F1 of `nat`
+  at κ = 1/256 exceed those at κ = 1 in every seed (as Exp 2/3).
+
+Disposition rules: P7+P10 met → the paper states, as an empirical claim on
+real tissue, that a spatial–spectral model's insensitivity to spectral
+compression coexists with usable, recoverable information beyond sixteen
+components. P7 met, P10 not met, G1 passed → the joint model and the
+comparator are both insensitive; report that the K = 12 bottleneck or the
+head family does not exploit the fine components, and keep the paragraph
+logical, not empirical. P7 not met → O'Leary's observation does not
+reproduce at 3×3; report as a scale limitation. Nothing is dropped;
+whatever the verdict, Stage A and B numbers go to Appendix G.
+
+### 8.3 Stage A outcome (recorded 2026-09-11 ~12:10; Stage B grid launched at 12:00, before this was read)
+Cache: 19,650 / 3,700 / 2,700 natural 3×3 patches (train/val/test) from
+79 / 20 / 16 labelled cores (54 of the 169 cores carry no label of the four
+classes in either data copy). Neighbourhood homogeneity: no 3×3 patch
+straddles two labelled classes (0.0%); 88% of neighbours share the centre
+label, 12% are unlabelled. Natural 3×3 context is therefore redundancy of
+the centre's class signal, not a separate cue. Top 16 PCs carry 81.7% of
+the standardized variance (23: 86.5%; 64: 97.7%).
+
+**G1 PASSED.** Per-pixel macro-F1 at k = 16 → 942 (validation / test):
+LDA 0.560→0.651 / 0.538→0.645; logistic 0.595→0.673 / 0.571→0.658;
+MLP 0.640→0.705 / 0.594→0.677. Gains 0.065–0.107 on both sides, all
+≥ 0.02. Also recorded: the best k is 128 (MLP val 0.717); k = 23 (the
+field's PCA-denoising rank) gives 0.654 (MLP val), so the standard
+denoising itself discards per-pixel-usable information here; and
+components 9–16 reduce TEST macro-F1 for all three classifiers (k = 8 →
+16: LDA 0.596→0.538, MLP 0.621→0.594) before later components recover
+it — a non-monotonicity to report, not hide. Stage B's compression arms
+are meaningful; P10 is live. Single fold, three classifier families,
+patient-level split; no claim about other cohorts.
+
+### 8.3a Correction to 8.3 (recorded 12:25): the denoising remark was wrong
+The same per-pixel sweep on the PCA-23-DENOISED copy (Exp 3's four-class
+cache, 20,000 training pixels; per-core denoising, so the pooled data are
+NOT rank 23 — singular values 22–25 are 0.11–0.12 of the largest):
+MLP macro-F1 (val / test) k = 8: 0.598 / 0.606; 16: 0.670 / 0.637;
+23: 0.710 / 0.697; 64: 0.783 / 0.782; LDA 16 → 64: 0.550 → 0.690 /
+0.541 → 0.692. So (i) per-core denoising IMPROVES per-pixel
+classification (0.783 vs 0.705 at the best k) — the 8.3 sentence "the
+standard denoising itself discards per-pixel-usable information" is
+withdrawn; (ii) G1 holds on the denoised copy too, and more strongly
+(+0.113 MLP val from 16 to 64 global components), because per-core
+subspaces differ and the pooled data need more than 23 global
+components. Consequence: a replication of Stage B on the denoised copy
+(the field-standard preprocessing, closer to O'Leary's pipeline) is
+worth running with the same arms and predictions — see 8.4 if launched.
+
+### 8.4 Replication on the PCA-23-denoised copy (pre-registered 12:40, before its cache or any run)
+Same cores, split, sampling caps, seed, model, arms, budget, evaluation
+conditions, recovery protocol and predictions P7–P10 as 8.2, with the
+data copy switched to `data_breast_v2_pca23` (the companion pipeline's
+field-standard preprocessing; per-core PCA denoising to 23 components).
+Rationale (8.3a): per-pixel classification is stronger on this copy and
+the gain beyond 16 global components is larger, so it is the copy on
+which the O'Leary/Müller inference is best tested. Code: `--copy pca23`
+in `exp4_natural_context.py` and `exp4_train.py`; results
+`results/exp4_pca23/`. The non-denoised results of 8.2 remain the
+primary pre-registered set; agreement between the copies is reported
+as such, disagreement is reported as a preprocessing dependence.
+Stage A on this copy is re-run with the same script for the table
+(the 8.3a numbers came from Exp 3's pixel cache with a 20,000-pixel
+subsample and one MLP seed).
+
+### 8.5 Amendment (recorded 12:55, before these arms run): what O'Leary et al. actually varied
+Verified from the abstract (Manchester Research Explorer) and the authors'
+code (`~/Projects/avpn/third_party_oleary/src/{models,utils}.py`): the
+neural-network "spectral bottleneck of just 16 features" is a LEARNED
+1×1 convolution (BatchNorm → Conv2d(input_dim, 16, 1) → BatchNorm)
+trained end to end with the model, compared against "fixed" = no
+reduction (BatchNorm only); PCA bottlenecks are used only for the
+classical models. Their stated conclusion: "tissue classification itself
+is characterised by only a small set of spectral features", plus a strong
+correlation between spatial receptive field and performance. So the
+author's paraphrase "16 PCA or less is enough" and the v1 triage note
+"frozen compression, not joint training" are both inaccurate: it is a
+learned, jointly trained bottleneck. Consequences for Exp 4:
+- Stage A (PCA-k) tests the paraphrase, not their claim; P10's contrast
+  (`nat16` vs `nat`) is a PCA contrast.
+- The exact analogue of their comparison is a learned K-dim bottleneck
+  (`nat`, K = 12) versus NO bottleneck. New arms `natfull` and `shuffull`:
+  identity encoder (frozen), head over the nine raw standardized spectra
+  (9 × 942 → M = 32 → 4). Three seeds, same budget and evaluation.
+- **P11 (their observation in its own form):** |iid(`nat`) −
+  iid(`natfull`)| < 0.02 at budget end, and |ctx_random(`shuf`) −
+  ctx_random(`shuffull`)| < 0.03: a learned 12-dim linear bottleneck
+  loses nothing relative to no bottleneck. If met together with G1
+  (PCA-16 loses 0.07–0.11), the paper can state the distinction that
+  answers the author's question: the class information is low-dimensional
+  as a LEARNED linear subspace (which any discriminant is, for four
+  classes), not as a small number of principal components; a small learned
+  bottleneck draws on the whole spectrum, so "a small set of spectral
+  features" is a compressibility statement, not evidence that the spectral
+  dimension is redundant.
+
+### 8.6 Registered verdicts, non-denoised copy (recorded 13:05; Stage B 18 runs + 13 retraining runs; validation macro-F1, mean over three seeds, budget end = 40,000 steps unless stated)
+Matched-fit rule: no threshold in {0.30, 0.40, 0.50} is reached by every
+arm (`frozen` floors at loss ≈ 0.61, `shuf16` at ≈ 0.53; capacity, not
+budget), so the PRIMARY comparison is budget end, with matched values at
+0.5 (nat, nat16, headlr, shuf) and 0.4 (nat, shuf) reported alongside.
+Per-pixel reference O(942) = 0.705 (MLP), O(16) = 0.640.
+
+| arm | loss | probe (init 0.52) | iid | ctx-random | homogeneous | retrained head, ctx-random |
+|---|---|---|---|---|---|---|
+| nat | 0.19 | 0.672 | 0.732 | 0.234 | 0.705 | 0.681 (from init 0.494) |
+| nat16 | 0.42 | 0.574 | 0.657 | 0.201 | 0.620 | 0.594 |
+| shuf | 0.34 | 0.670 | 0.652 | 0.680 | 0.648 | 0.688 |
+| shuf16 | 0.53 | 0.557 | 0.541 | 0.583 | 0.540 | — |
+| frozen | 0.63 | 0.521 | 0.576 | 0.263 | 0.540 | — |
+| headlr κ=1/256 | 0.49 | 0.619 | 0.646 | 0.305 | 0.630 | 0.644 |
+
+- **P7 NOT MET** at budget end: iid nat 0.732 vs nat16 0.657 (Δ +0.075;
+  test 0.652 vs 0.611, +0.041): the natural-context model is SENSITIVE
+  to PCA-16 compression. At matched loss 0.5 it is not (0.643 vs 0.636),
+  because the full-spectrum model keeps fitting (0.19) where PCA-16
+  plateaus (0.42). Ceiling caveat not triggered.
+- **P8 MET**: ctx-random nat 0.234 ≤ 0.605; shuf 0.680 ≥ 0.675 (marginal).
+- **P9 reading (a), HEAD-LEVEL, MET**: retrained head on the nat encoder
+  0.681 vs shuf 0.680; probes equal (0.672 / 0.670). The encoder is not
+  starved: with natural context it learns the class signal exactly as
+  without. A random K = 12 encoder retains much less (0.494 after
+  retraining), so the bottleneck must be LEARNED to keep the information.
+- **P10 MET numerically** (shuf − shuf16 = 0.111 ≥ 0.039) but the
+  asymmetry reading FAILS because P7 is not met: BOTH the comparator and
+  the natural-context model lose from PCA-16.
+- **Secondary (κ = 1/256) NOT MET**: probe 0.619 < 0.672, recovery 0.644
+  < 0.681; at matched 0.5, 0.616 vs 0.632. Slowing the head buys nothing
+  when the context is a redundant copy of the spectral cue.
+- Disposition (8.2 rules): "P7 not met → O'Leary's observation does not
+  reproduce at 3×3" — superseded in part by 8.5: their observation is
+  about a LEARNED bottleneck, tested by P11 (`natfull`/`shuffull`,
+  running). What stands: natural 3×3 context is redundancy of the centre's
+  class signal (8.3), so the paper's competition mechanism does not
+  operate here — the encoder learns equally, the model uses the full
+  spectrum, and its collapse under context-random is the head's use of
+  same-class neighbours. Report as a scope result: the competition needs a
+  contextual cue that is not the spectral cue replicated (larger receptive
+  fields, morphology), which Exp 4 does not test.
+
+## 9. Public hyperspectral replication of Experiments 3 and 4 (pre-registered 2026-09-11 14:40, before any cache-dependent run)
+
+**Why.** The closest accepted papers (Gradient Starvation, NeurIPS 2021;
+Modality Competition, ICML 2022; DFR, ICLR 2023) each rest on a
+nonlinear-network theorem, a method, or public benchmarks; our real data
+are private. A public scene lets a reviewer rerun Exp 3 (constructed
+context, mechanism) and Exp 4 (natural context, usage) end to end.
+
+**Scene.** ROSIS Pavia University (610×340×103, nine classes, 42,776
+labelled pixels; `.mat` files as distributed by the EHU scenes page,
+fetched from the HybridSN GitHub mirror; SHA-256 prefixes PaviaU
+28447fa8, PaviaU_gt 23f6a426). Indian Pines (145×145×200, 16 classes)
+is downloaded and is a second scene only if time allows.
+
+**Spatial split (patient analogue).** 20×20-pixel tiles, assigned at
+random (seed 0, first feasible attempt = 0) to train/val/test in the
+proportion 0.6/0.2/0.2 (208/70/70 labelled tiles), with every class
+having ≥ 60 admissible pixels per split; a pixel is admissible only if
+its whole 3×3 neighbourhood lies inside its tile. Per tile and class, up
+to 400/200/200 pixels (train/val/test), seed 1234. Residual spatial
+autocorrelation across tile borders is stated as a limitation. Code
+`code/experiments/hsi_data.py`; caches `results/exp3_paviau/`,
+`results/exp4_paviau/`.
+
+**Preprocessing.** Counts cast to float; per-feature standardization and
+PCA fitted on the training split by the experiment code (ready =
+standardized, unready = PCA-whitened with the Exp 3 ridge); no per-pixel
+normalization, denoising or derivatives (the IR pipeline is
+domain-specific and has no analogue here).
+
+**Exp 3 analogue.** Binary pair fixed now: **Meadows (+1) versus Trees
+(−1)** (the two largest vegetation classes, a standard confusion in this
+scene; 8,347 / 1,322 admissible training pixels). Secondary pair if time:
+Gravel versus Self-Blocking Bricks. Sizes scaled to the pair: up to 2,400
+balanced training patches, 400 probe-fit pixels, evaluation on all
+validation and test pixels of the pair (≤ 6,000). Everything else as
+§5 / Appendix D: readiness scan (descriptive, run first), two regimes if
+the scan shows the same accessibility asymmetry (standardized random-
+encoder probe high, whitened low; the rule is the §5 rule), eight cue
+directions, τ calibrated per regime to the centre-only discriminant,
+arms sp {8, 32, 128, 512}, headlr κ ∈ {1, 1/16, 1/256} at M = 32,
+ctxfree {8, 128}, frozen 32, three seeds, L* = 0.30, paired conditions,
+retraining protocol. Predictions: those of §4.4/§5 as amended (P1–P6 read
+with Astra's interpretation rules), evaluated exactly as in §4.4d and
+Appendix C/D. In particular: informative context suppresses the
+encoder's probe gain relative to ctxfree at L* in the unready regime;
+reversal accuracy of informative-context arms is far below ctxfree's;
+slowing the head raises the probe gain monotonically in κ within seeds
+but does not remove the reversal failure; retraining recovers more from
+slow-head encoders than fast-head ones where the cue is accessible.
+
+**Exp 4 analogue.** All nine classes, macro-F1; Stage A gate G1 and Stage
+B arms, predictions P7–P11 and disposition rules exactly as §8.1, §8.2,
+§8.5 (k ∈ {2,4,8,16,23,32,64,103}; no second data copy). The registered
+expectation from Exp 4 on tissue is carried over as a prediction here:
+natural 3×3 context is redundancy of the centre's class signal, so P7
+is expected NOT to be met, P8 met, P9 head-level, the κ prediction not
+met, and P11 met; if instead P7 is met and P10 holds, the scene differs
+from the tissue result and both are reported.
+
+Disposition: nothing is dropped; results go to Appendix H with two
+sentences in the main text (one in §5, one in §6).
+
+### 8.7 P11 verdict, non-denoised copy (recorded 15:05; `natfull`/`shuffull`, three seeds, budget end)
+**P11 MET.** iid macro-F1: natural context with the learned 12-dim
+bottleneck 0.732 (0.723–0.741) vs no bottleneck 0.744 (0.739–0.749),
+|Δ| = 0.012 < 0.02 (test 0.652 vs 0.667); context-random: shuffled
+comparator 0.680 vs no bottleneck 0.661, |Δ| = 0.019 < 0.03 (test 0.628
+vs 0.616). The no-bottleneck model reaches training loss 0.10 by
+29,000–31,000 steps where the bottleneck model is at 0.19 at budget end,
+so the equality is not a fitting artefact. Together with G1 (PCA-16
+loses 0.065–0.107 per pixel) and P7-not-met (the spatial model loses
+0.04–0.08 from PCA-16), the distinction of 8.5 is established on this
+data: the class signal is low-dimensional as a LEARNED linear subspace
+and not as a small number of principal components; a learned bottleneck
+draws on the whole spectrum, so compressibility is not redundancy.
+
+### 9.1 Pavia descriptive stages (recorded 15:20, before any registered run)
+Readiness scan (`results/exp3_paviau/readiness_scan.csv`), Meadows vs
+Trees: standardized oracle 0.933, random K = 12 probe 0.850 [0.836,
+0.875]; whitened oracle 0.955, random K = 12 probe 0.667 [0.623, 0.702];
+|cos(contrast, v1)| = 0.91. The §5 rule gives the same two regimes as on
+tissue (ready = standardized, unready = whitened), with a smaller
+asymmetry than breast (0.955 vs 0.54 there). Other pairs scanned for the
+record: Gravel–Bricks 0.780/0.612, Asphalt–Bricks 0.922/0.650,
+Meadows–BareSoil 0.837/0.729 (standardized/whitened K = 12 random probe).
+
+**Stage A, G1 FAILS on Pavia.** Per-pixel macro-F1 (nine classes) at
+k = 16 → 103, validation / test: LDA 0.767→0.781 / 0.742→0.759;
+logistic 0.816→0.830 / 0.831→0.841; MLP 0.891→0.911 / 0.876→0.885. The
+best gain is 0.020 on validation and 0.009 on test, below the 0.02
+threshold on the test side. On this scene sixteen principal components
+carry essentially all per-pixel information available to these
+classifiers — the OPPOSITE of the tissue result (0.065–0.107), to be
+reported as such (ROSIS bands are strongly correlated; 16 PCs carry
+most of the variance). Disposition per §8.1: the compression arms
+`nat16`/`shuf16` are dropped on Pavia; Stage B runs the usage arms
+`nat`, `shuf`, `frozen`, `headlr` and the no-bottleneck arms
+`natfull`/`shuffull` (P8, P9, secondary κ, P11).
+
+## 10. Experiment 2, nonlinear-encoder arm (pre-registered 2026-09-11 15:50, before any run)
+
+**Why.** Every experiment so far has a linear encoder; the most predictable
+reviewer question is whether the suppression, the reliance and the rate
+response survive a nonlinear one.
+
+**Design.** Encoder = two-layer ReLU network S → 64 → K (fc1 N(0, 1/S)
+with zero bias, fc2 N(0, 1/64)); everything else as §4 (same generator,
+calibration τ, heads, one global rate, L* = 0.30, paired conditions,
+three seeds). Arms: `nlenc` informative context at M ∈ {8, 32, 128, 512};
+`nlenc_ctxfree` uninformative context at M ∈ {8, 128}; `nlenc_headlr`
+κ = 1/256 at M = 32; `nlenc_frozen` random encoder at M = 32. The linear
+alignment measures (a_u, h_u) are undefined for this encoder and are
+recorded as NaN; the probe (LDA on encoder output of spectral-only
+data), the paired shifted accuracies and the retraining protocol
+(exp2_recovery.py, encoders nl_init / nl_kappa1 / nl_kappa256, 20,000
+steps on fresh context-random images, paired head initialization) carry
+the claims. Readiness of the random nonlinear encoder is recorded at
+initialization (not tuned). Code: `exp2_intervention.py` (MLPEncoder,
+ENC_HIDDEN = 64, arms), `exp2_recovery.py`.
+
+**Predictions (validation of the same claims as §4.4/§4.4b, evaluated at
+L* unless stated):**
+- **P12 (suppression persists):** probe gain of `nlenc` is below that of
+  `nlenc_ctxfree` at M = 8 and M = 128 in every seed.
+- **P13 (reliance persists):** reversal accuracy of `nlenc` ≤ 0.5 at
+  every width and seed; `nlenc_ctxfree` ≥ 0.75.
+- **P14 (rate response persists):** probe gain at κ = 1/256 exceeds that
+  at κ = 1 (M = 32) in every seed, while mean reversal accuracy changes
+  by less than 0.05.
+- **P15 (recovery ordering persists):** retrained reversal accuracy from
+  the κ = 1/256 encoder exceeds that from the κ = 1 encoder in every
+  seed, and the κ = 1 encoder yields no more than the random encoder
+  plus 0.05.
+Disposition: nothing dropped; results go to Appendix C with one clause in
+§4 ("with a two-layer ReLU encoder the same pattern holds / does not
+hold"), stating whichever the verdicts support.
+
+## 11. Seed extension 3 → 5 for Experiments 2 and 3 (pre-registered 2026-09-11 16:00, before any seed-3/4 run)
+Seeds 3 and 4 are added to every registered cell of Exp 2 (sp, mup,
+ctxfree, headlr, lrmult, frozen) and Exp 3 (all three regimes, all
+arms). Rule: the REGISTERED verdicts (§4.4d, §5 amendments) remain those
+computed on seeds 0–2 and are not recomputed; the five-seed means and
+spreads are reported alongside as a robustness extension, and any
+prediction whose direction fails to hold in the added seeds is reported
+as such (per-seed tables). The three-seed summaries are preserved as
+`results/exp2/PREDICTIONS_3seeds_v1.md`, `results/exp2_summary_3seeds_v1.csv`,
+`results/exp3_summary_3seeds_v1.csv`. Recovery runs for the added seeds
+follow the same protocols.
+
+## 12. Five-fold extension of Experiments 3 and 4 on tissue (pre-registered 2026-09-11 16:10, before any fold-1..4 run)
+Folds 1–4 of the companion's five-fold patient-level split
+(`splits_fold{1..4}.json`, same cores, one core per patient) are run with
+exactly the fold-0 protocols: Exp 3 (three regimes, all arms, seeds 0–2,
+per-fold calibration of τ and per-fold preprocessing, per-fold readiness
+recorded), Exp 4 Stage A and Stage B (non-denoised copy, usage arms and
+compression arms, seeds 0–2) and both retraining protocols. Rule: fold 0
+remains the registered fold; the registered verdicts are not recomputed.
+The five-fold values give the patient-split variation of every reported
+contrast (mean and range over folds), and any contrast whose sign is not
+the same in all five folds is reported as fold-dependent. Code: the
+`EXP_FOLD` environment switch in `exp3_real_context.py` and
+`exp4_natural_context.py`; results `results/exp3_fold{f}/`,
+`results/exp4_fold{f}/`. Nothing is dropped.
+
+### 8.8 Registered verdicts, PCA-23-denoised copy (8.4 replication; recorded 17:10; 24 runs + 16 retraining runs; validation macro-F1, three seeds)
+Stage A on the patch cache: G1 PASSES more strongly than on the
+non-denoised copy: k = 16 → 942, validation / test: LDA 0.574→0.695 /
+0.543→0.807; logistic 0.598→0.773 / 0.586→0.858; MLP 0.665→0.804 /
+0.634→0.883 (test patients are easier than validation on this copy).
+Stage B at budget end (nat, natfull, shuffull reach the 0.10 stop; nat16
+and headlr plateau at 0.37, shuf16 at 0.52, frozen at 0.52):
+
+| arm | probe (init 0.53) | iid | ctx-random | test iid | retrained head, ctx-random |
+|---|---|---|---|---|---|
+| nat | 0.671 | 0.727 | 0.274 | 0.839 | 0.706 (from init 0.503) |
+| nat16 | 0.582 | 0.683 | 0.187 | 0.640 | 0.595 |
+| natfull | 0.756* | 0.744 | 0.280 | 0.802 | — |
+| shuf | 0.676 | 0.703 | 0.722 | 0.763 | 0.720 |
+| shuf16 | 0.569 | 0.564 | 0.588 | 0.556 | — |
+| shuffull | 0.756* | 0.717 | 0.715 | 0.755 | — |
+| frozen | 0.529 | 0.594 | 0.261 | 0.638 | — |
+| headlr κ=1/256 | 0.683 | 0.697 | 0.299 | 0.678 | 0.702 |
+(* the identity encoder's probe is a 942-dim discriminant.)
+
+- **P7 NOT MET** (as on the other copy): iid nat 0.727 vs nat16 0.683,
+  Δ 0.044 in every seed (test 0.839 vs 0.640); at matched loss 0.5 and
+  0.4 the two are within 0.011.
+- **P8 first clause MET** (nat 0.274 ≤ 0.704), **second clause NOT MET**:
+  shuf 0.722 < O(942) − 0.03 = 0.774. The jointly trained M = 32 head
+  with plain GD stays 0.08 below the per-pixel MLP oracle on this copy
+  (and so does the no-bottleneck comparator, 0.715), so this is the head
+  family / optimizer, not the bottleneck.
+- **P9 HEAD-LEVEL MET**: retrained 0.706–0.712 ≥ 0.722 − 0.03; probes
+  equal (0.671 / 0.676); random encoder 0.503.
+- **P10 numerically MET** (shuf − shuf16 = 0.139 ≥ 0.083) but the
+  asymmetry reading FAILS again (P7 not met).
+- **P11 MET on validation**: |0.727 − 0.744| = 0.017; |0.722 − 0.715| =
+  0.007. On test the bottleneck model is 0.037 ABOVE the no-bottleneck
+  one (0.839 vs 0.802) — reported, not registered.
+- **Secondary κ NOT MET**: probe 0.683 vs 0.671 (2/3 seeds higher, one
+  lower); retrained 0.702 vs 0.706.
+Conclusion: the two preprocessing copies agree on every registered
+verdict; the denoised copy shows larger per-pixel gains beyond sixteen
+components and a larger test-side compression effect for the spatial
+model (0.20).
+
+### 9.2 Pavia Exp 4 analogue, Stage B verdicts (recorded 17:40; 18 runs; nine-class validation macro-F1, three seeds; retraining pending a rerun)
+Neighbourhood homogeneity and per-pixel reference: O(103) = 0.911 (MLP),
+O(16) = 0.891. Budget end (40,000 steps; no arm reaches the 0.10 stop;
+`nat`/`natfull` reach 0.3, `shuf`/`shuffull`/`frozen` only 0.5, `headlr`
+κ = 1/256 stays at loss 0.84, i.e. barely trained):
+
+| arm | probe (init 0.715) | iid | ctx-random | homogeneous | test iid |
+|---|---|---|---|---|---|
+| nat | 0.732 | 0.840 | 0.144 | 0.728 | 0.847 |
+| natfull | 0.790* | 0.836 | 0.152 | 0.740 | 0.871 |
+| shuf | 0.722 | 0.594 | 0.627 | 0.599 | 0.688 |
+| shuffull | 0.790* | 0.648 | 0.654 | 0.651 | 0.735 |
+| frozen | 0.715 | 0.703 | 0.169 | 0.668 | 0.785 |
+| headlr κ=1/256 | 0.702 | 0.512 | 0.090 | 0.532 | 0.547 |
+(* identity encoder: 103-dim discriminant.)
+
+- **P7**: not evaluated (compression arms dropped by the 8.1 rule after
+  G1 failed).
+- **P8 first clause MET** (nat 0.144 ≤ 0.811; nine-class chance ≈ 0.11),
+  **second clause NOT MET**: shuf 0.627 ≪ 0.881. The M = 32 head with
+  plain GD is a weak nine-class per-pixel classifier here (loss 0.49 at
+  budget end; the no-bottleneck comparator 0.654), so the within-family
+  comparison (P9) carries the usage claim, not the oracle comparison.
+- **Natural context helps a lot on Pavia**: iid 0.840 (nat) vs 0.594
+  (shuf): the same-class neighbours (homogeneity to be read from
+  neighbourhood_stats.json) raise accuracy by 0.25 in distribution —
+  larger than on tissue (0.08).
+- **Encoder not starved** (as on tissue): probes 0.732 (nat) vs 0.722
+  (shuf), from 0.715 at init — the standardized inputs put this scene in
+  the high-accessibility regime, where the linear bottleneck barely needs
+  to move.
+- **P11 MET**: |0.840 − 0.836| = 0.004; |0.627 − 0.654| = 0.027 < 0.03.
+- **Secondary κ NOT EVALUABLE at matched fit** (the κ = 1/256 arm never
+  reaches 0.5 in budget) and NOT MET at budget end (probe 0.702 < 0.732).
+- **P9**: pending the retraining rerun (the first run crashed on the
+  dropped compression arm; loop now skips missing encoders).

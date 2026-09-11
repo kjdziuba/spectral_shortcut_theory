@@ -1,0 +1,132 @@
+% Appendix G: Experiment 4 (natural context, usage test). Written 2026-09-11 from
+% code/experiments/exp4_natural_context.py, exp4_train.py, results/exp4*/ and
+% REFOCUS_PLAN_2026-09-10.md section 8 (pre-registration, amendments 8.3a, 8.4, 8.5).
+
+\subsection{Purpose and registration}
+Experiment~4 tests, with natural neighbourhoods, the inference that motivated this
+work: that a spatial--spectral model's insensitivity to spectral compression shows the
+spectral dimension to be largely redundant \citep{oleary2026spatial,mueller2023dimred}.
+It is a usage test, not a mechanism test: no cue is constructed or calibrated. Its
+predictions, arms and disposition rules were fixed before the first run and are
+reproduced in the pre-registration file; two amendments were recorded before the
+arms they concern were run (the class-weighted loss, and the no-bottleneck arms
+added after the authors' code was checked). Every registered outcome is reported,
+including the ones that failed.
+
+\subsection{Data and natural patches}
+The cores, patient-level fold-0 split and four classes are those of
+Appendix~\ref{app:exp3}. Two copies of the spectra are used: the non-denoised copy
+(full rank; the pre-registered primary set) and the companion pipeline's
+PCA-23-denoised copy (the field-standard preprocessing, closer to the pipeline of
+\citet{oleary2026spatial}; a replication with identical arms and predictions,
+registered before its cache was built). A patch is a labelled centre pixel with its
+eight recorded neighbours, all nine inside the tissue mask; neighbours keep their own
+labels or lack of one. Per core and class, up to $150$ (training) or $100$
+(validation, test) patches were sampled with a fixed seed: $19{,}650$ training patches
+from $79$ cores, $3{,}700$ validation from $20$, $2{,}700$ test from $16$ ($54$ cores
+carry no label of the four classes). The neighbourhoods are homogeneous: no patch
+contains a neighbour of a different labelled class, $88\%$ of neighbours share the
+centre's label and $12\%$ are unlabelled. Natural $3\times3$ context on this data is
+therefore a redundant copy of the centre's class signal, not a separate cue.
+
+\subsection{Stage A: per-pixel information against the number of components}
+On the standardized centre spectra, with PCA fitted on training patients, three
+per-pixel classifiers were fitted on training centres for each number of components
+$k$ and scored on validation and test patients: a shrinkage Fisher discriminant,
+balanced logistic regression and a $256$-unit ReLU MLP with a fixed $40$-epoch
+schedule and three seeds, with no selection on the evaluation patients
+(Tables~\ref{tab:exp4_pixel_nodenoise} and~\ref{tab:exp4_pixel_pca23}). The
+registered gate was a gain of at least $0.02$ macro-F1 from $k=16$ to the full
+spectrum on both evaluation sides. On the non-denoised copy the gains are
+$0.065$--$0.107$ (LDA $0.560\to0.651$ validation, $0.538\to0.645$ test; logistic
+$0.595\to0.673$, $0.571\to0.658$; MLP $0.640\to0.705$, $0.594\to0.677$). The
+dependence on $k$ is not monotone: components $9$--$16$ lower test macro-F1 for all
+three classifiers before later components recover it, and the best MLP value is at
+$k=128$ ($0.717$ validation). Sixteen principal components are therefore not enough for
+per-pixel classification of these spectra by these classifiers. The top $16$
+components carry $81.7\%$ of the standardized variance ($23$: $86.5\%$; $64$:
+$97.7\%$).
+
+\subsection{Stage B: joint training on natural patches}
+The model is that of Experiment~3 with four logits: linear encoder $942\to12$ (or
+$k\to12$ in the compression arms, the projection applied to all nine pixels), ReLU
+patch head of width $M=32$, class-weighted mean cross-entropy (weights proportional to
+inverse class frequency, normalized to mean one), full-batch plain gradient descent
+with one global rate $10^{-3}$, a budget of $40{,}000$ steps, paired initialization
+within seed, three seeds. Arms: \emph{natural} context; \emph{natural, 16 PCs}
+(inputs projected onto the top $16$ training-centre principal directions);
+\emph{shuffled} (the eight neighbours replaced by random training centres drawn
+independently of the centre label: the uninformative-context comparator, jointly
+trained); \emph{shuffled, 16 PCs}; \emph{frozen} (random encoder, head trained on
+natural patches); \emph{natural, $\kappa=1/256$} (whole-head rate multiplier); and,
+under amendment 8.5, \emph{no bottleneck} (identity encoder; the head reads the nine
+raw standardized spectra) with natural and with shuffled context, the analogue of the
+``fixed'' models of \citet{oleary2026spatial}. Evaluation on validation patients (test
+reported separately), each centre held fixed: \emph{iid} natural patches;
+\emph{context-random} (neighbours replaced by random centres from other cores of the
+same side, independent labels); \emph{homogeneous} (all nine pixels equal to the
+centre). The probe is a four-class discriminant on the encoder output of centre
+spectra, fitted on $4{,}000$ held-out training centres. Retraining follows the
+protocol of Section~\ref{sec:synthetic}: a fresh paired-initialization head trained
+for $20{,}000$ steps on context-random training patches from a frozen saved encoder,
+scored under context-random evaluation. Because the frozen and 16-component arms
+plateau above every registered matched-fit threshold (loss $0.61$ and $0.53$
+respectively), the registered fallback applies and the primary comparison is at
+budget end; matched values at loss $0.5$ are given in the tables.
+
+\paragraph{Results, non-denoised copy (Tables~\ref{tab:exp4_val_nodenoise},
+\ref{tab:exp4_test_nodenoise}, \ref{tab:exp4_recovery_nodenoise}).}
+\emph{P7, insensitivity of the natural-context model to PCA-16 compression: not
+met.} At budget end the natural-context model scores $0.732$ macro-F1 in distribution
+with the full spectrum and $0.657$ with $16$ components on validation patients
+($0.652$ and $0.611$ on test); the full-spectrum model keeps fitting (loss $0.19$)
+where the compressed one plateaus ($0.42$). At matched loss $0.5$ the two are
+indistinguishable ($0.643$ and $0.636$). \emph{P8, reliance on the neighbourhood:
+met.} Under context-random evaluation the natural-context model falls to $0.234$
+against $0.680$ for the shuffled comparator and $0.705$ for the per-pixel MLP.
+\emph{P9, where the information stopped: head-level.} The retrained head recovers
+$0.681$ from the natural-context encoder against $0.688$ from the comparator's, and the
+two encoders' probes are equal ($0.672$ and $0.670$, from $0.52$ at initialization);
+a random encoder yields only $0.494$ after retraining. With natural context the encoder
+learns the class signal exactly as it does without, and the collapse under
+context-random evaluation is the head's use of same-class neighbours. \emph{P10,
+compression asymmetry: not established.} The comparator loses $0.111$ from PCA-16
+($0.652\to0.541$), but so does the natural-context model, so the registered reading
+(sensitive comparator, insensitive natural-context model) does not hold. \emph{The
+secondary rate prediction is not met}: slowing the head to $\kappa=1/256$ lowers the
+probe ($0.619$) and the recovered value ($0.644$), at budget end and at matched loss
+$0.5$ ($0.616$ against $0.632$). With a context that is a redundant copy of the
+spectral cue there is no competition for the head's rate to relieve.
+
+\paragraph{Results, PCA-23-denoised copy (Tables~\ref{tab:exp4_pixel_pca23},
+\ref{tab:exp4_val_pca23}, \ref{tab:exp4_test_pca23}, \ref{tab:exp4_recovery_pca23}).}
+The replication registered before its cache was built agrees with the non-denoised copy
+on every verdict. The per-pixel gate passes more strongly (MLP $0.665\to0.804$
+validation, $0.634\to0.883$ test from $16$ to $942$ components). The natural-context
+model is again sensitive to PCA-16 at budget end ($0.727$ against $0.683$ in every
+seed; $0.839$ against $0.640$ on test) and indistinguishable at matched loss; it
+collapses under context-random evaluation ($0.274$); its encoder's probe equals the
+comparator's ($0.671$ and $0.676$ from $0.529$) and a retrained head recovers
+$0.706$--$0.712$ against the comparator's $0.720$; the slow head does not raise the
+probe consistently ($0.683$, two seeds up and one down). One clause fails on this copy:
+the jointly trained comparator ($0.722$) stays $0.08$ below the per-pixel MLP ($0.804$),
+as does the no-bottleneck comparator ($0.715$), so the gap is the head family and plain
+gradient descent, not the bottleneck.
+
+\paragraph{P11: the learned bottleneck against none.} The comparison
+\citet{oleary2026spatial} actually made is a learned linear bottleneck against no
+reduction, and it reproduces on both copies: with natural context the learned
+twelve-dimensional bottleneck scores $0.732$ in distribution against $0.744$ without a
+bottleneck (denoised copy $0.727$ against $0.744$; on its test patients the bottleneck
+model is $0.037$ higher), and the shuffled-context comparators score $0.680$ against
+$0.661$ under context-random evaluation ($0.722$ against $0.715$ denoised); the
+no-bottleneck model fits faster, so the equality is not a fitting artefact. Taken with Stage A and P7, this separates two readings of ``a small set of
+spectral features'': the class signal is low-dimensional as a learned linear subspace,
+as any four-class discriminant is, and not as a small number of principal components;
+the learned features draw on the whole spectrum, so compressibility is not redundancy.
+Whether a spatial model leaves that information unused is a separate question, answered
+here in the negative for natural $3\times3$ context (the model uses the full spectrum and
+its encoder is not starved) and in the affirmative for the constructed context of
+Section~\ref{sec:real}.
+
+\input{sections_iclr_v2/appendix_exp4_tables}

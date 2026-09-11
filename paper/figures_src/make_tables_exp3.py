@@ -12,9 +12,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+import os
 ROOT = Path(__file__).resolve().parents[2]
-df = pd.read_csv(ROOT / "results" / "exp3_summary.csv")
-OUT = ROOT / "paper" / "sections_iclr_v2" / "appendix_exp3_tables.tex"
+DS = os.environ.get("EXP3_DATASET", "breast")            # breast (Appendix D) or paviau (Appendix H)
+RES = "exp3" if DS == "breast" else f"exp3_{DS}"
+SFX = "" if DS == "breast" else f"_{DS}"
+df = pd.read_csv(ROOT / "results" / f"{RES}_summary.csv")
+OUT = ROOT / "paper" / "sections_iclr_v2" / f"appendix_exp3{SFX}_tables.tex"
 L = []
 
 
@@ -37,7 +41,7 @@ for regime, name in (("unready", "unready (whitened, $\\gamma=30$)"), ("unready1
     L.append(f"\\caption{{Experiment 3, {name} regime, at $L^\\ast=0.30$: mean$\\pm$sd over seeds (number of seeds). "
              "Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; "
              "accuracies on validation (val) and test (test) patients under the paired conditions.}"
-             f"\\label{{tab:exp3_{regime}}}")
+             f"\\label{{tab:exp3_{regime}{SFX}}}")
     L.append("\\begin{tabular}{llrcccccc}\\toprule")
     L.append("arm & $M$ / $\\kappa$ & step & probe gain & rev.\\ (val) & ctx-rand.\\ (val) & spec.-only (val) & rev.\\ (test) & ctx-rand.\\ (test) \\\\ \\midrule")
     print(f"--- {regime} at L* ---")
@@ -57,14 +61,14 @@ for regime, name in (("unready", "unready (whitened, $\\gamma=30$)"), ("unready1
     init = df[(df["regime"] == regime) & (df["threshold"].astype(str) == "init")]
     print(f"init probe_val {regime}: {init.groupby('seed')['probe_val'].first().round(3).to_dict()}")
 
-rec_path = ROOT / "results" / "exp3" / "recovery_summary.csv"
+rec_path = ROOT / "results" / RES / "recovery_summary.csv"
 if rec_path.exists():
     r = pd.read_csv(rec_path)
     L.append("\\begin{table}[htbp]\\centering\\scriptsize")
     L.append("\\caption{Recovery at $M=32$ (real spectra): a fresh patch head with paired initialization trained for 20,000 steps on newly "
              "sampled context-random patches with the encoder frozen at its $L^\\ast$ checkpoint (\\texttt{init} = random initial encoder); "
              "validation and test patients under the paired conditions; original = the run's own classifier at $L^\\ast$ (validation).}"
-             "\\label{tab:exp3_recovery}")
+             f"\\label{{tab:exp3_recovery{SFX}}}")
     L.append("\\begin{tabular}{lllcccccc}\\toprule regime & seed & encoder & probe (val) & orig.\\ rev.\\ (val) & retr.\\ iid (val) & retr.\\ rev.\\ (val) & retr.\\ ctx-rand.\\ (val) & retr.\\ rev.\\ (test) \\\\ \\midrule")
     for _, x in r.sort_values(["regime", "seed", "encoder"]).iterrows():
         o = f"{x['original_acc_reversed_val']:.3f}" if pd.notna(x.get("original_acc_reversed_val", float('nan'))) else "--"

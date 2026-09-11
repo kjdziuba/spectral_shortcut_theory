@@ -39,25 +39,44 @@ import json
 import math
 import sys
 import time
+import os
 from pathlib import Path
 
 import numpy as np
 import torch
 
 REPO = Path(__file__).resolve().parents[2]
-OUT_DIR = REPO / "results" / "exp3"
-CACHE = OUT_DIR / "cache_fold0.npz"
-CALIB = OUT_DIR / "calibration.json"
 DATA_DIR = Path("/mnt/hdd2/u37314kd/data_breast_v2_pca23")
-SPLITS = DATA_DIR / "splits_fold0.json"
-
-# ---- design constants (REFOCUS_PLAN §5) ----
-PAIR = {3: +1.0, 4: -1.0}          # CancerEpi -> +1, CAS -> -1   [author to confirm]
-CLASSES = {1: "NormalEpi", 2: "NormalStroma", 3: "CancerEpi", 4: "CAS"}
-CACHE_CLASSES = (1, 2, 3, 4)       # the cache holds all four classes; PAIR selects the task
+FOLD = int(os.environ.get("EXP_FOLD", "0"))        # §12: five-fold extension; fold 0 = the registered paths
+SPLITS = DATA_DIR / f"splits_fold{FOLD}.json"
 N_PER_CORE_CLASS = {"train": 600, "val": 300, "test": 300}
-S_FEAT = 942
 K = 12
+
+# ---- dataset switch (REFOCUS_PLAN §5 breast = default; §9 paviau = public replication) ----
+DATASET = os.environ.get("EXP3_DATASET", "breast")
+_CFG = {
+    "breast": dict(out="exp3", pair={3: +1.0, 4: -1.0},          # CancerEpi -> +1, CAS -> -1   [author to confirm]
+                   classes={1: "NormalEpi", 2: "NormalStroma", 3: "CancerEpi", 4: "CAS"}, s_feat=942,
+                   scan_pairs={"CancerEpi-vs-CAS": {3: +1.0, 4: -1.0}, "NormalStroma-vs-CAS": {2: +1.0, 4: -1.0},
+                               "NormalEpi-vs-CancerEpi": {1: +1.0, 3: -1.0}, "NormalStroma-vs-CancerEpi": {2: +1.0, 3: -1.0}},
+                   sizes=dict(n_train_patch=24_000, n_probe_fit=6_000, n_eval_max=6_000)),
+    "paviau": dict(out="exp3_paviau", pair={2: +1.0, 4: -1.0},   # Meadows -> +1, Trees -> -1 (§9, fixed before any run)
+                   classes={1: "Asphalt", 2: "Meadows", 3: "Gravel", 4: "Trees", 5: "PaintedMetal", 6: "BareSoil",
+                            7: "Bitumen", 8: "Bricks", 9: "Shadows"}, s_feat=103,
+                   scan_pairs={"Meadows-vs-Trees": {2: +1.0, 4: -1.0}, "Gravel-vs-Bricks": {3: +1.0, 8: -1.0},
+                               "Asphalt-vs-Bricks": {1: +1.0, 8: -1.0}, "Meadows-vs-BareSoil": {2: +1.0, 6: -1.0}},
+                   sizes=dict(n_train_patch=2_400, n_probe_fit=400, n_eval_max=6_000)),
+}
+CFG = _CFG[DATASET]
+OUT_DIR = REPO / "results" / (CFG["out"] if FOLD == 0 else f"{CFG['out']}_fold{FOLD}")
+CACHE = OUT_DIR / f"cache_fold{FOLD}.npz"
+CALIB = OUT_DIR / "calibration.json"
+PAIR = CFG["pair"]
+CLASSES = CFG["classes"]
+CACHE_CLASSES = tuple(CLASSES)     # the cache holds all classes; PAIR selects the task
+S_FEAT = CFG["s_feat"]
+SCAN_PAIRS = CFG["scan_pairs"]
+SIZES = CFG["sizes"]
 G_AMP = 3.0                         # gamma = G_AMP * sqrt(lambda_1): "large" relative to natural v1 variation
 CAL_SEED = 0
 RIDGE = 1e-2                        # relative ridge for the 942-dim LDA
@@ -68,6 +87,8 @@ def load_split_ids() -> dict:
 
 
 def build_cache() -> None:
+    if DATASET != "breast":
+        raise SystemExit("build hyperspectral caches with code/experiments/hsi_data.py")
     splits = load_split_ids()
     rng = np.random.default_rng(1234)
     Xs, ys, cores, sides = [], [], [], []
@@ -121,8 +142,7 @@ def readiness_scan(device: torch.device) -> None:
     the alignment of the class contrast with the top principal directions.
     Fit on training half A (cores), evaluate on half B. Writes results/exp3/readiness_scan.csv."""
     import pandas as pd
-    pairs = {"CancerEpi-vs-CAS": {3: +1.0, 4: -1.0}, "NormalStroma-vs-CAS": {2: +1.0, 4: -1.0},
-             "NormalEpi-vs-CancerEpi": {1: +1.0, 3: -1.0}, "NormalStroma-vs-CancerEpi": {2: +1.0, 3: -1.0}}
+    pairs = SCAN_PAIRS
     rows = []
     for pname, pair in pairs.items():
         X, y, core, side = load_pair(pair)

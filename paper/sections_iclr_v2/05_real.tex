@@ -5,10 +5,9 @@
 We test contextual competition using measured centre spectra and their
 recorded labels, with a synthetic class-associated spatial intensity
 pattern along training-estimated principal directions in the
-neighbourhood. It is a real-centre-spectrum experiment with constructed
-context, not a validation on natural tissue context: it asks whether the
-mechanism operates when the spectral cue is a real, high-dimensional class
-contrast, and it cannot show that natural neighbourhoods produce it.
+neighbourhood. It asks whether the mechanism operates when the spectral
+cue is a real, high-dimensional class contrast; natural neighbourhoods are
+treated in Appendix~\ref{app:exp4}.
 
 \paragraph{Data and readiness.}
 Breast-tissue QCL micro-array cores, fold~0 of a five-fold patient-level
@@ -37,21 +36,19 @@ natural variation ($3\sqrt{\lambda_d}$ standardized; $30$ in whitened
 units, with a $\gamma=10$ variant declared before its runs). $\tau$ is
 calibrated per regime so that a discriminant on the eight cue projections
 matches the centre-only discriminant on training-side data ($0.969$ high,
-$0.948$ low; the centre-only benchmark on validation patients is $0.959$
-and $0.884$); through a random encoder the encoded patch, centre included,
-reads at $0.94$--$0.99$. The model is the linear encoder over the nine
+$0.948$ low); through a random encoder the encoded patch, centre
+included, reads at $0.94$--$0.99$. The model is the linear encoder over the nine
 spectra and a ReLU head of width $M$ over the encoded patch, trained and
 thresholded as in Section~\ref{sec:synthetic}; three seeds per arm.
 
 \paragraph{Results: high accessibility.}
 The probe is $0.91$--$0.94$ before training and changes little at
-$L^\ast$ in any arm (gain $-0.015$ to $+0.035$): the accessible spectral
-information remains accessible, yet the informative-context-trained heads
-are strongly context-reliant, with reversal accuracy $0.08$--$0.10$ and
-context-random accuracy at chance for widths $8$--$512$ and for
-$\kappa=1$, $1/16$, $1/256$ alike, all fitting within $70$--$230$ steps;
-the uninformative-context comparator, also jointly trained, reaches
-reversal $0.93$ and context-random $0.92$, the frozen encoder $0.09$
+$L^\ast$ in any arm (gain $-0.015$ to $+0.035$), yet the
+informative-context-trained heads are strongly context-reliant, with
+reversal accuracy $0.08$--$0.10$ and context-random accuracy at chance
+for widths $8$--$512$ and for $\kappa=1$, $1/16$, $1/256$ alike, all
+fitting within $70$--$230$ steps; the uninformative-context comparator
+reaches reversal $0.93$ and context-random $0.92$, the frozen encoder $0.09$
 (Table~\ref{tab:exp3_ready}). A large deficit in this probe is not
 necessary for failure.
 
@@ -62,39 +59,36 @@ with substantial seed variation (up to $0.10$ in one run), against $0.35$
 for the uninformative-context comparator (probe $0.92$--$0.93$;
 $15{,}000$--$17{,}000$ steps to $L^\ast$ against $59$--$226$); reversal
 accuracy is $0.07$ against the comparator's $0.91$--$0.93$, the frozen
-encoder giving $0.08$ (Table~\ref{tab:exp3_unready}). Slowing the head over the tested range
-gives only a small probe response (mean change $+0.014$ from $\kappa=1$ to
-$1/256$) and does not restore the comparator's accessibility. The saved
-checkpoints show where the adaptation went: for every seed and $\kappa$,
-$99.995$--$99.998\%$ of the squared net encoder update lies in the span of
-the eight constructed-cue directions, against $88$--$90\%$ under
-uninformative-context training (Appendix~\ref{app:exp3}). That the cue's
-amplitude lets it dominate the encoder's own gradient is consistent with
-this and is offered as a supported hypothesis, not an identified
+encoder giving $0.08$ (Table~\ref{tab:exp3_unready}). Slowing the head
+gives only a small probe response (mean $+0.014$ from $\kappa=1$ to
+$1/256$). The saved checkpoints show where the adaptation went: for every
+seed and $\kappa$, $99.995$--$99.998\%$ of the squared net encoder update
+lies in the span of the eight constructed-cue directions, against
+$88$--$90\%$ under uninformative-context training
+(Appendix~\ref{app:exp3}). That the cue's amplitude dominates the
+encoder's own gradient is a supported hypothesis, not an identified
 mechanism: the projection is not a pathwise gradient decomposition, and
 the random head, unlike the theorem's zero-sum readout, lets contextual
 learning proceed through the encoder even when the head barely moves.
 
 \paragraph{Results: the lower-amplitude variant.}
 At $\gamma=10$ the fit takes $530$--$1{,}800$ steps and the rate response
-returns: the within-seed change in probe accuracy from $\kappa=1$ to
-$1/256$ is $+0.030$, $+0.049$, $+0.095$, against $+0.002$, $+0.023$,
-$+0.016$ at $\gamma=30$ in the same seeds (mean rate effect $+0.058$
-against $+0.014$; the paired difference is positive in every seed), while
-reversal accuracy stays at $0.06$--$0.08$ and the comparator again
+returns: the within-seed probe change from $\kappa=1$ to $1/256$ is
+$+0.030$, $+0.049$, $+0.095$, against $+0.002$, $+0.023$, $+0.016$ at
+$\gamma=30$ in the same seeds (paired difference positive in every seed),
+while reversal accuracy stays at $0.06$--$0.08$ and the comparator again
 reaches a gain of $0.35$ and reversal $0.92$
-(Table~\ref{tab:exp3_unready10}). The net update remains concentrated in
-the cue span ($99.96$--$99.98\%$), so the variant shows an
-amplitude-dependent accessibility response, not the removal of contextual
-dominance.
+(Table~\ref{tab:exp3_unready10}). The net update remains in the cue span
+($99.96$--$99.98\%$): an amplitude-dependent accessibility response, not
+the removal of contextual dominance.
 
 \paragraph{Results: what retraining recovers.}
 The recovery procedure of Section~\ref{sec:synthetic}, applied to these
 encoders, separates the regimes further (Table~\ref{tab:exp3_recovery}).
 With high accessibility a fresh head retrained on decorrelated context
 reaches reversal accuracy $0.90$--$0.96$ from every encoder, the random
-initialization included, although the original classifiers scored $0.08$:
-the spectral information was available throughout and simply unused. At
+initialization included, against $0.08$ for the original classifiers: the
+spectral information was available and unused. At
 $\gamma=30$ no encoder yields more than $0.45$--$0.56$; at $\gamma=10$ the
 slow-head encoders yield $0.55$--$0.70$ against $0.48$--$0.60$ after the
 fast head.
@@ -103,10 +97,15 @@ fast head.
 With measured spectra the outcome matches the synthetic experiment on
 reliance: at every width and rate evaluated the original predictor uses
 the constructed context when it is informative, with excess shifted risk
-of $0.83$--$0.84$ over the uninformative-context comparator. On adaptation it adds a scope condition:
-how much of the contrast the encoder learns before the fit depends on the
-head's relative speed and on the cue's amplitude, which are not
-interchangeable here.
+of $0.83$--$0.84$ over the uninformative-context comparator. On
+adaptation it adds a scope condition: how much of the contrast the
+encoder learns before the fit depends on the head's relative speed and on
+the cue's amplitude, which are not interchangeable here. The construction
+matters: with the natural $3\times3$ neighbourhoods of the same cores,
+which never straddle two classes, the encoder learns the class signal
+equally with and without informative context and the model uses the full
+spectrum, on tissue and on a public hyperspectral scene
+(Appendices~\ref{app:exp4} and~\ref{app:pavia}).
 
 \begin{figure}[t]
 \centering

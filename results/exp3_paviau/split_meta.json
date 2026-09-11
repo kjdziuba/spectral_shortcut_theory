@@ -1,0 +1,71 @@
+{
+  "scene": "paviau",
+  "tile": 20,
+  "seed": 0,
+  "min_px": 60,
+  "per_tile_class": {
+    "train": 400,
+    "val": 200,
+    "test": 200
+  },
+  "classes": {
+    "1": "Asphalt",
+    "2": "Meadows",
+    "3": "Gravel",
+    "4": "Trees",
+    "5": "PaintedMetal",
+    "6": "BareSoil",
+    "7": "Bitumen",
+    "8": "Bricks",
+    "9": "Shadows"
+  },
+  "dropped": [],
+  "counts": {
+    "1": {
+      "train": 3083,
+      "val": 1104,
+      "test": 1189
+    },
+    "2": {
+      "train": 8347,
+      "val": 2953,
+      "test": 3582
+    },
+    "3": {
+      "train": 1085,
+      "val": 423,
+      "test": 196
+    },
+    "4": {
+      "train": 1322,
+      "val": 647,
+      "test": 504
+    },
+    "5": {
+      "train": 715,
+      "val": 270,
+      "test": 122
+    },
+    "6": {
+      "train": 2638,
+      "val": 606,
+      "test": 806
+    },
+    "7": {
+      "train": 573,
+      "val": 359,
+      "test": 139
+    },
+    "8": {
+      "train": 1671,
+      "val": 406,
+      "test": 868
+    },
+    "9": {
+      "train": 436,
+      "val": 219,
+      "test": 123
+    }
+  },
+  "S": 103
+}

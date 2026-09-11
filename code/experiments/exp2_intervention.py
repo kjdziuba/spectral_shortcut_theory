@@ -92,6 +92,7 @@ SEEDS = [0, 1, 2]
 # learning appears before matched fit; then freeze and confirm on seeds 1, 2.
 HEAD_MULTS = [1, 1 / 16, 1 / 256]
 HEADLR_WIDTH = 32
+ENC_HIDDEN = 64            # amendment §10 (2026-09-11): two-layer ReLU encoder S -> 64 -> K
 
 ARMS = {
     "sp":      dict(param="sp",  widths=WIDTHS_FULL,    train_cond="iid",        mults=[1],      head_mults=[1],        frozen=False),
@@ -100,6 +101,11 @@ ARMS = {
     "lrmult":  dict(param="sp",  widths=[LRMULT_WIDTH], train_cond="iid",        mults=LR_MULTS, head_mults=[1],        frozen=False),
     "frozen":  dict(param="sp",  widths=WIDTHS_CTRL,    train_cond="iid",        mults=[1],      head_mults=[1],        frozen=True),
     "headlr":  dict(param="sp",  widths=[HEADLR_WIDTH], train_cond="iid",        mults=[1],      head_mults=HEAD_MULTS, frozen=False),
+    # amendment §10: NONLINEAR encoder (two-layer ReLU, S -> ENC_HIDDEN -> K), same heads and protocol
+    "nlenc":         dict(param="sp", widths=[8, 32, 128, 512], train_cond="iid",        mults=[1], head_mults=[1],       frozen=False, enc="mlp"),
+    "nlenc_ctxfree": dict(param="sp", widths=[8, 128],          train_cond="ctx_random", mults=[1], head_mults=[1],       frozen=False, enc="mlp"),
+    "nlenc_headlr":  dict(param="sp", widths=[HEADLR_WIDTH],    train_cond="iid",        mults=[1], head_mults=[1 / 256], frozen=False, enc="mlp"),
+    "nlenc_frozen":  dict(param="sp", widths=[HEADLR_WIDTH],    train_cond="iid",        mults=[1], head_mults=[1],       frozen=True,  enc="mlp"),
 }
 
 # Seed layout: directions 1000+s; training data 2000+s; the five test
@@ -118,6 +124,24 @@ class Encoder(nn.Module):
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:  # (B,H,W,S) -> (B,H,W,K)
         return self.proj(X)
+
+
+class MLPEncoder(nn.Module):
+    """Two-layer ReLU encoder S -> Hd -> K (amendment §10): fc1 N(0, 1/S) with zero bias, fc2 N(0, 1/Hd)."""
+
+    def __init__(self, S: int, Hd: int, K: int) -> None:
+        super().__init__()
+        self.fc1 = nn.Linear(S, Hd, bias=True)
+        self.fc2 = nn.Linear(Hd, K, bias=False)
+        nn.init.normal_(self.fc1.weight, std=1.0 / math.sqrt(S)); nn.init.zeros_(self.fc1.bias)
+        nn.init.normal_(self.fc2.weight, std=1.0 / math.sqrt(Hd))
+
+    def forward(self, X: torch.Tensor) -> torch.Tensor:  # (B,H,W,S) -> (B,H,W,K)
+        return self.fc2(torch.relu(self.fc1(X)))
+
+
+def flat_params(enc: nn.Module) -> torch.Tensor:
+    return torch.cat([p.detach().flatten() for p in enc.parameters()])
 
 
 class CNNHead(nn.Module):
@@ -239,6 +263,10 @@ def spectral_probe(enc: nn.Module, data: dict) -> float:
 
 @torch.no_grad()
 def encoder_stats(enc: nn.Module, W0: torch.Tensor, u: torch.Tensor, V: torch.Tensor) -> dict:
+    if not hasattr(enc, "proj"):  # nonlinear encoder: the linear alignment measures are undefined
+        th = flat_params(enc).double(); nan = float("nan")
+        return dict(align_u=nan, align_V=nan, gain_u=nan, gain_V=nan, h_u=nan, h_V=nan,
+                    w_norm=float(th.norm()), disp=float((th - W0.double()).norm() / W0.double().norm()))
     Wt = enc.proj.weight.double()
     ud, Vd = u.double(), V.double()
     wn2 = float((Wt ** 2).sum())
@@ -282,15 +310,17 @@ def run_one(arm: str, width: int, mult: float, seed: int, tau: float, lr: float,
 
     torch.manual_seed(seed)
     np.random.seed(seed)
-    enc = Encoder(S, K).to(device)
+    enc = (MLPEncoder(S, ENC_HIDDEN, K) if cfg.get("enc") == "mlp" else Encoder(S, K)).to(device)
     head = CNNHead(K, width, cfg["param"]).to(device)
     if cfg["frozen"]:
-        enc.proj.weight.requires_grad_(False)
-    W0 = enc.proj.weight.detach().clone()
+        for p_ in enc.parameters():
+            p_.requires_grad_(False)
+    W0 = enc.proj.weight.detach().clone() if hasattr(enc, "proj") else flat_params(enc).clone()
+    enc_states = {}
 
     groups = []
     if not cfg["frozen"]:
-        groups.append({"params": [enc.proj.weight], "lr": lr})
+        groups.append({"params": list(enc.parameters()), "lr": lr})
     groups.append({"params": list(head.conv1.parameters()), "lr": lr * head_mult})
     groups.append({"params": [head.conv2.weight], "lr": lr * head_mult * mult})
     opt = torch.optim.SGD(groups, momentum=0.0)
@@ -315,7 +345,11 @@ def run_one(arm: str, width: int, mult: float, seed: int, tau: float, lr: float,
         for c, (Xc, yc) in data["tests"].items():
             row[f"acc_{c}"] = accuracy(enc, head, Xc, yc)
         snap_rows.append(row)
-        W_snaps[f"W_{label}"] = enc.proj.weight.detach().cpu().numpy().copy()
+        if hasattr(enc, "proj"):
+            W_snaps[f"W_{label}"] = enc.proj.weight.detach().cpu().numpy().copy()
+        else:
+            W_snaps[f"W_{label}"] = flat_params(enc).cpu().numpy().copy()
+            enc_states[label] = {k: v.detach().cpu().clone() for k, v in enc.state_dict().items()}
         if not quiet:
             print(f"  [{tag}] {label!s:>8} step {step:6d} loss {loss_v:.4f} acc {acc_v:.3f} "
                   f"a_u {st['align_u']:.4f} probe {row['probe_acc']:.3f} "
@@ -335,7 +369,7 @@ def run_one(arm: str, width: int, mult: float, seed: int, tau: float, lr: float,
             snapshot("diverged", step, loss_v, acc_v)
             break
         loss.backward()  # gradients of the CURRENT iterate; snapshots below are same-state
-        gth = float(enc.proj.weight.grad.norm()) if enc.proj.weight.grad is not None else 0.0
+        gth = math.sqrt(sum(float(p.grad.norm()) ** 2 for p in enc.parameters() if p.grad is not None))
         gph = math.sqrt(sum(float(p.grad.norm()) ** 2 for p in head.parameters() if p.grad is not None))
         if step == 0:
             snapshot("init", 0, loss_v, acc_v)
@@ -367,6 +401,8 @@ def run_one(arm: str, width: int, mult: float, seed: int, tau: float, lr: float,
     snaps.to_csv(OUT_DIR / f"snap_{tag}.csv", index=False)
     np.savez_compressed(OUT_DIR / f"enc_{tag}.npz", W0=W0.cpu().numpy(),
                         u=data["u"].cpu().numpy(), V=data["V"].cpu().numpy(), **W_snaps)
+    if enc_states:
+        torch.save(enc_states, OUT_DIR / f"encstate_{tag}.pt")
     if not quiet:
         print(f"[{tag}] {status} at step {step}, {time.time() - t0:.1f}s", flush=True)
     return snaps

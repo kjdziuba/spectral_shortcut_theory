@@ -8,36 +8,31 @@ at matched fit, that the fitted model fails under contextual reversal
 under explicit finite-width conditions, and that readout normalization
 removes the width dependence without necessarily removing the failure.
 At matched training loss in the synthetic spectral--spatial model, slowing
-the spatial head substantially increases the linear accessibility of the
-spectral cue while the trained classifier remains strongly
-context-reliant; retraining a fresh head on decorrelated context from the
-frozen encoders recovers about $0.2$ more shifted accuracy after the slow
-head than after the fast one, from which no more is recovered than from a
-random encoder. With measured spectra, high spectral accessibility
-coexists with severe contextual reliance, so a deficit in this probe is
-not necessary for failure; with low initial accessibility, slowing the
-head yields only small accessibility gains at the larger constructed
-amplitude and a larger response at the smaller one. The paper's claim is that difference, at the stated fits, rates and
+the spatial head raises the linear accessibility of the spectral cue
+while the trained classifier remains strongly context-reliant; retraining
+a fresh head on decorrelated context recovers about $0.2$ more shifted
+accuracy after the slow head than after the fast one, which yields no
+more than a random encoder. With measured spectra, high spectral
+accessibility coexists with severe contextual reliance, so a deficit in
+this probe is not necessary for failure; with low initial accessibility
+the head's rate matters more at the smaller constructed amplitude. The
+paper's claim is that difference, at the stated fits, rates and
 constructions, not a general law.
 
 \paragraph{Limitations.}
 The theorem has a linear encoder, noiseless cues and a fixed spectral skip
 coefficient; the experiments add noisy cues and jointly learned routing
-but keep a linear encoder and one head family each. The contextual cues
-are constructed, so neither experiment shows that natural
-tissue neighbourhoods produce the effect, and matched mean training loss
-is an analogue of the theorem's matched margin, not the same rule. The
-accessibility asymmetry the mechanism needs is set by preprocessing and
-bottleneck: where a random encoder already reads the spectral cue, there
-is little for the encoder to gain, and the failure that still occurs there
-is not the theorem's. Real-spectrum seed variation is conditional on one
-patient split.
-
-\paragraph{What the production model showed and did not.}
-On a production segmentation model, initialization curvature is not the
-diagnostic used here: its scalar block ratio is inverted and its width
-trend depends on the head's BatchNorm statistics, and neither measures
-impaired learning. A matched retraining study found an earlier apparent
-freezing advantage protocol-confounded and unresolved
-(Appendix~\ref{app:scope}).
-We recommend no mitigation.
+but keep a linear encoder and one head family each. The cues that show
+the mechanism are constructed; natural $3\times3$ neighbourhoods, being
+the same class as their centre, did not produce it, and larger receptive
+fields are untested. Matched mean training loss is an analogue of the
+theorem's matched margin, not the same rule, and where a random encoder
+already reads the spectral cue the failure that still occurs is not the
+theorem's. Real-spectrum seed variation is conditional on one patient
+split. On a production segmentation model, scalar initialization
+curvature is not the diagnostic used here, and an earlier apparent
+freezing advantage was protocol-confounded (Appendix~\ref{app:scope}). We
+test no mitigation on natural context; the supported statement is
+conditional: where the spectral cue is accessible at the encoder output,
+retraining the readout on context-decorrelated data recovered it; where
+it is not, only retraining the encoder without informative context did.

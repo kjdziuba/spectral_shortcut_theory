@@ -1,0 +1,23 @@
+{
+  "train": {
+    "n": 19870,
+    "frac_all8_same_label": 0.6424760946149974,
+    "frac_any_other_labelled_class": 0.0,
+    "mean_frac_same_label": 0.8796175138399598,
+    "mean_frac_unlabelled": 0.12038248616004026
+  },
+  "val": {
+    "n": 6172,
+    "frac_all8_same_label": 0.601749837977965,
+    "frac_any_other_labelled_class": 0.0,
+    "mean_frac_same_label": 0.8628078418664938,
+    "mean_frac_unlabelled": 0.13719215813350616
+  },
+  "test": {
+    "n": 6407,
+    "frac_all8_same_label": 0.5916965818635868,
+    "frac_any_other_labelled_class": 0.0,
+    "mean_frac_same_label": 0.8603675667238957,
+    "mean_frac_unlabelled": 0.13963243327610425
+  }
+}

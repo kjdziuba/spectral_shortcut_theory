@@ -1,0 +1,58 @@
+% Appendix H: public hyperspectral replication of Experiments 3 and 4 (Pavia University).
+% Design written 2026-09-11 from code/experiments/hsi_data.py, the EXP3_DATASET / --dataset
+% switches of the Exp 3 / Exp 4 code, and REFOCUS_PLAN_2026-09-10.md section 9. Results
+% paragraphs are appended as the registered runs complete.
+
+\subsection{Purpose and registration}
+Our tissue spectra are not public. This appendix repeats Experiment~3 (constructed
+context: the mechanism) and Experiment~4 (natural context: usage) on the ROSIS Pavia
+University scene, a standard public hyperspectral benchmark ($610\times340$ pixels,
+$103$ bands, nine labelled classes, $42{,}776$ labelled pixels), with the same code,
+protocols, arms and pre-registered predictions, so that every number can be reproduced
+from the released scripts. The scene, the spatial split, the class pair and the
+disposition rules were fixed before the first registered run (pre-registration
+section~9); the readiness scan and the per-pixel sweep are descriptive stages that
+precede the registered runs, as on tissue.
+
+\subsection{Spatial split, sampling and preprocessing}
+The patient-level split of the tissue experiments has no counterpart in a single scene,
+so we cut the scene into $20\times20$-pixel tiles and assign tiles at random (seed $0$)
+to training, validation and test in the proportion $0.6/0.2/0.2$ ($208/70/70$ tiles
+carrying labels), requiring at least $60$ admissible pixels per class in each split; a
+pixel is admissible only if its whole $3\times3$ neighbourhood lies inside its tile, so
+no evaluation neighbourhood overlaps a training one ($34{,}386$ admissible pixels). Per
+tile and class up to $400/200/200$ pixels are sampled with a fixed seed: $19{,}870$
+training, $6{,}172$ validation and $6{,}407$ test pixels. Residual spatial
+autocorrelation across tile borders is a limitation shared by every single-scene
+benchmark and is not removed here. Reflectance counts are cast to float; per-feature
+standardization and PCA are fitted on the training split by the experiment code,
+exactly as for the tissue spectra; there is no per-pixel normalization, denoising or
+derivative.
+
+\subsection{Experiment 3 on Pavia: constructed context}
+The pair is Meadows ($+1$) against Trees ($-1$), the two largest vegetation classes
+and a standard confusion in this scene ($8{,}347$ and $1{,}322$ admissible training
+pixels). The readiness scan reproduces the tissue structure: with standardized inputs a
+random $12$-dimensional encoder reads the contrast at $0.850$ against a discriminant of
+$0.933$; after PCA whitening the random encoder reads $0.667$ against $0.955$
+(Table~\ref{tab:pavia_scan}), so the same two regimes (high and low initial probe
+accessibility) apply, with a smaller asymmetry than on tissue. Calibration matched the
+constructed contextual discriminant to the centre-only discriminant in each regime
+($\tau=1.89$ standardized; $1.66$ whitened at $\gamma=30$ and at $\gamma=10$). Sizes
+are scaled to the pair: up to $2{,}400$ balanced training patches, $400$ probe-fit
+pixels, evaluation on all validation and test pixels of the pair. Arms, widths, rate
+multipliers, seeds, thresholds, conditions and the retraining protocol are those of
+Appendix~\ref{app:exp3}.
+
+\subsection{Experiment 4 on Pavia: natural context}
+All nine classes, macro-F1, with the Stage A gate and the Stage B arms of
+Appendix~\ref{app:exp4}. Stage A gives the opposite of the tissue result
+(Table~\ref{tab:exp4_pixel_paviau}): the best per-pixel classifier gains only $0.020$
+macro-F1 on validation and $0.009$ on test from the components beyond the sixteenth
+(MLP $0.891\to0.911$ and $0.876\to0.885$; discriminant $0.767\to0.781$ and
+$0.742\to0.759$), so the registered gate fails and sixteen principal components carry
+essentially all per-pixel information available to these classifiers on this scene,
+whose bands are strongly correlated. By the registered rule the compression arms are
+dropped here and Stage B runs the usage arms and the no-bottleneck arms.
+
+\input{sections_iclr_v2/appendix_pavia_tables}

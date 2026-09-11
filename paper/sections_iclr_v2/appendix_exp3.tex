@@ -6,7 +6,12 @@
 Breast-tissue QCL micro-array cores, fold~0 of the five-fold patient-level
 split used throughout this work ($115$ training, $28$ validation, $26$ test
 cores). Each labelled tissue pixel contributes the $942$-dimensional vector
-of absorbance, first and second derivative ($3\times314$ channels). Up to
+of absorbance, first and second derivative ($3\times314$ channels), after
+the field-standard preprocessing of the companion pipeline, which includes
+per-core PCA denoising with $23$ components before the derivatives are
+taken; each core's spectra are therefore of numerical rank $23$, while the
+pooled training-patient data are not, since the retained subspaces differ
+between cores. Up to
 $600$ (training) or $300$ (validation, test) pixels per class per core were
 sampled with a fixed seed: $75{,}297$ training pixels from $79$ cores,
 $11{,}024$ validation from $20$, $8{,}038$ test from $16$, over the four

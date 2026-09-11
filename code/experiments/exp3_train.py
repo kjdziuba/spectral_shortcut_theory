@@ -54,10 +54,10 @@ CODE_DIR = Path(__file__).resolve().parents[1]
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
 from experiments.exp3_real_context import (  # noqa: E402
-    CACHE, OUT_DIR, PAIR, S_FEAT, K, RIDGE, CAL_SEED, load_pair, lda_fit, lda_eval,
+    CACHE, OUT_DIR, PAIR, S_FEAT, K, RIDGE, CAL_SEED, SIZES, load_pair, lda_fit, lda_eval,
 )
 
-SUMMARY = OUT_DIR.parent / "exp3_summary.csv"
+SUMMARY = OUT_DIR.parent / f"{OUT_DIR.name}_summary.csv"
 
 # ---- pre-registered constants (REFOCUS_PLAN §5; mirrors Exp 2) ----
 LR = 1e-3
@@ -67,9 +67,9 @@ THRESHOLDS = [0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.10]
 STOP_LOSS = 0.10
 DIVERGE_LOSS = 3.0
 LOG_EVERY = 25
-N_TRAIN_PATCH = 24_000
-N_PROBE_FIT = 6_000
-N_EVAL_MAX = 6_000
+N_TRAIN_PATCH = SIZES["n_train_patch"]   # 24,000 breast; 2,400 paviau (pair-limited, §9)
+N_PROBE_FIT = SIZES["n_probe_fit"]       # 6,000 breast; 400 paviau
+N_EVAL_MAX = SIZES["n_eval_max"]
 WIDTHS = [8, 32, 128, 512]
 HEAD_MULTS = [1, 1 / 16, 1 / 256]
 HEADLR_WIDTH = 32

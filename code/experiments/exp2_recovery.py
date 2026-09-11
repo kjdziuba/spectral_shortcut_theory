@@ -39,7 +39,7 @@ CODE_DIR = Path(__file__).resolve().parents[1]
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
 from experiments.exp2_intervention import (  # noqa: E402
-    ALPHA, BETA, SIGMA, S, K, H, W, N_TRAIN, CALIB, OUT_DIR, CNNHead, Encoder, ProblemSpec,
+    ALPHA, BETA, SIGMA, S, K, H, W, N_TRAIN, CALIB, OUT_DIR, CNNHead, Encoder, MLPEncoder, ENC_HIDDEN, ProblemSpec,
     build_data, margin_loss, accuracy, spectral_probe, make_problem_v2,
 )
 
@@ -52,11 +52,19 @@ ENCODERS = {
     "init":     ("enc_headlr_M32_x1_s{s}.npz", "W0"),
     "kappa1":   ("enc_headlr_M32_x1_s{s}.npz", "W_0.3"),
     "kappa256": ("enc_headlr_M32_x1_h0.00390625_s{s}.npz", "W_0.3"),
+    # amendment §10: nonlinear (two-layer ReLU) encoders, saved as state dicts by exp2_intervention.py
+    "nl_init":     ("encstate_nlenc_M32_x1_s{s}.pt", "init"),
+    "nl_kappa1":   ("encstate_nlenc_M32_x1_s{s}.pt", "0.3"),
+    "nl_kappa256": ("encstate_nlenc_headlr_M32_x1_h0.00390625_s{s}.pt", "0.3"),
 }
-ORIG_TAG = {"init": None, "kappa1": "headlr_M32_x1_s{s}", "kappa256": "headlr_M32_x1_h0.00390625_s{s}"}
+ORIG_TAG = {"init": None, "kappa1": "headlr_M32_x1_s{s}", "kappa256": "headlr_M32_x1_h0.00390625_s{s}",
+            "nl_init": None, "nl_kappa1": "nlenc_M32_x1_s{s}", "nl_kappa256": "nlenc_headlr_M32_x1_h0.00390625_s{s}"}
 
 
 def main():
+    filt = sys.argv[1:]                                   # optional encoder names; default = the three linear ones
+    names = filt or ["init", "kappa1", "kappa256"]
+    out_name = "recovery_summary.csv" if not filt else "recovery_summary_" + "_".join(names) + ".csv"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tau = float(json.loads(CALIB.read_text())["tau"])
     spec = ProblemSpec(S=S, H=H, W=W, alpha=ALPHA, beta=BETA, tau=tau, sigma=SIGMA)
@@ -66,13 +74,24 @@ def main():
         u, V = data["u"].cpu(), data["V"].cpu()
         Xrt, yrt = make_problem_v2(N_TRAIN, spec, u, V, seed=2500 + s, condition="ctx_random")
         Xrt, yrt = Xrt.to(device), yrt.to(device)
-        for name, (fname, key) in ENCODERS.items():
-            z = np.load(OUT_DIR / fname.format(s=s))
-            Wenc = torch.from_numpy(z[key]).float().to(device)
-            enc = Encoder(S, K).to(device)
-            with torch.no_grad():
-                enc.proj.weight.copy_(Wenc)
-            enc.proj.weight.requires_grad_(False)
+        for name in names:
+            fname, key = ENCODERS[name]
+            path = OUT_DIR / fname.format(s=s)
+            if not path.exists():
+                print(f"[recovery] seed {s} {name}: missing {path.name}, skipped", flush=True); continue
+            if fname.endswith(".pt"):
+                states = torch.load(path)
+                if key not in states:
+                    print(f"[recovery] seed {s} {name}: no state {key!r} in {path.name}, skipped", flush=True); continue
+                enc = MLPEncoder(S, ENC_HIDDEN, K).to(device); enc.load_state_dict(states[key])
+            else:
+                z = np.load(path)
+                Wenc = torch.from_numpy(z[key]).float().to(device)
+                enc = Encoder(S, K).to(device)
+                with torch.no_grad():
+                    enc.proj.weight.copy_(Wenc)
+            for p_ in enc.parameters():
+                p_.requires_grad_(False)
             torch.manual_seed(100 + s)                       # paired head initialization across encoders
             head = CNNHead(K, HEAD_WIDTH, "sp").to(device)
             opt = torch.optim.SGD(head.parameters(), lr=LR, momentum=0.0)
@@ -107,10 +126,10 @@ def main():
                   f"ctxrnd {row['retrained_acc_ctx_random']:.3f} spec {row['retrained_acc_spec_only']:.3f}"
                   + (f" | original rev {row['original_acc_reversed']:.3f}" if 'original_acc_reversed' in row else ""), flush=True)
     df = pd.DataFrame(rows)
-    df.to_csv(OUT_DIR / "recovery_summary.csv", index=False)
+    df.to_csv(OUT_DIR / out_name, index=False)
     print(df.groupby("encoder")[["probe_acc", "retrained_acc_iid", "retrained_acc_reversed", "retrained_acc_ctx_random",
                                  "retrained_acc_spec_only"]].agg(["mean", "std"]).round(3))
-    print(f"[recovery] wrote {OUT_DIR / 'recovery_summary.csv'}")
+    print(f"[recovery] wrote {OUT_DIR / out_name}")
 
 
 if __name__ == "__main__":
