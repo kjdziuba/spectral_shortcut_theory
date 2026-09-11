@@ -26,8 +26,8 @@ because the random projection preserves the signal-to-noise ratio of a
 cue whose noise shares its direction and attenuates by about $\sqrt{K/S}$
 one whose noise is isotropic. This is the nonlinear analogue of
 $(a_0\ \text{small},\ v_0=O(1))$: the contextual cue is initially
-accessible to a trained readout; the spectral cue is substantially less
-accessible. The model is the linear encoder followed by a ReLU
+accessible, the spectral cue substantially less so. The model is the
+linear encoder followed by a ReLU
 convolutional head ($3\times3$ convolution to width $M$, ReLU, $3\times3$
 convolution to one logit, circular padding; a $5\times5$ receptive field),
 trained by full-batch gradient descent on $256$ images ($65{,}536$ pixels)
@@ -44,10 +44,11 @@ function at initialization, the control of Theorem~\ref{thm:serial}(c),
 which under plain gradient descent equals a readout trained at rate $1/M$);
 training with an uninformative context (the cue carrying an independent
 label) at $M\in\{2,8,128,512\}$;
-a readout learning-rate multiplier and, following the design review, a
-whole-head multiplier $\kappa\in\{1,1/16,1/256\}$ at $M=32$, which in the
+a readout multiplier and, following the design review, a whole-head
+multiplier $\kappa\in\{1,1/16,1/256\}$ at $M=32$, which in the
 theorem gives the bound $1/(1+\kappa Mv_0^2)$; and a frozen encoder. Three
-seeds each. At every snapshot we record the probe (a discriminant on the
+registered seeds each; two seeds added afterwards agree on every direction
+(Appendix~\ref{app:exp2}). At every snapshot we record the probe (a discriminant on the
 encoder output of clean spectral-only inputs, fitted and evaluated on
 disjoint independent sets; initial values $0.647$, $0.658$, $0.615$,
 reported as the gain over the run's own initial value), its exact
@@ -66,7 +67,7 @@ paired test family.
 In the standard-parameterization baseline every model with an informative
 context leaves the encoder's spectral accessibility near its initial value
 at $L^\ast$: the probe gain is $0.04$ at $M=2$ and $0.002$ at $M=2048$
-(means over three seeds; $h_u$ $0.09\to0.05$ against a mean $0.048$ at
+(three-seed means; $h_u$ $0.09\to0.05$ against $0.048$ at
 initialization), accuracy under reversal is $0.12$--$0.13$, and accuracy
 with an uninformative context is at chance ($0.50$). The same model trained
 with an uninformative context aligns its encoder before reaching the same

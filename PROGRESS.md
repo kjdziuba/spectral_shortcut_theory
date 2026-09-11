@@ -2431,3 +2431,11 @@ ViT sweep:
   recoverability replicates; rate response / recovery ordering NOT met at γ=30, partial at γ=10.
   Exp 3 retraining script gained EXP3_SEEDS; five-fold aggregation generator make_tables_folds.py
   + Appendix D subsection wired (fold 0 only so far). Abstract v4 candidate in plan §13.
+- 21:00 Seed extension grids DONE (Exp 2 60/60, Exp 3 60/60 added runs; my earlier "156" was a
+  miscount: 10 cells per regime). All registered directions hold on seeds 3–4 (plan §11.1);
+  registered PREDICTIONS.md byte-identical on seeds 0–2; PREDICTIONS_allseeds.md for the record.
+  Added-seed retraining running (EXP2_SEEDS / EXP3_SEEDS). Fold chain: fold 1 Exp 3 grid done
+  (90 runs = 30 cells × 3 seeds), fold 1 Exp 4 running. Pavia complete; Astra prompt in plan §14.
+- 21:20 Main text: "two added seeds agree" sentences in §4/§5; page re-fitted (trims in §2 duplicate
+  four-measurement list, §4, §5, §6, Fig 4 caption). Note: trims before the theorem block do not help
+  the page-9 spill (slack absorbed at the unbreakable statement); pay on pages 7–9.

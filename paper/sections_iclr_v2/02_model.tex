@@ -23,8 +23,8 @@ encoder must discover: a randomly initialized encoder attenuates it. The
 \emph{contextual cue} lies in the neighbourhood along directions of large
 amplitude: a randomly initialized encoder passes it, so a trained readout
 can use it at once. The two cues are calibrated to matched discriminant
-accuracy on calibration data (a matched signal-to-noise construction in
-the synthetic case; a training-side estimate on real spectra), so that a
+accuracy on calibration data (matched signal-to-noise synthetically; a
+training-side estimate on real spectra), so that a
 preference for one cue is not simply a preference for the more predictive
 one. The theorem allows any $(a_0,v_0)$; the experiments select its
 regime of interest, a small initial spectral contribution and an
@@ -45,11 +45,8 @@ of a comparator of the same architecture trained with an uninformative
 (decorrelated) context to the same fitting threshold. The theorem supplies
 an exact reversal failure against a spectral-only model; the noisy
 experiments measure the corresponding risk difference against that
-trained comparator, without assuming a zero-error reference. Four
-measurements are kept distinct throughout: adaptation of the encoder,
-linear accessibility of the spectral cue on clean spectral inputs (the
-probe), use of context by the original predictor, and performance after
-an explicit retraining procedure.
+trained comparator, without assuming a zero-error reference; the probe
+is linear accessibility of the spectral cue on clean spectral inputs.
 
 \paragraph{Test conditions.}
 Every evaluation family is generated from the same labels and noise as

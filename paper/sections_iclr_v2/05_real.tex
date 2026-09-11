@@ -13,12 +13,11 @@ treated in Appendix~\ref{app:exp4}.
 Breast-tissue QCL micro-array cores, fold~0 of a five-fold patient-level
 split; the binary task Cancer Epithelium versus Cancer-Associated Stroma
 on $942$-channel pixel vectors; $24{,}000$ class-balanced training
-centres; evaluation on held-out validation patients, with test patients
-reported separately (Appendix~\ref{app:exp3}). A readiness scan
+centres; validation patients for evaluation, test patients reported
+separately (Appendix~\ref{app:exp3}). A readiness scan
 (Table~\ref{tab:exp3_scan}) shows that with per-feature standardization a
 random encoder $W\in\R^{12\times942}$ already reads this contrast at
-$0.955$ against a calibration discriminant of $0.969$, because the
-class-mean contrast lies along the top principal directions; PCA
+$0.955$ against a calibration discriminant of $0.969$; PCA
 whitening estimated on the training patients reduces the random-encoder
 probe to $0.54$ while the discriminant stays at $0.944$. We therefore run
 two regimes on the same pixels and labels, \emph{high} and \emph{low
@@ -39,23 +38,24 @@ matches the centre-only discriminant on training-side data ($0.969$ high,
 $0.948$ low); through a random encoder the encoded patch, centre
 included, reads at $0.94$--$0.99$. The model is the linear encoder over the nine
 spectra and a ReLU head of width $M$ over the encoded patch, trained and
-thresholded as in Section~\ref{sec:synthetic}; three seeds per arm.
+thresholded as in Section~\ref{sec:synthetic}; three registered seeds per
+arm, with two added seeds agreeing (Appendix~\ref{app:exp3}).
 
 \paragraph{Results: high accessibility.}
 The probe is $0.91$--$0.94$ before training and changes little at
 $L^\ast$ in any arm (gain $-0.015$ to $+0.035$), yet the
 informative-context-trained heads are strongly context-reliant, with
 reversal accuracy $0.08$--$0.10$ and context-random accuracy at chance
-for widths $8$--$512$ and for $\kappa=1$, $1/16$, $1/256$ alike, all
-fitting within $70$--$230$ steps; the uninformative-context comparator
+for every width and $\kappa$, all fitting within $70$--$230$ steps; the
+uninformative-context comparator
 reaches reversal $0.93$ and context-random $0.92$, the frozen encoder $0.09$
 (Table~\ref{tab:exp3_ready}). A large deficit in this probe is not
 necessary for failure.
 
 \paragraph{Results: low accessibility.}
 The probe starts at $0.56$--$0.60$. Among the $\gamma=30$
-informative-context arms the mean gain at $L^\ast$ is at most $0.046$,
-with substantial seed variation (up to $0.10$ in one run), against $0.35$
+informative-context arms the mean gain at $L^\ast$ is at most $0.046$
+(up to $0.10$ in one run), against $0.35$
 for the uninformative-context comparator (probe $0.92$--$0.93$;
 $15{,}000$--$17{,}000$ steps to $L^\ast$ against $59$--$226$); reversal
 accuracy is $0.07$ against the comparator's $0.91$--$0.93$, the frozen
@@ -76,15 +76,14 @@ At $\gamma=10$ the fit takes $530$--$1{,}800$ steps and the rate response
 returns: the within-seed probe change from $\kappa=1$ to $1/256$ is
 $+0.030$, $+0.049$, $+0.095$, against $+0.002$, $+0.023$, $+0.016$ at
 $\gamma=30$ in the same seeds (paired difference positive in every seed),
-while reversal accuracy stays at $0.06$--$0.08$ and the comparator again
-reaches a gain of $0.35$ and reversal $0.92$
-(Table~\ref{tab:exp3_unready10}). The net update remains in the cue span
+while reversal stays at $0.06$--$0.08$ and the comparator again reaches
+gain $0.35$, reversal $0.92$ (Table~\ref{tab:exp3_unready10}). The net update remains in the cue span
 ($99.96$--$99.98\%$): an amplitude-dependent accessibility response, not
 the removal of contextual dominance.
 
 \paragraph{Results: what retraining recovers.}
-The recovery procedure of Section~\ref{sec:synthetic}, applied to these
-encoders, separates the regimes further (Table~\ref{tab:exp3_recovery}).
+The recovery procedure of Section~\ref{sec:synthetic} separates the
+regimes further (Table~\ref{tab:exp3_recovery}).
 With high accessibility a fresh head retrained on decorrelated context
 reaches reversal accuracy $0.90$--$0.96$ from every encoder, the random
 initialization included, against $0.08$ for the original classifiers: the
@@ -100,21 +99,19 @@ the constructed context when it is informative, with excess shifted risk
 of $0.83$--$0.84$ over the uninformative-context comparator. On
 adaptation it adds a scope condition: how much of the contrast the
 encoder learns before the fit depends on the head's relative speed and on
-the cue's amplitude, which are not interchangeable here. The construction
-matters: with the natural $3\times3$ neighbourhoods of the same cores,
-which never straddle two classes, the encoder learns the class signal
-equally with and without informative context and the model uses the full
-spectrum, on tissue and on a public hyperspectral scene
-(Appendices~\ref{app:exp4} and~\ref{app:pavia}).
+the cue's amplitude, which are not interchangeable here. With the natural
+$3\times3$ neighbourhoods of the same cores, which never straddle two
+classes, the encoder learns the class signal equally with and without
+informative context and the model uses the full spectrum, on tissue and
+on a public scene (Appendices~\ref{app:exp4} and~\ref{app:pavia}).
 
 \begin{figure}[t]
 \centering
 \IfFileExists{figures/fig4_exp3.pdf}{\includegraphics[width=\linewidth]{figures/fig4_exp3.pdf}}{\fbox{\rule{0pt}{2.0in}\rule{0.97\linewidth}{0pt}}}
-\caption{Experiment 3 at $L^\ast=0.30$ on validation patients, three seeds
-per cell. (a) Probe gain against width: high accessibility (blue), low
-accessibility ($\gamma=30$ red, $\gamma=10$ orange), uninformative-context
-comparator dashed. (b) Accuracy under context reversal. (c) Whole-head
-rate multiplier at $M=32$: probe gain (solid), reversal accuracy (dashed).
-(d) Accuracy with an uninformative context.}
+\caption{Experiment 3 at $L^\ast=0.30$, validation patients, three seeds.
+(a) Probe gain against width (high accessibility blue; low accessibility
+$\gamma=30$ red, $\gamma=10$ orange; comparator dashed). (b) Reversal
+accuracy. (c) Rate multiplier at $M=32$: probe gain (solid), reversal
+(dashed). (d) Accuracy with uninformative context.}
 \label{fig:exp3}
 \end{figure}

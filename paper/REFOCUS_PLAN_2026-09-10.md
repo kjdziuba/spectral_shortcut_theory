@@ -1127,3 +1127,81 @@ standardized 0.915 / 0.923 / 0.909.
   suppression MET, reliance MET, high-accessibility failure-without-
   deficit MET with full recoverability, rate response and recovery
   ordering NOT met at γ=30 and PARTIAL (one seed) at γ=10.
+
+## 14. Astra review-03 prompt (paste-ready; drafted 20:35; PDF of commit 3596a9c, SHA-256 prefix 70502959; the seed/fold extensions will change only the added tables)
+
+Astra — revision after your review 02 is in paper/main_iclr_v2.pdf (sources
+paper/sections_iclr_v2/; plan paper/REFOCUS_PLAN_2026-09-10.md §8–§13 records
+every pre-registration, amendment and verdict with timestamps). Since review 02:
+(1) Your single change is done: exp2_recovery.py (protocol fixed before any shifted
+result; init / κ=1 / κ=1/256 encoders at L*, paired head init, 20,000 GD steps on
+fresh context-random images): retrained reversal 0.84/0.77/0.75 after κ=1/256 vs
+0.62/0.59/0.54 after κ=1 and 0.60/0.59/0.53 from random init; the real-spectra
+version (27 runs): high accessibility 0.90–0.96 from every encoder incl. random,
+γ=30 0.45–0.56 for all, γ=10 0.55–0.70 (slow) vs 0.48–0.60 (fast). Update
+projections exported and reported in §5 as a supported hypothesis; registered
+verdicts recomputed on the original five widths (Appendix C criterion table); all
+32 ledger items applied.
+(2) NEW Experiment 4 (Appendix E; plan §8): natural 3×3 neighbourhoods on breast
+QCL fold 0, four classes, two preprocessing copies. Gate: per-pixel classifiers gain
+0.07–0.11 macro-F1 beyond 16 PCs (0.14–0.25 on the denoised copy). Registered
+verdicts on both copies: P7 (spatial model insensitive to PCA-16) NOT met at budget
+end (0.73 vs 0.66; insensitive only at matched loss); P8 reliance met; P9 head-level
+(encoder probes equal with/without informative context, retrained head recovers the
+comparator's level); P10 asymmetry fails; P11 MET (learned 12-dim bottleneck = no
+bottleneck, 0.732 vs 0.744); κ prediction NOT met. Reading: natural 3×3 context is a
+redundant copy of the centre's class (no patch straddles classes; 88% same-label), so
+the competition mechanism does not operate there — stated as a scope result in §5/§6.
+(3) O'Leary et al. 2026 verified from the abstract and their code: the "16-feature
+bottleneck" is a LEARNED 1×1 conv trained end to end, not PCA; the intro now says
+compressibility is not redundancy (Müller et al. 2023 added).
+(4) NEW public replication on Pavia University (Appendix F; plan §9): tile-disjoint
+split; readiness scan gives the same two regimes; Exp 3 analogue (78 runs, all at
+L*): suppression and reliance replicate in full; rate response and recovery
+ordering NOT met at γ=30, partial (one seed) at γ=10; high-accessibility regime
+fails without a probe deficit and recovers 0.89–0.91 from every encoder. Exp 4
+analogue: per-pixel gate FAILS (16 PCs suffice there), P8 first clause met, P9
+head-level, P11 met; the M=32 plain-GD head is a weak nine-class classifier (stated).
+(5) NEW nonlinear encoder in Exp 2 (Appendix C; plan §10): two-layer ReLU encoder;
+P12–P15 ALL met in every seed (suppression, reliance, rate response, recovery
+ordering; recovered levels 0.65–0.70 vs 0.57 vs 0.58).
+(6) Running: seeds 3–4 for Exp 2/Exp 3 (registered verdicts stay on seeds 0–2; plan
+§11) and folds 1–4 for Exp 3/Exp 4 (plan §12; Appendix D subsection wired).
+(7) Main text re-fitted to nine pages; §6 replaces "we recommend no mitigation" with
+the conditional statement the experiments support; abstract v4 candidate in plan §13
+(not applied; registration Sep 18).
+Please write review_packet/astra/review_iclr_03.md: the reviewer report as before
+(score, ranked weaknesses with page/line, the single most valuable change), a
+sentence-level ledger of anything still stronger than the files support, and four
+specific checks: (a) is the natural-context scope result stated correctly in §5/§6
+and Appendix E, and does it undercut the paper's claim more than we say; (b) is the
+compressibility-vs-redundancy sentence in §1 the strongest defensible statement
+against the "small set of spectral features" reading of O'Leary et al.; (c) does the
+Pavia replication (Appendix F) support calling the mechanism reproducible, given the
+failed rate prediction at γ=30; (d) should the abstract v4 candidate replace v3 for
+registration. Do not edit paper files.
+
+### 11.1 Seed extension outcome, grids (recorded 20:55; Exp 2 60/60 and Exp 3 60/60 added runs; retraining for the added seeds running)
+Registered verdicts unchanged (`PREDICTIONS.md` regenerated on seeds
+0–2 is byte-identical in its verdict section; all-seed evaluation in
+`PREDICTIONS_allseeds.md` for the record). Directions on seeds 3 and 4:
+- **Exp 3 unready, suppression:** probe gain sp (mean over widths) +0.026
+  / +0.061 vs ctxfree +0.329 / +0.462 (seeds 0–2: −0.004 / +0.031 /
+  +0.020 vs 0.35 / 0.34 / 0.34). Holds 5/5.
+- **Exp 3 reliance:** reversal sp 0.069 / 0.065 vs ctxfree 0.906 / 0.919
+  (unready); ready 0.108 / 0.088 vs 0.913 / 0.924. Holds 5/5.
+- **Exp 3 κ response, paired 1 → 1/256:** γ = 30: +0.002 / +0.022 /
+  +0.015 / +0.032 / +0.054 (positive 5/5; larger in the added seeds);
+  γ = 10: +0.030 / +0.048 / +0.094 / +0.086 / +0.082 (5/5). The §5
+  statement "small at γ = 30, larger at γ = 10" holds with five seeds
+  (means +0.025 vs +0.068).
+- **Exp 2 P1 (width criterion ρ ≤ −0.8 for a_u AND reversal):** a_u ρ =
+  −0.7 / −1.0 / −1.0 / −0.9 / −0.7; reversal ρ = −0.6 / −0.9 / −0.6 /
+  +0.7 / −0.4 → still not met (2/5 for a_u; 0/5 for both). **P2b** (a_u at
+  2048, normalized > standard): 5/5. **P5** frozen reversal max 0.149
+  (< 0.5). ctxfree probe 0.887–0.943 at every width. **P6 κ** (M = 32):
+  probe gain 0.028→0.223, 0.025→0.203, 0.014→0.205, 0.008→0.225,
+  0.005→0.221 (monotone 5/5). Five-seed mean κ = 1/256 probe gain 0.215
+  (three-seed 0.211).
+Main text keeps the registered three-seed numbers; one sentence each in
+§4 and §5 will say the two added seeds agree (Appendices C, D).

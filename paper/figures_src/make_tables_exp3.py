@@ -63,7 +63,7 @@ for regime, name in (("unready", "unready (whitened, $\\gamma=30$)"), ("unready1
 
 rec_path = ROOT / "results" / RES / "recovery_summary.csv"
 if rec_path.exists():
-    r = pd.read_csv(rec_path)
+    r = pd.concat([pd.read_csv(f) for f in sorted((ROOT / "results" / RES).glob("recovery_summary*.csv"))], ignore_index=True)  # registered + §11 added seeds
     L.append("\\begin{table}[htbp]\\centering\\scriptsize")
     L.append("\\caption{Recovery at $M=32$ (real spectra): a fresh patch head with paired initialization trained for 20,000 steps on newly "
              "sampled context-random patches with the encoder frozen at its $L^\\ast$ checkpoint (\\texttt{init} = random initial encoder); "
