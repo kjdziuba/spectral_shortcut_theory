@@ -2420,3 +2420,8 @@ ViT sweep:
   registered verdicts pinned to seeds 0–2 (`REG_SEEDS`), PREDICTIONS_allseeds.md for the extension,
   `EXP2_SEEDS` for added-seed retraining, table generator merges retraining files and excludes nlenc.
   Build clean: 38 pp, 0 undefined refs, main text ends on p. 9.
+- 19:55 Pavia Exp 3 grid DONE (78/78 reached L*): suppression MET (probe gain ≈ 0 vs +0.22–0.24
+  ctxfree), reliance MET in all regimes (reversal 0.05–0.26 vs 0.84–0.90), rate response NOT met at
+  γ=30 and partial (2/3, one responsive seed) at γ=10, ready regime fails without a probe deficit →
+  plan §9.3, Appendix F paragraph + tables (make_tables_exp3.py with EXP3_DATASET=paviau). Pavia
+  Exp 3 retraining running. Abstract v4 candidate recorded in plan §13 (not applied).

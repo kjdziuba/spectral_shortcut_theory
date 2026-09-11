@@ -1046,3 +1046,71 @@ criterion table to seeds 0–2 and report five-seed means separately.
   fresh linear-readout head extracts less from the ReLU encoder's
   features within the budget (retraining loss 0.56–0.61 vs 0.67). All
   four nonlinear-encoder predictions (P12–P15) are met.
+
+## 13. Abstract v4 candidate (drafted 19:35; NOT applied to `00_abstract.tex`; for the author and Astra; registration deadline Sep 18)
+Changes from v3: "linear or two-layer ReLU encoder" in the synthetic
+sentence; one added sentence on natural neighbourhoods (tissue + public
+scene, the compressibility/redundancy distinction); the real-spectra
+sentence shortened to pay for it. Numbers as in the appendices.
+
+> We study how relative module training rates affect spectral adaptation
+> in serial spectral–spatial models, in which a small encoder compresses
+> each pixel's spectrum and a wide spatial network reads the encoded
+> neighbourhood. An exactly solvable serial logistic model bounds the
+> spectral encoder's update at matched fit by a fraction 1/(1+Mv₀²) of
+> the update a spectral-only model needs, establishes contextual-reversal
+> failure under explicit finite-width conditions, and shows through a
+> M^{-1/2}-normalized readout that replicated-readout width acts through
+> the training metric; normalization removes the width dependence but
+> need not prevent the failure. In a nonlinear synthetic model with two
+> cues of matched signal-to-noise ratio, with a linear or a two-layer
+> ReLU encoder, slowing the spatial head by 256× raises the linear
+> accessibility of the spectral cue at matched training loss from 0.66
+> to 0.85 while the trained classifier remains strongly context-reliant
+> (reversal accuracy 0.12 to 0.14); retraining the head on decorrelated
+> context from the frozen encoders then recovers 0.75–0.84 shifted
+> accuracy from the slow-head encoders against 0.54–0.62 from the
+> fast-head ones, no better than random encoders. With measured tissue
+> spectra and constructed context, strong contextual reliance appears at
+> high and at low initial spectral accessibility, with a weaker rate
+> response at high contextual amplitude. With natural neighbourhoods, on
+> tissue and on a public hyperspectral scene, no competition arises: the
+> neighbours carry the centre's class, the encoder learns it equally
+> with or without them, and a learned twelve-dimensional bottleneck loses
+> nothing where sixteen principal components lose per-pixel information.
+> The results separate adaptation of the encoder, accessibility of the
+> spectral cue, reliance of the fitted classifier, and what a specified
+> retraining recovers.
+
+### 9.3 Pavia Exp 3 analogue, registered verdicts (recorded 19:50; 78 runs, ALL reached L* = 0.30; validation of the pair Meadows vs Trees; retraining pending)
+Init probe (whitened, K = 12): 0.664 / 0.703 / 0.755 by seed (mean 0.707);
+standardized 0.915 / 0.923 / 0.909.
+
+| regime | arm | probe gain | reversal | ctx-random | steps to L* |
+|---|---|---|---|---|---|
+| unready γ=30 | sp M 8–512 | −0.002…+0.001 | 0.07–0.12 | 0.47–0.52 | 15–85 |
+| | headlr κ 1 / 1/16 / 1/256 | −0.001 / 0.000 / +0.002 | 0.07–0.08 | 0.47–0.48 | 42–250 |
+| | ctxfree M 8 / 128 | +0.239 / +0.223 | 0.88 / 0.85 | 0.87 / 0.86 | 9,100–10,200 |
+| | frozen | 0 | 0.07 | 0.48 | 53 |
+| unready10 γ=10 | sp | +0.001…+0.008 | 0.05–0.07 | 0.48–0.51 | 103–416 |
+| | headlr κ 1 / 1/16 / 1/256 | +0.004 / +0.021 / +0.029 | 0.05–0.06 | 0.48 | 283–1,900 |
+| | ctxfree M 8 / 128 | +0.240 / +0.231 | 0.84 / 0.90 | 0.87 / 0.90 | 8,900–10,100 |
+| ready (standardized) | sp | ≈ 0 | 0.23–0.26 | 0.53–0.57 | 431–1,219 |
+| | headlr κ 1 / 1/16 / 1/256 | ≈ 0 | 0.23 / 0.23 / 0.19 | 0.54 / 0.54 / 0.51 | 1,066–13,524 |
+| | ctxfree M 8 / 128 | +0.004 / +0.003 | 0.85 / 0.88 | 0.86 / 0.88 | 4,800–7,500 |
+| | frozen | 0 | 0.22 | 0.54 | 1,418 |
+
+- **Suppression at matched fit (unready): MET** in every seed and width:
+  informative-context probe gain ≈ 0 against +0.22–0.24 for the
+  comparator, which needs 100× more steps to reach L*.
+- **Reliance / failure: MET** in all three regimes: reversal 0.05–0.26
+  for every informative-context arm against 0.84–0.90 for ctxfree.
+- **Rate response: NOT MET at γ = 30** (within-seed change κ 1 → 1/256:
+  +0.023 / −0.009 / −0.006; monotone in 1/3 seeds) and **PARTIAL at
+  γ = 10** (+0.073 / −0.001 / +0.005; monotone in 2/3): only the seed
+  with the lowest initial accessibility (0.664) responds; the seeds
+  starting at 0.703 and 0.755 gain nothing. Weaker than tissue
+  (+0.030 / +0.049 / +0.095 at γ = 10). Reversal unchanged (≤ 0.01).
+- **High accessibility (ready): failure without a probe deficit**, as on
+  tissue (gain ≈ 0 everywhere; reversal 0.19–0.26 vs 0.85–0.88).
+- Recovery ordering: pending `exp3_recovery.py` (running).

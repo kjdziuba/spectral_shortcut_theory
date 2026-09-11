@@ -1,0 +1,59 @@
+\begin{table}[htbp]\centering\scriptsize
+\caption{Experiment 3, unready (whitened, $\gamma=30$) regime, at $L^\ast=0.30$: mean$\pm$sd over seeds (number of seeds). Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; accuracies on validation (val) and test (test) patients under the paired conditions.}\label{tab:exp3_unready_paviau}
+\begin{tabular}{llrcccccc}\toprule
+arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec.-only (val) & rev.\ (test) & ctx-rand.\ (test) \\ \midrule
+\texttt{sp} & 8 & 85$\pm$71 & -0.002$\pm$0.002 & 0.073$\pm$0.015 & 0.466$\pm$0.034 & 0.355$\pm$0.122 & 0.068$\pm$0.016 & 0.463$\pm$0.033 (3) \\
+\texttt{sp} & 32 & 42$\pm$5 & -0.001$\pm$0.002 & 0.071$\pm$0.022 & 0.476$\pm$0.024 & 0.386$\pm$0.094 & 0.066$\pm$0.024 & 0.469$\pm$0.026 (3) \\
+\texttt{sp} & 128 & 31$\pm$3 & 0.001$\pm$0.003 & 0.118$\pm$0.025 & 0.523$\pm$0.019 & 0.535$\pm$0.106 & 0.126$\pm$0.033 & 0.526$\pm$0.021 (3) \\
+\texttt{sp} & 512 & 15$\pm$2 & -0.001$\pm$0.001 & 0.112$\pm$0.014 & 0.513$\pm$0.018 & 0.482$\pm$0.065 & 0.109$\pm$0.010 & 0.508$\pm$0.010 (3) \\
+\midrule
+\texttt{headlr} & 32 / 0.00390625 & 250$\pm$23 & 0.002$\pm$0.020 & 0.080$\pm$0.016 & 0.472$\pm$0.029 & 0.373$\pm$0.129 & 0.072$\pm$0.025 & 0.466$\pm$0.042 (3) \\
+\texttt{headlr} & 32 / 0.0625 & 188$\pm$10 & 0.000$\pm$0.013 & 0.079$\pm$0.017 & 0.476$\pm$0.026 & 0.375$\pm$0.119 & 0.069$\pm$0.025 & 0.467$\pm$0.038 (3) \\
+\texttt{headlr} & 32 & 42$\pm$5 & -0.001$\pm$0.002 & 0.071$\pm$0.022 & 0.476$\pm$0.024 & 0.386$\pm$0.094 & 0.066$\pm$0.024 & 0.469$\pm$0.026 (3) \\
+\midrule
+\texttt{ctxfree} & 8 & 10187$\pm$582 & 0.239$\pm$0.043 & 0.877$\pm$0.029 & 0.873$\pm$0.018 & 0.622$\pm$0.100 & 0.894$\pm$0.030 & 0.895$\pm$0.014 (3) \\
+\texttt{ctxfree} & 128 & 9142$\pm$764 & 0.223$\pm$0.033 & 0.851$\pm$0.015 & 0.857$\pm$0.017 & 0.745$\pm$0.021 & 0.872$\pm$0.010 & 0.874$\pm$0.018 (3) \\
+\midrule
+\texttt{frozen} & 32 & 53$\pm$8 & 0.000$\pm$0.000 & 0.072$\pm$0.023 & 0.476$\pm$0.023 & 0.389$\pm$0.082 & 0.067$\pm$0.024 & 0.469$\pm$0.025 (3) \\
+\bottomrule
+\end{tabular}\end{table}
+\begin{table}[htbp]\centering\scriptsize
+\caption{Experiment 3, unready (whitened, $\gamma=10$; amendment) regime, at $L^\ast=0.30$: mean$\pm$sd over seeds (number of seeds). Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; accuracies on validation (val) and test (test) patients under the paired conditions.}\label{tab:exp3_unready10_paviau}
+\begin{tabular}{llrcccccc}\toprule
+arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec.-only (val) & rev.\ (test) & ctx-rand.\ (test) \\ \midrule
+\texttt{sp} & 8 & 416$\pm$244 & 0.008$\pm$0.006 & 0.056$\pm$0.008 & 0.479$\pm$0.019 & 0.365$\pm$0.106 & 0.053$\pm$0.010 & 0.479$\pm$0.018 (3) \\
+\texttt{sp} & 32 & 283$\pm$28 & 0.004$\pm$0.005 & 0.054$\pm$0.012 & 0.486$\pm$0.011 & 0.391$\pm$0.064 & 0.052$\pm$0.016 & 0.484$\pm$0.015 (3) \\
+\texttt{sp} & 128 & 220$\pm$20 & 0.008$\pm$0.009 & 0.071$\pm$0.013 & 0.506$\pm$0.011 & 0.514$\pm$0.081 & 0.076$\pm$0.014 & 0.506$\pm$0.009 (3) \\
+\texttt{sp} & 512 & 103$\pm$16 & 0.001$\pm$0.003 & 0.070$\pm$0.007 & 0.500$\pm$0.009 & 0.481$\pm$0.050 & 0.070$\pm$0.003 & 0.500$\pm$0.006 (3) \\
+\midrule
+\texttt{headlr} & 32 / 0.00390625 & 1901$\pm$96 & 0.029$\pm$0.046 & 0.059$\pm$0.006 & 0.479$\pm$0.015 & 0.379$\pm$0.133 & 0.056$\pm$0.014 & 0.475$\pm$0.026 (3) \\
+\texttt{headlr} & 32 / 0.0625 & 1303$\pm$79 & 0.021$\pm$0.035 & 0.056$\pm$0.009 & 0.481$\pm$0.013 & 0.381$\pm$0.110 & 0.054$\pm$0.013 & 0.478$\pm$0.023 (3) \\
+\texttt{headlr} & 32 & 283$\pm$28 & 0.004$\pm$0.005 & 0.054$\pm$0.012 & 0.486$\pm$0.011 & 0.391$\pm$0.064 & 0.052$\pm$0.016 & 0.484$\pm$0.015 (3) \\
+\midrule
+\texttt{ctxfree} & 8 & 10067$\pm$1374 & 0.240$\pm$0.044 & 0.842$\pm$0.027 & 0.867$\pm$0.019 & 0.687$\pm$0.053 & 0.867$\pm$0.034 & 0.892$\pm$0.022 (3) \\
+\texttt{ctxfree} & 128 & 8923$\pm$880 & 0.231$\pm$0.037 & 0.899$\pm$0.005 & 0.900$\pm$0.011 & 0.792$\pm$0.016 & 0.920$\pm$0.003 & 0.922$\pm$0.004 (3) \\
+\midrule
+\texttt{frozen} & 32 & 368$\pm$42 & 0.000$\pm$0.000 & 0.054$\pm$0.011 & 0.484$\pm$0.009 & 0.389$\pm$0.050 & 0.053$\pm$0.014 & 0.485$\pm$0.013 (3) \\
+\bottomrule
+\end{tabular}\end{table}
+\begin{table}[htbp]\centering\scriptsize
+\caption{Experiment 3, ready (standardized) regime, at $L^\ast=0.30$: mean$\pm$sd over seeds (number of seeds). Probe gain = discriminant accuracy on the encoder output of validation centres minus its initial value; accuracies on validation (val) and test (test) patients under the paired conditions.}\label{tab:exp3_ready_paviau}
+\begin{tabular}{llrcccccc}\toprule
+arm & $M$ / $\kappa$ & step & probe gain & rev.\ (val) & ctx-rand.\ (val) & spec.-only (val) & rev.\ (test) & ctx-rand.\ (test) \\ \midrule
+\texttt{sp} & 8 & 1219$\pm$441 & 0.002$\pm$0.002 & 0.227$\pm$0.050 & 0.530$\pm$0.032 & 0.605$\pm$0.059 & 0.225$\pm$0.049 & 0.533$\pm$0.028 (3) \\
+\texttt{sp} & 32 & 1066$\pm$262 & -0.001$\pm$0.004 & 0.230$\pm$0.021 & 0.544$\pm$0.010 & 0.634$\pm$0.036 & 0.227$\pm$0.027 & 0.547$\pm$0.019 (3) \\
+\texttt{sp} & 128 & 842$\pm$77 & 0.000$\pm$0.003 & 0.264$\pm$0.035 & 0.574$\pm$0.028 & 0.733$\pm$0.031 & 0.279$\pm$0.046 & 0.583$\pm$0.029 (3) \\
+\texttt{sp} & 512 & 431$\pm$65 & 0.000$\pm$0.002 & 0.252$\pm$0.017 & 0.568$\pm$0.017 & 0.719$\pm$0.036 & 0.255$\pm$0.009 & 0.569$\pm$0.015 (3) \\
+\midrule
+\texttt{headlr} & 32 / 0.00390625 & 13524$\pm$4802 & 0.003$\pm$0.004 & 0.189$\pm$0.028 & 0.512$\pm$0.041 & 0.520$\pm$0.136 & 0.181$\pm$0.043 & 0.513$\pm$0.046 (3) \\
+\texttt{headlr} & 32 / 0.0625 & 5910$\pm$2023 & 0.001$\pm$0.004 & 0.227$\pm$0.030 & 0.537$\pm$0.030 & 0.591$\pm$0.080 & 0.219$\pm$0.038 & 0.536$\pm$0.029 (3) \\
+\texttt{headlr} & 32 & 1066$\pm$262 & -0.001$\pm$0.004 & 0.230$\pm$0.021 & 0.544$\pm$0.010 & 0.634$\pm$0.036 & 0.227$\pm$0.027 & 0.547$\pm$0.019 (3) \\
+\midrule
+\texttt{ctxfree} & 8 & 7465$\pm$1642 & 0.004$\pm$0.002 & 0.853$\pm$0.033 & 0.855$\pm$0.027 & 0.834$\pm$0.013 & 0.941$\pm$0.028 & 0.942$\pm$0.022 (3) \\
+\texttt{ctxfree} & 128 & 4781$\pm$463 & 0.003$\pm$0.002 & 0.875$\pm$0.002 & 0.877$\pm$0.006 & 0.869$\pm$0.009 & 0.964$\pm$0.002 & 0.962$\pm$0.004 (3) \\
+\midrule
+\texttt{frozen} & 32 & 1418$\pm$232 & 0.000$\pm$0.000 & 0.217$\pm$0.016 & 0.542$\pm$0.005 & 0.637$\pm$0.027 & 0.213$\pm$0.016 & 0.542$\pm$0.011 (3) \\
+\bottomrule
+\end{tabular}\end{table}
+\paragraph{Runs that did not reach $L^\ast$.}
+Every run reached $L^\ast$.

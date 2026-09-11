@@ -44,6 +44,23 @@ pixels, evaluation on all validation and test pixels of the pair. Arms, widths, 
 multipliers, seeds, thresholds, conditions and the retraining protocol are those of
 Appendix~\ref{app:exp3}.
 
+\paragraph{Results (Tables~\ref{tab:exp3_unready_paviau}, \ref{tab:exp3_unready10_paviau},
+\ref{tab:exp3_ready_paviau}).} All $78$ runs reach $L^\ast$. In the low-accessibility
+regime the outcome is that of the tissue experiment: every informative-context arm
+leaves the encoder's probe at its initial value (gain $-0.002$ to $+0.002$ at
+$\gamma=30$, at most $+0.008$ at $\gamma=10$, from $0.707$) and fits within $15$ to
+$420$ steps, while the uninformative-context comparator raises the probe by $0.22$ to
+$0.24$ and needs about $9{,}000$ steps; reversal accuracy is $0.05$ to $0.12$ against
+$0.84$ to $0.90$, and context-random accuracy is at chance. The rate response is weaker
+than on tissue: at $\gamma=30$ the within-seed probe change from $\kappa=1$ to $1/256$
+is $+0.023$, $-0.009$, $-0.006$ (monotone in one seed of three), and at $\gamma=10$ it is
+$+0.073$, $-0.001$, $+0.005$ (two of three); only the seed whose random encoder started
+least accessible ($0.664$ against $0.703$ and $0.755$) responds, and reversal accuracy
+is unchanged. The registered rate prediction is therefore not met at $\gamma=30$ and
+partially met at $\gamma=10$ on this scene. In the high-accessibility regime the probe
+is $0.91$ to $0.92$ throughout and the informative-context arms still fail under
+reversal ($0.19$ to $0.26$ against $0.85$ to $0.88$), as on tissue.
+
 \subsection{Experiment 4 on Pavia: natural context}
 All nine classes, macro-F1, with the Stage A gate and the Stage B arms of
 Appendix~\ref{app:exp4}. Stage A gives the opposite of the tissue result
