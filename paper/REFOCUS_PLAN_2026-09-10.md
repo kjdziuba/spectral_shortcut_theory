@@ -1205,3 +1205,8 @@ Registered verdicts unchanged (`PREDICTIONS.md` regenerated on seeds
   (three-seed 0.211).
 Main text keeps the registered three-seed numbers; one sentence each in
 §4 and §5 will say the two added seeds agree (Appendices C, D).
+- **Exp 2 retraining, added seeds (recorded 21:35):** retrained reversal
+  from κ=1/256 encoders 0.808 / 0.774 (seeds 3 / 4) vs κ=1 0.600 / 0.567
+  vs random init 0.605 / 0.561 → the ordering of §4 holds 5/5 (five-seed
+  means 0.789 / 0.583 / 0.578). Exp 2 tables regenerated with five seeds
+  (criterion table on seeds 0–2).
